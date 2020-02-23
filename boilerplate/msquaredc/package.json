@@ -1,0 +1,25 @@
+{
+  "name": "elm-spa-boilerplate",
+  "version": "1.0.0",
+  "description": "A simple, no-frills boilerplate for creating delightful Single Page Applications (SPAs) in Elm",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "elm-app build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jzxhuang/elm-spa-boilerplate.git"
+  },
+  "author": "Jeffrey Huang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jzxhuang/elm-spa-boilerplate/issues"
+  },
+  "homepage": "https://github.com/jzxhuang/elm-spa-boilerplate#readme",
+  "devDependencies": {
+    "create-elm-app": "^2.2.0"
+  }
+}

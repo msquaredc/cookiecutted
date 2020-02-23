@@ -1,0 +1,56 @@
+module Type.Type exposing (..)
+
+import Dict exposing (Dict)
+import Set exposing (Set)
+
+type Type a
+    = IntType Int
+    | StringType String
+    | MaybeType (Type a)
+    | ResultType (Type a) (Type a)
+    | BoolType Bool
+    | FloatType Float
+    | ListType (List (Type a))
+    | SetType (Set (Type a))
+    | Custom a
+
+
+fromInt : Int -> Type a
+fromInt v = 
+    IntType v
+
+toInt : Type a -> Maybe Int
+toInt t = 
+    case t of
+        IntType v ->
+            Just v 
+        _ ->
+            Nothing
+
+fromString : String -> Type a
+fromString v =
+    StringType v
+
+toString : Type a -> Maybe String
+toString t =
+    case t of
+        StringType v->
+            Just v
+    
+        _ ->
+            Nothing
+
+fromMaybe : Maybe (Type a) -> Type a
+fromMaybe v = 
+    MaybeType v
+
+sameType : Type a -> Type a -> Bool
+sameType t1 t2 = 
+    case (t1,t2) of
+        (IntType _, IntType _) -> 
+            True
+        (StringType _, StringType _) ->
+            True
+        (MaybeType a, MaybeType b) ->
+            sameType a b
+        

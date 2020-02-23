@@ -1,0 +1,680 @@
+module Type.IO.Update exposing (..)
+
+import Array exposing (Array)
+import Dict exposing (Dict)
+import List.Extra
+import Result.Extra
+
+
+type alias PartialUpdater b c a = 
+    Request b -> Result Error ((c -> a) -> a -> a)
+    
+type alias Request a=
+    {
+        msg: Msg,
+        parent: a
+    }
+
+-- empty : PartialUpdater a b c
+-- empty = \_ -> Ok identity
+
+-- 
+-- input : ((a-> c) -> b)
+-- current : (a -> c)
+
+-- input : (c -> b) = mapper.input old.current
+-- current: c  -- = mapper.current old.current
+
+-- mapInput : (a -> c) -> ((a-> c) -> b) -> a -> (a -> b) -> (c -> b )
+-- mapInput mapperCurrent mapperInput oldCurrent oldInput = 
+--     mapperInput << oldCurrent
+
+
+
+-- andThen : (a -> Request c b) -> Request a b -> Request c b
+-- andThen f old =
+--     {
+--         msg = old.msg,
+--         input = old.input,
+--         current = .current <| f <| old.current old.input
+--     }
+
+-- andBefore : (b -> Request a c) -> Request a b -> Request a c
+-- andBefore f old =
+--     {
+--         msg = old.msg,
+--         input = .input <| f <| old.input,
+--         current = .current <| f <| old.input
+--     }
+
+-- concat : Request a b -> Request b c -> Request a c
+-- concat first second =
+--     {
+--         msg = second.msg,
+--         input = second.input,
+--         current = first.current << second.current
+--     }
+
+-- map : Request a b -> (b -> a) ->  Request (a -> c) b -> Request b c
+-- map def getter parent =
+--     {
+--         msg = def.msg,
+--         parent = getter >> parent.current,
+--         current = parent.parent parent.current
+--     }
+
+-- cur : Request a b c-> a
+-- cur request =
+--     request.current
+    
+-- input : Request a b -> b
+-- input request = 
+--     request.parent request.current
+
+type alias Updater a=
+    PartialUpdater a a a
+
+
+type OldMsg
+    = Set SetterMsg
+    | Update Msg
+
+
+type SetterMsg
+    = BasicSetter BaseSetter
+    | MaybeSetter (Maybe SetterMsg)
+    | ListSetter (List SetterMsg)
+
+
+type BaseSetter
+    = IntSetter Int
+    | StringSetter String
+    | FloatSetter Float
+    | BoolSetter Bool
+
+
+type Msg
+    = BasicUpdater BaseUpdater
+    | MaybeUpdater Msg
+    | ListUpdater Int Msg
+    | ArrayUpdater Int Msg
+    | DictUpdater String DictUpdateMsg
+    | ResultUpdater ResultUpdateMsg
+    | AttributeUpdater String Msg
+    | Stay
+
+
+type DictUpdateMsg
+    = Key Msg
+    | Value Msg
+
+
+type ResultUpdateMsg
+    = OkMsg Msg
+    | ErrMsg Msg
+
+
+type BaseUpdater
+    = IntUpdater (Int -> Int)
+    | StringUpdater (String -> String)
+    | FloatUpdater (Float -> Float)
+    | BoolUpdater (Bool -> Bool)
+
+
+type Response a
+    = NoChange a
+    | Change a
+
+
+type Error
+    = WrongUpdater
+    | WrongSetter
+    | NothingCanNotBeUpdated
+    | IndexOutOfBounds
+    | NoValueToStayOn
+    | KeyError
+    | EntityDidNotStay
+
+
+
+int : Updater Int
+int request =
+    case request.msg of
+        BasicUpdater (IntUpdater u) ->
+            Ok (\f x -> f x)
+
+        Stay ->
+            Ok identity
+
+        _ ->
+            Err WrongUpdater
+
+
+
+-- (Update _ ,_) ->
+--     Err WrongUpdater
+-- (Set (BasicSetter(IntSetter a)), _) ->
+--     Ok a
+-- (Set _,_) ->
+--     Err WrongSetter
+-- (Stay, Just x) ->
+--     Ok x
+-- (Stay, _) ->
+--     Err NoValueToStayOn
+
+
+string : Updater String
+string request =
+    case request.msg of
+        BasicUpdater (StringUpdater u) ->
+            Ok (\f x -> f x)
+
+        Stay ->
+            Ok (identity)
+
+        _ ->
+            Err WrongUpdater
+
+
+
+-- (Update (BasicUpdater  (StringUpdater f)), Nothing) ->
+--     Err NothingCanNotBeUpdated
+-- (Update _ ,_) ->
+--     Err WrongUpdater
+-- (Set (BasicSetter(StringSetter a)), _) ->
+--     Ok a
+-- (Set _,_) ->
+--     Err WrongSetter
+-- (Stay, Just x) ->
+--     Ok x
+-- (Stay, _) ->
+--     Err NoValueToStayOn
+
+
+float : Updater Float
+float request =
+    case request.msg of
+        BasicUpdater (FloatUpdater u) ->
+            Ok (\f x -> f x)
+
+        Stay ->
+            Ok identity
+
+        _ ->
+            Err WrongUpdater
+
+
+
+-- (Update (BasicUpdater  (FloatUpdater f)), Nothing) ->
+--     Err NothingCanNotBeUpdated
+-- (Update _ ,_) ->
+--     Err WrongUpdater
+-- (Set (BasicSetter(FloatSetter a)), _) ->
+--     Ok a
+-- (Set _,_) ->
+--     Err WrongSetter
+-- (Stay, Just x) ->
+--     Ok x
+-- (Stay, _) ->
+--     Err NoValueToStayOn
+
+
+bool : Updater Bool
+bool request =
+    case request.msg of
+        BasicUpdater (BoolUpdater u) ->
+            Ok (\f x -> f x)
+
+        Stay ->
+            Ok <| identity
+
+        _ ->
+            Err WrongUpdater
+
+
+
+-- (Update (BasicUpdater  (BoolUpdater f)), Nothing) ->
+--     Err NothingCanNotBeUpdated
+-- (Update _ ,_) ->
+--     Err WrongUpdater
+-- (Set (BasicSetter(BoolSetter a)), _) ->
+--     Ok a
+-- (Set _,_) ->
+--     Err WrongSetter
+-- (Stay, Just x) ->
+--     Ok x
+-- (Stay, _) ->
+--     Err NoValueToStayOn
+
+
+maybe : Updater a -> Updater (Maybe a)
+maybe old request =
+    case request.msg of
+        MaybeUpdater msg_ ->
+
+            case request.parent of
+                Just v -> 
+                    let
+                        u = old {msg=msg_,parent = v}
+                    in
+                        case u of
+                            Ok func ->
+                                -- Ok (Maybe.map func)
+                                Ok (\f x -> f x)
+                            Err err ->
+                                Err err
+                Nothing ->
+                    Ok identity
+            
+--             case cur request of
+--                 Nothing ->
+--                     Ok Nothing
+
+--                 Just v ->
+--                     old {msg=msg_,parent = v, current = v, previous = v}
+-- --                    old {msg=msg_,parent = (request.parent << Just), current = v }
+--                     |> Result.map Just
+
+        Stay ->
+            Ok <| identity
+
+        _ ->
+            Err WrongUpdater
+
+
+-- (Update (MaybeUpdater msg_), Nothing) ->
+--     Err NothingCanNotBeUpdated
+-- (Update _, _) ->
+--     Err WrongUpdater
+-- (Set (MaybeSetter Nothing),_) ->
+--     Ok Nothing
+-- (Set (MaybeSetter (Just msg_)),Just a) ->
+--     ((old (Set msg_)) a)
+--     |> Result.map Just
+-- (Set (MaybeSetter (Just msg_)),Nothing) ->
+--     ((old (Set msg_)) Nothing)
+--     |> Result.map Just
+-- (Set _, _) ->
+--     Err WrongSetter
+-- (Stay, Just x) ->
+--     Ok x
+-- (Stay, _) ->
+--     Err NoValueToStayOn
+
+
+list : Updater a -> Updater (List a)
+list old request =
+    case request.msg of
+        ListUpdater index msg_ ->
+            case List.Extra.getAt index request.parent of
+                Just v ->
+--                    old {msg=msg_,parent = (request.parent << (\x -> List.Extra.setAt index x (cur request))), current = v }
+                        case old {msg=msg_,parent = v} of 
+                            Ok g ->
+                                Ok (\f x -> f x)
+                                -- Ok (\x -> case (List.Extra.getAt index request.parent) of
+                                --             Just value -> 
+                                --                 f value
+                                --                 |> \y -> List.Extra.setAt index y x
+                                --             Nothing ->
+                                --                 request.parent
+                                --     )
+                            Err err ->
+                                Err err
+
+                Nothing ->
+                    Err IndexOutOfBounds
+
+        Stay ->
+            Ok identity
+
+        _ ->
+            Err WrongUpdater
+
+
+
+
+
+
+-- (Update (ListUpdater index msg_), Just v) ->
+--     let
+--         (before,(value,after)) = List.Extra.splitAt index v
+--                                 |> \(x, y) -> (x, List.Extra.splitAt 1 y)
+--         new = (old (Update msg_)) (List.head value)
+--     in
+--         Result.map (\x -> before ++ [x] ++ after) new
+-- (Update (ListUpdater index msg_), Nothing) ->
+--     Err NothingCanNotBeUpdated
+-- (Update _, _) ->
+--     Err WrongUpdater
+-- (Set (ListSetter msg_), _) ->
+--     List.map (\x -> old (Set x) Nothing) msg_
+--     |> Result.Extra.combine
+-- (Set _,_) ->
+--     Err WrongSetter
+-- (Stay, Just x) ->
+--     Ok x
+-- (Stay, _) ->
+--     Err NoValueToStayOn
+
+
+dict : (comparable -> Maybe String) -> Updater comparable -> Updater a -> Updater (Dict comparable a)
+dict getter keys values request =
+    case request.msg of
+        DictUpdater key msg_ ->
+            let
+                strkey dictionary =
+                    Dict.keys dictionary
+                        |> List.filter
+                            (\x ->
+                                getter x
+                                    |> Maybe.map (\y -> y == key)
+                                    |> Maybe.withDefault False
+                            )
+                        |> List.head
+
+            in
+            case ( msg_, strkey request.parent) of
+                ( Key kmsg, Just newkey) ->
+--                    keys {msg=kmsg, parent = (request.parent << (\x -> Dict.insert x newval (Dict.remove newkey (cur request)))), current = newkey }
+                    case keys {msg=kmsg, parent = newkey} of
+                        Ok g ->
+                            Ok (\f x -> f x)
+                            -- Ok (\x -> 
+                            --         let
+                            --             k = strkey x
+                            --             v = Maybe.andThen (\y -> Dict.get y request.parent) (strkey request.parent)
+                            --         in
+                            --             case (k, v) of
+                            --                 (Just oldkey, Just newval) ->
+                            --                     Dict.insert (f oldkey) newval (Dict.remove oldkey x)
+                            --                 (_,_) ->
+                            --                     x
+                            -- )
+                        Err err ->
+                            Err err
+                ( Key _, _) ->
+                    Err KeyError
+
+                ( Value vmsg, Just newkey) ->
+--                    values {msg=vmsg, parent = (request.parent << (\x -> Dict.insert newkey x (Dict.remove newkey (cur request)))), current = newval }
+                    let
+                        val = Dict.get newkey request.parent
+                    in  
+                        case val of
+                            Just parentval ->
+                                case values {msg=vmsg, parent = parentval} of
+                                    Ok g -> 
+                                        Ok (\f x -> f x)
+                                        -- Ok (\x -> 
+                                        --         let
+                                        --             oldval = Dict.get newkey x
+                                        --         in
+                                        --             case oldval of 
+                                        --                 Just v ->
+                                        --                     Dict.insert newkey v x
+                                        --                 Nothing ->
+                                        --                     x
+                                        --     )
+                                    Err err ->
+                                        Err err
+                            Nothing ->
+                                Err KeyError 
+                ( Value _, _) ->
+                    Err KeyError
+
+        Stay ->
+            Ok identity
+
+        _ ->
+            Err WrongUpdater
+
+
+
+-- case (msg, dictionary) of
+--     (Update (DictUpdater key msg_), Just v) ->
+--         Ok v
+--     (Update (DictUpdater key msg_), Nothing) ->
+--         Err NothingCanNotBeUpdated
+--     (Stay, Just x) ->
+--         Ok x
+--     (Stay, _) ->
+--         Err NoValueToStayOn
+
+
+result : Updater err -> Updater val -> Updater (Result err val)
+result err val request =
+    case ( request.msg, request.parent ) of
+        ( ResultUpdater (OkMsg msg_), Ok r ) ->
+--            val {msg=msg_, current=r, parent=request.parent << Ok}
+            case val {msg=msg_, parent=r} of 
+                Ok g ->
+                    -- Ok (Result.map f)
+                    (Ok (\f x -> f x))
+                Err error ->
+                    Err error
+
+        ( ResultUpdater (ErrMsg msg_), Err r ) ->
+              case err {msg=msg_, parent=r} of 
+--            err {msg=msg_, current=r, parent=request.parent << Err}
+                Ok g ->
+                    (Ok (\f x -> f x))
+                    -- Ok (Result.mapError f)
+                Err error ->
+                    Err error
+
+        ( ResultUpdater _, _ ) ->
+            Ok identity
+
+        ( Stay, _ ) ->
+            Ok identity
+
+        _ ->
+            Err WrongUpdater
+
+
+entity : a -> PartialUpdater d a a
+entity builder request =
+    case request.msg of
+        Stay ->
+            --Ok (\x -> builder)
+            Ok (\f x -> f x)
+    
+        _ ->
+            Err EntityDidNotStay
+
+
+
+attribute : String -> Updater p -> (f -> p) -> PartialUpdater f p f -> PartialUpdater f f f
+attribute name def getter parent request =
+    case request.msg of
+        AttributeUpdater attrname msg_ ->
+            if name == attrname then
+                let
+                    --get access to a => via getter (aka. b -> a)
+                    current = (getter request.parent)
+                    --update a with def
+                    def_updater = def {msg = msg_, parent=current}
+                    parent_updater = parent {msg=Stay, parent=request.parent}
+                    --inject a into c builder [a, a -> c, nowkiss]
+                    -- map_a = toInject def msg_
+--                    new_request = inject map_a request
+                    -- new_request = inject map_a request
+                    -- pnew =
+                    --     Result.map (\x -> parent ) map_a
+                    --     parent {r1 | msg = Stay}
+                        --  (\_ -> request.current)old
+                    
+                    -- dnew =
+                    --     def msg_ (getter request.current)
+                in
+                    --inject a into c builder [a, a -> c, nowkiss]
+                    case (def_updater, parent_updater) of
+                        (Ok deff, Ok parentf) ->
+                            let
+                                g : p -> p
+                                g = deff identity
+                            in
+                            
+                            Ok (
+                                \f -> --((person -> foo))
+                                    \x -> --person
+                                        f x
+                                )
+                    
+                        (_, Err err2) ->
+                            Err err2
+                        (Err err, _) ->
+                            Err err
+
+            else
+                case parent {msg = request.msg, parent=request.parent} of
+                    Ok parentf -> 
+                        Ok (\f x -> f x)
+                        -- Ok parentf
+                    Err err ->
+                        Err err
+--                parent request.msg ((\x _ -> x) cur request)
+--                    |> Result.map (\x -> x (getter request.current))
+
+        Stay ->
+            case parent {msg = Stay, parent=request.parent} of
+                    Ok parentf -> 
+                        Ok (\f x -> f x)
+                        -- Ok parentf
+                    Err err ->
+                        Err err
+        _ ->
+            Err WrongUpdater
+
+
+-- parent.input = (c -> b)
+-- parent.current = c
+-- both = b 
+-- toInject : Updater a -> Msg -> (a -> Result Error a)
+-- toInject mapper msg = 
+--     \x -> mapper {current = x,
+--                     parent = x,
+--                     msg = msg}
+
+-- inject : (a -> a) -> Request (a -> c) b d-> Request (a -> c) b d
+-- inject f y=
+--     {y | current = f >> y.current}
+
+-- resInsert : (a -> Result Error a) -> Request (a -> c) b d-> Result Error (Request (a -> c) b d)
+-- resInsert f x =
+--     {x | current = \y -> f y }
+            
+    
+
+-- (c -> a) -> b
+-- (c -> a)
+
+-- parent.input = (a -> c) -> b
+-- parent.current = (a -> c)
+-- getter (b -> a)
+-- c
+-- b -> a
+-- attributeFirst : Request (a -> c) b  -> (b -> a)-> Request b c
+-- attributeFirst parent getter = 
+--     {
+--         msg = parent.msg,
+-- --        current = parent.current (getter (parent.input parent.current)),
+--         current = parent.input parent.current,
+--         input = getter >> parent.current
+--     }
+
+
+
+{- reference : String -> Updater comparable -> (d -> comparable)  -> PartialUpdater d (comparable -> c) ->  PartialUpdater d (comparable -> c)
+reference = attribute
+
+
+references : String -> Updater comparable -> (d -> List comparable) -> PartialUpdater d (List comparable -> c) -> PartialUpdater d (List comparable -> c)
+references name def =
+    attribute name (list def)
+
+
+substruct : String -> PartialUpdater p p -> (f -> p) -> PartialUpdater f (p -> f) -> PartialUpdater f (p -> f)
+substruct name p getter f request =
+    case request.msg of
+        AttributeUpdater attrname msg_ ->
+            if name == attrname then
+                let
+                    --get access to a => via getter (aka. b -> a)
+                    current = (getter request.parent)
+                    --update a with def
+                    p_updater = p {msg = msg_, parent=current}
+                    f_updater = f {msg=Stay, parent=request.parent}
+                    --inject a into c builder [a, a -> c, nowkiss]
+                    -- map_a = toInject def msg_
+--                    new_request = inject map_a request
+                    -- new_request = inject map_a request
+                    -- pnew =
+                    --     Result.map (\x -> parent ) map_a
+                    --     parent {r1 | msg = Stay}
+                        --  (\_ -> request.current)old
+                    
+                    -- dnew =
+                    --     def msg_ (getter request.current)
+                in
+                    --inject a into c builder [a, a -> c, nowkiss]
+                    case (p_updater, f_updater) of
+                        (Ok pf, Ok ff) ->
+                            Ok (\oldf -> 
+                                    \x -> (ff oldf) (pf x)
+                                )
+                    
+                        (_, Err err2) ->
+                            Err err2
+                        (Err err, _) ->
+                            Err err
+
+            else
+                case f {msg = request.msg, parent=request.parent} of
+                    Ok parentf -> 
+                        Ok parentf
+                    Err err ->
+                        Err err
+--                parent request.msg ((\x _ -> x) cur request)
+--                    |> Result.map (\x -> x (getter request.current))
+
+        Stay ->
+            case f {msg = Stay, parent=request.parent} of
+                    Ok parentf -> 
+                        Ok parentf
+                    Err err ->
+                        Err err
+        _ ->
+            Err WrongUpdater -}
+
+
+array : Updater a-> Updater (Array a)
+array old request =
+    case request.msg of
+        ArrayUpdater index msg_ ->
+            case Array.get index request.parent of
+                Just v ->
+    --                    old {msg=msg_,parent = (request.parent << (\x -> List.Extra.setAt index x (cur request))), current = v }
+                        case old {msg=msg_,parent = v} of 
+                            Ok g ->
+                                Ok (\f x -> f x)
+                                -- Ok (\x -> case (Array.get index request.parent) of
+                                --             Just value -> 
+                                --                 f value
+                                --                 |> \y -> Array.set index y x
+                                    
+                                --             Nothing ->
+                                --                 request.parent
+                                -- )
+                            Err err ->
+                                Err err
+
+                Nothing ->
+                    Err IndexOutOfBounds
+
+        Stay ->
+            Ok identity
+
+        _ ->
+            Err WrongUpdater

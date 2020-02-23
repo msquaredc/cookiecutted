@@ -1,0 +1,361 @@
+module Page.Admin exposing (Model, init, page, parser, update, view)
+
+--import Browser
+
+import Dict
+import Html exposing (a, div, h1, h3, li, p, text, ul)
+import Html.Attributes exposing (class, href)
+import Material.Button exposing (buttonConfig, textButton)
+import Material.TextField exposing (textField, textFieldConfig)
+import Msg exposing (AdminMsg)
+import Page exposing (Page(..))
+import Session
+import Type.Database as Db
+import Type.Database.TypeMatching as Match
+import Type.IO exposing (form2update)
+import Type.IO.Form as Form
+import Type.IO.Setter as Update
+import Type.IO.ToString as ToString exposing (Error)
+import Url.Parser as Parser exposing ((</>), (<?>))
+import Url.Parser.Query as Query
+import Viewer
+import Ports
+
+
+
+{-
+   This is a page with subpages. You can change the behaviour depending on the subpage path!
+-}
+-- MODEL
+
+
+type alias Model =
+    { subpage : SubPage
+    , textfield : String
+    , error : Maybe String
+    }
+
+
+type SubPage
+    = Home
+    | Query Match.Type (Maybe String)
+    | Edit Match.Type String
+
+
+
+-- INIT
+
+
+init : SubPage -> Model
+init =
+    \x -> Model x "" Nothing
+
+
+page : Session.Session -> SubPage -> ( Page.Page Model AdminMsg, Cmd AdminMsg )
+page session table =
+    let
+        model =
+            { session = session
+            , page = init table
+            , view = view
+            , toMsg = Msg.Admin
+            , header = Viewer.header
+            , update = update
+
+            --            , update = Page.liftupdate update
+            }
+    in
+    ( Page model, Cmd.none )
+
+
+parser : Parser.Parser (SubPage -> a) a
+parser =
+    let
+        page2parser : Match.Type -> Parser.Parser (SubPage -> b) b
+        page2parser subpage =
+            Parser.map (Query subpage) (Parser.s (Match.toString subpage) <?> Query.string "q")
+
+        page2edit : Match.Type -> Parser.Parser (SubPage -> b) b
+        page2edit subpage =
+            Parser.map (Edit subpage) (Parser.s (Match.toString subpage) </> Parser.string)
+    in
+    Parser.oneOf
+        (Parser.map Home Parser.top :: List.map page2parser Match.types ++ List.map page2edit Match.types)
+
+
+
+-- UPDATE
+
+
+update : Msg.AdminMsg -> Page.Page Model Msg.AdminMsg -> ( Page.Page Model Msg.AdminMsg, Cmd Msg.AdminMsg )
+update msg (Page model) =
+    case msg of
+        Msg.AdminForm msg_ ->
+            case form2update msg_ of
+                Just dbmsg ->
+                    --Debug.log "form2update" <|
+                        updateDb (Db.database.updater dbmsg) (Page model)
+
+                Nothing ->
+                    
+                    ( Page model, Cmd.none )
+
+        Msg.AdminDb dbmsg ->
+            case dbmsg of
+                Msg.Create kind index ->
+                    let
+                        oldsession =
+                            model.session
+
+                        newsession =
+                            { oldsession | db = Match.new index kind model.session.db }
+                    in
+                    ( Page { model | session = newsession }, Cmd.none )
+
+        Msg.ValueChanged val ->
+            let
+                oldmodel =
+                    model.page
+
+                newmodel =
+                    { oldmodel | textfield = val }
+            in
+            ( Page { model | page = newmodel }, Cmd.none )
+
+
+updateDb : (Db.Database -> Result Update.Error Db.Database) -> Page.Page Model msg -> ( Page.Page Model msg, Cmd msg2 )
+updateDb f (Page model) =
+    case f model.session.db of
+        Ok val ->
+            Debug.log (Debug.toString val) <|
+            let
+                oldsession =
+                    model.session
+                newsession =
+                    { oldsession | db = val }
+            in
+                ( Page { model | session = newsession }, Ports.toDb (Type.IO.encode Db.database.encoder val) )
+        Err err -> 
+            Debug.log (Debug.toString err) <|
+            let
+                oldmodel = 
+                    model.page
+                newmodel = {oldmodel | error = (Just (Update.errToString err))}
+            in
+                ( Page { model | page = newmodel }, Cmd.none )
+
+
+
+-- VIEW
+
+
+view : Page Model AdminMsg -> Viewer.Details AdminMsg
+view (Page model) =
+    { title = toTitle model.page
+    , body =
+        [ h1 [] [ text "Admin Panel", demo model.page ]
+        , div [ class "content" ] <|
+            case model.page.subpage of
+                Home ->
+                    [ h3 [] [ text "This is a page that can handle sbpaths in its routing." ]
+                    , div
+                        []
+                        (Dict.toList model.session.db.users
+                            |> List.map (\( x, _ ) -> text x)
+                        )
+                    
+
+                    --                        , newEntry "answer"
+                    --    , h3 [] [ text <| "The current subpath is : /" ++ String.fromInt (Maybe.withDefault -1 model.page.user_id) ]
+                    , div [] [ text "The subpath could be anything, or a specific type, like a string or integer. You can have many levels of subpaths if you wanted!" ]
+                    , div []
+                        [ text " This demo accepts a single level subpath that can be any string. For example, "
+                        , a [ href "/pagewithsubpage/xyz" ] [ text "/pagewithsubpage/xyz" ]
+                        ]
+                    , div [] [ a [ href "/pagewithsubpage/a-wonderful-subpath" ] [ text "click here to go to a subpath" ] ]
+                    , div [] [ a [ href "/pagewithsubpage/i-love-elm" ] [ text "click here to go to another subpath" ] ]
+                    , viewTables (Page model)
+                    ]
+
+                Query _ _ ->
+                    [ text "Querying ..." ]
+
+                Edit kind id ->
+                    [
+                    (div [] <| edit model.session.db kind id)
+                    , Maybe.map (\x -> Html.h4 [] [text ("Error: "++ x)]) model.page.error
+                      |> Maybe.withDefault (div [][])
+                    ]
+        ]       
+    }
+
+
+demo : Model -> Html.Html AdminMsg
+demo model =
+    --Debug.log model.textfield
+        textField
+        { textFieldConfig
+            | label = Just "My text field"
+            , value = model.textfield
+            , onInput = Just Msg.ValueChanged
+        }
+
+
+edit : Db.Database -> Match.Type -> String -> List (Html.Html AdminMsg)
+edit db kind id =
+    let
+        msg =
+            \x ->
+                Msg.AdminForm <|
+                    Form.AttrMsg (Match.toString kind) <|
+                        Form.DictMsg (Just id) <|
+                            Form.AttrMsg "value" x
+    in
+        Match.fields kind
+        |> List.map (\x -> 
+            case Match.forms id kind msg x db of
+                Just form ->
+                    form
+                        ++ [ textButton
+                                { buttonConfig | onClick = Just (Msg.AdminForm <| 
+                                            Form.AttrMsg (Match.toString kind) <| 
+                                            Form.DictMsg (Just id) <| 
+                                            Form.AttrMsg "value" <| 
+                                            Form.AttrMsg x <| 
+                                            Form.StringMsg (Just "Value")) }
+                                "SetValue!"
+                            , 
+                                case (Db.database.toString 
+                                    (Match.toString kind ++ "." ++ id ++ ".value." ++ x) 
+                                    db) of 
+                                    Ok v ->
+                                        text v
+                                    Err (ToString.IndexOutOfBounds index) ->
+                                        text ("IndexOutOfBounds: "++ String.fromInt index)
+                                    Err (ToString.NotFound) ->
+                                        text "Not Found"
+                                    Err (ToString.NotAnInt name) ->
+                                        text ("Not an Int: " ++ name)
+                                    Err (ToString.NoSuchKey key) ->
+                                        text ("No such key: " ++ key)
+                                    Err (ToString.NoSuchSubstruct name) ->
+                                        text ("No such substruct: "++ name)
+                                    Err (ToString.NoSuchValue) ->
+                                        text ("No such value")
+                               
+                               
+                        ]
+
+                Nothing ->
+                    [ text "ID not found"
+                    , textButton
+                        { buttonConfig | onClick = Just (Msg.AdminDb <| Msg.Create kind id) }
+                        "Create!"
+                    ])
+        |> List.map (div [])
+
+
+viewTables : Page Model AdminMsg -> Html.Html AdminMsg
+viewTables (Page model) =
+    let
+        db =
+            model.session.db
+    in
+    case model.page.subpage of
+        Home ->
+            div []
+                [ text "Database overview:"
+                , ul []
+                    (List.map (\x -> viewSummary x (Match.keys x db)) Match.types)
+                ]
+
+        Query kind id ->
+            div []
+                [ case id of
+                    Just strid ->
+                        viewValue strid kind db
+
+                    Nothing ->
+                        viewTable (Match.toString kind) (Match.toString kind) (Match.keys kind db)
+                ]
+
+        Edit _ _ ->
+            div []
+                [ text "Edit me"
+                ]
+
+
+
+-- HELPERS
+
+
+toTitle : Model -> String
+toTitle _ =
+    "Admin"
+
+
+viewSummary : Match.Type -> List String -> Html.Html msg
+viewSummary kind keys =
+    let
+        asString : String
+        asString =
+            Match.toString kind
+    in
+    p []
+        [ text ("Table: " ++ asString ++ ": ")
+        , a [ href ("/admin/" ++ Match.toString kind) ] [ text (Match.toString kind) ]
+        , text ("Found " ++ (String.fromInt <| List.length <| keys) ++ " entries!")
+        ]
+
+
+viewTable : String -> String -> List String -> Html.Html msg
+viewTable path name keys =
+    div []
+        [ text ("Found " ++ (String.fromInt <| List.length <| keys) ++ " " ++ name ++ "s!")
+        , ul []
+            (List.map (toBullet path) keys)
+        ]
+
+
+viewValue : String -> Match.Type -> Db.Database -> Html.Html AdminMsg
+viewValue id kind db =
+    let
+        results =
+            Match.keys kind db
+                |> List.filter (String.startsWith id)
+    in
+    --Debug.log id <|
+        if List.length results > 0 then
+            viewTable (Match.toString kind) (Match.toString kind) results
+
+        else
+            div []
+                [ text "No result found! Create One?"
+                , textButton
+                    { buttonConfig | onClick = Just (Msg.AdminDb <| Msg.Create kind id) }
+                    "Create!"
+                ]
+
+
+
+-- if List.member id  then
+--     text "Value in Database"
+-- else
+--     text "Value not in Database"
+
+
+toBullet : String -> String -> Html.Html msg
+toBullet path name =
+    li [] [ a [ href ("/admin/" ++ path ++ "/" ++ name) ] [ text name ] ]
+
+
+
+-- newEntry : String -> Html.Html AdminMsg
+-- newEntry path =
+--     path
+--     |> Match.fromString
+--     |> Maybe.map (\x ->Match.forms "admin" x Msg.AdminForm "*")
+--     |> Maybe.map (List.map (\x -> p [] [x]))
+--     |> Maybe.map (div [])
+--     |> Maybe.withDefault (text "")
+--"Page With Subpage - " ++ String.fromInt (Maybe.withDefault -1 model.user_id)

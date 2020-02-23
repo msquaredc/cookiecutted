@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- 
+*** IMPORTANT **
+	This index.html file is to be used only if you do not want to use create-elm-app. If you're using create-elm-app, it's safe to delete this file!
+	See the README (Usage > Alternatives to create-elm-app) for full instructions.
+
+	Note that all other Elm dev servers I've tried still have some issues with `pushState` and 404 redirection when routing URLs with subpaths, and thus do not fully support SPAs.
+	I would highly recommend using create-elm-app to avoid these potential issues, unless you are very familiar with SPAs.
+
+	Again, if you use create-elm-app, you can safely delete this file.
+
+*** IMPORTANT ***
+-->
+
+<head>
+
+	<title>Elm SPA Boilerplate</title>
+	<meta charset="utf-8">
+	<meta http-equiv="x-ua-compatible" content="ie=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<meta name="theme-color" content="#000000">
+	<meta name="description" content="A simple, no-frills boilerplate for creating delightful Single Page Applications (SPAs) in Elm.">
+	<!-- manifest.json provides metadata used when your web app is added to the homescreen on Android. See https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/ -->
+	<link rel="manifest" href="%PUBLIC_URL%/public/manifest.json">
+	<link rel="shortcut icon" href="%PUBLIC_URL%/public/favicon.ico">
+
+	<!-- Your custom styles -->
+	<link rel="stylesheet" type="text/css" href="%PUBLIC_URL%/src/css/main.css">
+
+	<!-- The compied Elm code from elm-live -->
+	<script src="%PUBLIC_URL%/elm.js"></script>
+</head>
+
+<body>
+	<noscript>
+		You need to enable JavaScript to run this app.
+	</noscript>
+	<div id="elm"></div>
+
+	<!-- Our custom javascript that initializes flags and handles ports  -->
+	<script src="%PUBLIC_URL%/src/index.js"></script>
+</body>
+
+</html>
