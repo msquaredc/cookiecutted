@@ -20,7 +20,6 @@ import Ports
 import Session
 import Type.Database exposing (database)
 import Type.Flags
-import Type.LocalStorage
 import Type.IO
 import Url
 import Url.Parser as Parser exposing ((</>))
@@ -64,7 +63,8 @@ init flags url key =
     let
         localStorage =
             Json.Decode.decodeValue Type.Database.database.decoder flags.localStorage
-        db = 
+
+        db =
             Json.Decode.decodeValue Type.Database.database.decoder flags.db
 
         ( model, cmds ) =
@@ -78,7 +78,6 @@ init flags url key =
         Err _ ->
             -- If localstorage decoder failed, clear localstorage
             ( model, Cmd.batch [ cmds, Ports.clearLocalStorage () ] )
-    
 
 
 
@@ -135,11 +134,15 @@ update message model =
                             { session | db = database.empty }
             in
             updateSession model newSession
-        
+
         Msg.OnDbChange msg ->
             let
-                db = Json.Decode.decodeValue database.decoder msg
-                session = extractSession model
+                db =
+                    Json.Decode.decodeValue database.decoder msg
+
+                session =
+                    extractSession model
+
                 newSession =
                     case db of
                         Ok success ->
@@ -196,34 +199,40 @@ update message model =
         Msg.Viewer _ ->
             ( model, Cmd.none )
 
+        {- ({model| page = Page.updateHeader msg model.page}, Cmd.none) -}
         Msg.Admin msg ->
             --Debug.log (Debug.toString msg) <|
             case model.page of
                 Admin m ->
                     let
-                        (newmodel,effect) =  mapPageMsg model Admin (Page.update msg m)
-                        session = extractSession newmodel
+                        ( newmodel, effect ) =
+                            mapPageMsg model Admin (Page.update msg m)
+
+                        session =
+                            extractSession newmodel
                     in
-                        case msg of
-                            Msg.AdminDb _ ->                                
-                                updateSession newmodel (extractSession newmodel)
-                                |> \(x,y) -> (x,Cmd.batch [y, Debug.log "toDb" Ports.toDb (Type.IO.encode database.encoder session.db)])
-                            _ -> 
-                                (newmodel, effect)
-                    
+                    case msg of
+                        Msg.AdminDb _ ->
+                            updateSession newmodel (extractSession newmodel)
+                                |> (\( x, y ) -> ( x, Cmd.batch [ y, Debug.log "toDb" Ports.toDb (Type.IO.encode database.encoder session.db) ] ))
+
+                        _ ->
+                            ( newmodel, effect )
 
                 _ ->
                     ( model, Cmd.none )
-        
+
         Msg.Db msg ->
             --Debug.todo (Debug.toString msg) <|
             let
-                session = (extractSession model)
-                new_db = database.updater msg session.db
-                         |> Result.withDefault session.db
+                session =
+                    extractSession model
+
+                new_db =
+                    database.updater msg session.db
+                        |> Result.withDefault session.db
             in
-                (updateSession model {session | db = new_db })
-            
+            updateSession model { session | db = new_db }
 
 
 
@@ -414,7 +423,7 @@ parser model session =
         , route (Parser.s paths.users </> Parser.int) (\user_id -> mapPageMsg model User (User.page session (Just user_id)))
         , route (Parser.s paths.pageOne)
             (mapPageMsg model PageOne (PageOne.page session))
-        , route (Parser.s paths.admin </> Admin.parser) 
+        , route (Parser.s paths.admin </> Admin.parser)
             (\presult -> mapPageMsg model Admin (Admin.page session presult))
 
         -- , route (Parser.s paths.newPage)

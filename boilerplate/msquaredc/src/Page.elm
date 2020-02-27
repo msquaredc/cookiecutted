@@ -30,6 +30,10 @@ update : msg -> Page a msg -> (Page a msg, Cmd msg)
 update msg (Page model) =
     model.update msg (Page model)
 
+updateHeader : Msg.ViewerMsg -> Page a msg -> Page a msg
+updateHeader msg (Page model) =
+    Page {model| header = Viewer.update msg model.header}
+
 liftupdate : (msg -> a -> (a, Cmd msg)) -> msg -> Page a msg -> (Page a msg, Cmd msg)
 liftupdate uf msg (Page model) = 
     let

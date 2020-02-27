@@ -3,8 +3,8 @@ import {
   Elm
 } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
-require("material-components-web/dist/material-components-web.js");
-require("material-components-web/dist/material-components-web.css");
+require("material-components-web/dist/material-components-web.min.js");
+require("material-components-web/dist/material-components-web.min.css");
 
 // CONFIG
 const storageName = "elm-spa-boilerplate" // key in localStorage

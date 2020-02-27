@@ -1,4 +1,4 @@
-module Viewer exposing (Details, Header, header, notFound, view)
+module Viewer exposing (Details, Header, update, header, notFound, view)
 
 --import Url.Builder
 
@@ -7,8 +7,11 @@ import Html exposing (Html, a, div, h1, h3, text)
 import Html.Attributes exposing (class, href, style)
 import Material.IconButton exposing (iconButton, iconButtonConfig)
 import Material.TopAppBar as TopAppBar exposing (topAppBar, topAppBarConfig)
-import Material.Drawer as Drawer exposing (modalDrawer, modalDrawerConfig, dismissibleDrawerConfig)
-import Msg exposing (ViewerMsg)
+import Material.Drawer as Drawer exposing (modalDrawer, modalDrawerConfig, dismissibleDrawerConfig, drawerContent, permanentDrawer, permanentDrawerConfig)
+import Material.List exposing (list, listConfig, listItem, listItemConfig, listItemGraphic)
+import Material.Typography as Typography
+import Msg exposing (ViewerMsg(..))
+import TestDrawer
 import Session
 import Utils
 
@@ -33,6 +36,16 @@ type alias Header =
 
 
 -- UPDATE
+update : ViewerMsg -> Header -> Header
+update msg model =
+    case msg of
+        OpenDrawer ->
+            {model|drawerOpen = True}
+        
+        CloseDrawer ->
+            {model|drawerOpen = False}
+
+
 -- VIEW
 
 
@@ -40,7 +53,9 @@ view : Session.Session -> (a -> Msg.Msg) -> Details a -> Header -> Browser.Docum
 view session msg details h =
     { title = details.title ++ Utils.genericTitle
     , body =
-        [ viewHeader2 h details.title
+        [TestDrawer.main]
+       --  [Html.map Msg.Viewer (viewAll h details.title)]
+        {- [ viewHeader2 h details.title
             |> Html.map Msg.Viewer
 
         --, Utils.logo 256
@@ -51,9 +66,9 @@ view session msg details h =
 --                , class "main"
 --                , style "height" (String.fromInt (session.windowSize.height - headerHeight - footerHeight) ++ "px")
                 ]
-                    (viewDrawer h (List.map (Html.map msg) details.body))
+                    [viewDrawer h (List.map (Html.map msg) details.body)]
         , viewFooter
-        ]
+        ] -}
     }
 
 
@@ -142,29 +157,94 @@ notFound =
 
 header : Header
 header =
-    { drawerOpen = False
+    { drawerOpen = True
     }
 
-viewDrawer : Header -> List (Html.Html Msg.Msg) -> List (Html.Html Msg.Msg)
+viewDrawer : Header -> List (Html.Html Msg.Msg) -> (Html.Html Msg.Msg)
 viewDrawer config content =
-    [Drawer.dismissibleDrawer
-        { dismissibleDrawerConfig
+    div demoPanel
+    [Drawer.modalDrawer
+        { modalDrawerConfig
             | open = True
             , onClose = Just (Msg.Viewer Msg.CloseDrawer)
+            , additionalAttributes =
+                        [ TopAppBar.fixedAdjust
+                        , Html.Attributes.style "z-index" "1"
+                        ]
         }
-        [ Drawer.drawerHeader []
-        [ Html.h3 [ Drawer.drawerTitle ] [ text "Mail" ]
-        , Html.h6 [ Drawer.drawerSubtitle ] [ text "email@material.io" ]
+        [ drawerContent [][]
         ]
-    , Drawer.drawerContent [] [] ]
-    , Drawer.drawerScrim [] []
     , Html.div [] content
     ]
+
+viewAll : Header -> String -> Html Msg.ViewerMsg
+viewAll config name =
+    let
+        toggleCatalogDrawer =
+            if config.drawerOpen then
+                Msg.CloseDrawer
+
+            else
+                Msg.OpenDrawer
+    in
+    Html.div catalogPageContainer
+        [ topAppBar topAppBarConfig
+            [ TopAppBar.row []
+                [ TopAppBar.section [ TopAppBar.alignStart ]
+                    [ iconButton
+                        { iconButtonConfig
+                            | additionalAttributes = [ TopAppBar.navigationIcon ]
+                            , onClick = Just toggleCatalogDrawer
+                        }
+                        "menu"
+                    , Html.span
+                        [ TopAppBar.title
+                        , Html.Attributes.style "text-transform" "uppercase"
+                        , Html.Attributes.style "font-weight" "400"
+                        ]
+                        [ text "Material Components for Elm" ]
+                    ]
+                ]
+            ]
+        , Html.div 
+            [ style "display" "flex"
+            , style "flex-flow" "row nowrap"
+            ]
+            [ modalDrawer {modalDrawerConfig | open = True}
+                [ drawerContent []
+                    [ list listConfig
+                        [ listItem listItemConfig
+                            [ text "Home" ]
+                        , listItem listItemConfig
+                            [ text "Log out" ]
+                        ]
+                    ]
+                ]
+            , Html.div [] [ text "Main Content" ]
+            ]
+            -- , 
+            --     Html.div (TopAppBar.fixedAdjust :: Drawer.appContent :: demoContent)
+            --         [ Html.div demoContentTransition
+            --             (Html.h1 [ Typography.headline5 ] [ text "catalogPage.title" ]
+            --                 :: Html.p [ Typography.body1 ] [ text "catalogPage.prelude" ]
+            --                 --:: Html.div hero catalogPage.hero
+            --                 :: Html.h2 (Typography.headline6 :: demoTitle)
+            --                     [ text "Resources" ]
+            --                 --:: resourcesList catalogPage.resources
+            --                 :: Html.h2 (Typography.headline6 :: demoTitle)
+            --                     [ text "Demos" ]
+            --                 :: [text "catalogPage.content"]
+            --             )
+            --         ]
+            --]
+        ]
 
 -- LOGO
 -- viewLogo : Html msg
 -- viewLogo =
 --     a [ href "/", style "text-decoration" "none" ] [ Utils.logo 32 ]
+
+
 -- STYLING HELPERS (lazy, hard-coded styling)
 
 
@@ -176,3 +256,51 @@ headerHeight =
 footerHeight : Int
 footerHeight =
     60
+
+catalogPageContainer : List (Html.Attribute msg)
+catalogPageContainer =
+    [ Html.Attributes.style "position" "relative"
+    , Typography.typography
+    ]
+
+demoPanel : List (Html.Attribute msg)
+demoPanel =
+    [ Html.Attributes.style "display" "-ms-flexbox"
+    , Html.Attributes.style "display" "flex"
+    , Html.Attributes.style "position" "relative"
+    , Html.Attributes.style "height" "100vh"
+    , Html.Attributes.style "overflow" "hidden"
+    ]
+
+demoContent : List (Html.Attribute msg)
+demoContent =
+    [ Html.Attributes.id "demo-content"
+    , Html.Attributes.style "height" "100%"
+    , Html.Attributes.style "-webkit-box-sizing" "border-box"
+    , Html.Attributes.style "box-sizing" "border-box"
+    , Html.Attributes.style "max-width" "100%"
+    , Html.Attributes.style "padding-left" "16px"
+    , Html.Attributes.style "padding-right" "16px"
+    , Html.Attributes.style "padding-bottom" "100px"
+    , Html.Attributes.style "width" "100%"
+    , Html.Attributes.style "overflow" "auto"
+    , Html.Attributes.style "display" "-ms-flexbox"
+    , Html.Attributes.style "display" "flex"
+    , Html.Attributes.style "-ms-flex-direction" "column"
+    , Html.Attributes.style "flex-direction" "column"
+    , Html.Attributes.style "-ms-flex-align" "center"
+    , Html.Attributes.style "align-items" "center"
+    , Html.Attributes.style "-ms-flex-pack" "start"
+    , Html.Attributes.style "justify-content" "flex-start"
+    ]
+
+demoContentTransition : List (Html.Attribute msg)
+demoContentTransition =
+    [ Html.Attributes.style "max-width" "900px"
+    , Html.Attributes.style "width" "100%"
+    ]
+
+demoTitle : List (Html.Attribute msg)
+demoTitle =
+    [ Html.Attributes.style "border-bottom" "1px solid rgba(0,0,0,.87)"
+    ]
