@@ -16,7 +16,7 @@ type UpdateMsg
     = IntMsg (Maybe Int)
     | StringMsg (Maybe String)
     | FloatMsg (Maybe Float)
-    | BoolMsg
+    | BoolMsg (Maybe Bool)
     | MaybeMsg UpdateMsg
     | ListMsg Int UpdateMsg
     | DictMsg (Maybe String) UpdateMsg
@@ -29,20 +29,30 @@ type ResultState
     = ErrForm
     | OkForm
 
+type Error
+    = MaybeWasNothing
+    | ListError
+    | KeyError
+    | ArrayError
+    | AttributeNotFound
+    | NotFound
 
 type alias FormAcc full msg =
     { forms : full -> List (Html.Html msg)
     }
 
+type alias FormFunctor msg =
+    (String -> (String -> msg) -> Html msg)
+    
 type alias Form kind msg =
-    String -> (UpdateMsg -> msg) -> kind -> String -> List (Html.Html msg)
+    String -> (UpdateMsg -> msg) -> kind -> String -> FormFunctor msg -> Result Error (Html.Html msg)
 
 
 
 
-view : String -> (UpdateMsg -> msg) -> Form kind msg -> kind -> String -> List (Html.Html msg)
-view name callback form value acc =
-    form name callback value acc
+-- view : String -> (UpdateMsg -> msg) -> Form kind msg -> kind -> String -> List (Html.Html msg)
+-- view name callback form value acc =
+--     form name callback value acc
 
 
 
@@ -50,15 +60,16 @@ view name callback form value acc =
 
 
 int : Form Int msg
-int name callback kind _ =
-    [
-        TextField.textField
-            { textFieldConfig
-                | value = String.fromInt kind
-                , onInput = Just (callback << IntMsg << String.toInt)
-                , label = Just (name)
-            }
-    ]
+int name callback kind label f =
+    Ok <|
+        f (String.fromInt kind) (callback << IntMsg << String.toInt)
+        -- TextField.textField
+        --     { textFieldConfig
+        --         | value = String.fromInt kind
+        --         , onInput = Just (callback << IntMsg << String.toInt)
+        --         , label = Just label
+        --     }
+    
 
 
 -- int : Form Int (TextField.TextFieldConfig msg) msg
@@ -73,28 +84,17 @@ int name callback kind _ =
 --     }
 
 
-string2 : Form String msg
-string2 name callback kind label =
-    Debug.log ("Kind: " ++ kind)
-    [
-        TextField.textField
-                { textFieldConfig
-                    | label = Just name
-                    , value = kind
-                    , onInput = Just (callback << StringMsg << Just )
-                }
-    ]
-
 string : Form String msg
-string name callback kind label =
-    Debug.log ("Kind: " ++ kind)
-    [
-        Html.input 
-            [Html.Attributes.value kind
-            , Html.Events.onInput (callback << StringMsg << Just )
-            , Html.Attributes.placeholder name
-            ][]
-    ]
+string name callback kind label f =
+    Ok <|
+        f kind (callback << StringMsg << Just)
+        -- TextField.textField
+        --         { textFieldConfig
+        --             | label = Just label
+        --             , value = kind
+        --             , onInput = Just (callback << StringMsg << Just )
+        --         }
+    
 
 
 -- string : Form String (TextField.TextFieldConfig msg) msg
@@ -110,15 +110,16 @@ string name callback kind label =
 
 
 float : Form Float msg
-float name callback kind _ =
-    [
-        TextField.textField
-            { textFieldConfig
-                | value = String.fromFloat kind
-                , onInput = Just (callback << FloatMsg << String.toFloat)
-                , label = Just name 
-            }
-    ]
+float name callback kind label f=
+    Ok <|
+        f (String.fromFloat kind) (callback << FloatMsg << String.toFloat)
+        -- TextField.textField
+        --     { textFieldConfig
+        --         | value = String.fromFloat kind
+        --         , onInput = Just (callback << FloatMsg << String.toFloat)
+        --         , label = Just label 
+        --     }
+    
 
 
 
@@ -135,7 +136,7 @@ float name callback kind _ =
 
 
 bool : Form Bool msg
-bool _ callback kind _ =
+bool _ callback kind _ f =
     let
         bool2state state =
             case state of
@@ -148,13 +149,14 @@ bool _ callback kind _ =
                 Nothing ->
                     Checkbox.Indeterminate
     in
-    [
-        Checkbox.checkbox
-            { checkboxConfig
-                | state = bool2state <| Just kind
-                , onChange = Just (callback BoolMsg)
-            }
-    ]
+    Ok <|
+        f (if kind then "TRUE" else "FALSE") (\x -> callback <| BoolMsg <| Just (x == "TRUE") )
+        -- Checkbox.checkbox
+        --     { checkboxConfig
+        --         | state = bool2state <| Just kind
+        --         , onChange = Just (callback BoolMsg)
+        --     }
+    
 
 
 -- bool : Form Bool (Checkbox.CheckboxConfig msg) msg
@@ -180,13 +182,13 @@ bool _ callback kind _ =
 
 
 maybe : Form a msg -> Form (Maybe a) msg
-maybe old name callback kind acc =
+maybe old name callback kind acc f =
     let
         new =
-            Maybe.map (\x -> old name (callback << MaybeMsg) x acc) kind
+            Maybe.map (\x -> old name (callback << MaybeMsg) x acc f) kind
     in
-        new
-        |> Maybe.withDefault []
+        Maybe.withDefault (Err MaybeWasNothing) new
+        
 
 
 
@@ -203,19 +205,19 @@ maybe old name callback kind acc =
 
 
 list : Form a msg -> Form (List a) msg
-list old name callback kind acc=
+list old name callback kind acc f=
     let
         new =
-            List.indexedMap (\index instance -> old name (callback << ListMsg index) instance rest) kind
+            List.indexedMap (\index instance -> old name (callback << ListMsg index) instance rest f) kind 
         (parsedIndex,rest) = parseHeadTail acc
     in
-         if parsedIndex == "*" then
-            new
-            |> List.concat
-        else
+        --  if parsedIndex == "*" then
+        --     new
+        --     |> List.concat
+        -- else
         String.toInt parsedIndex
         |> Maybe.andThen (\x -> List.Extra.getAt x new)
-        |> Maybe.withDefault []
+        |> Maybe.withDefault (Err ListError)
 
 
 
@@ -251,17 +253,17 @@ list old name callback kind acc=
 
 
 dict : (comparable -> Maybe String) -> Form a msg -> Form (Dict comparable a) msg
-dict keySerializer old name callback kind acc =
+dict keySerializer old name callback kind acc f =
     let
         new =
-            Dict.map (\key instance -> old name (callback << DictMsg (keySerializer key)) instance rest) kind
+            Dict.map (\key instance -> old name (callback << DictMsg (keySerializer key)) instance rest f) kind
         (parsedkey,rest) = parseHeadTail acc
     in
-        if parsedkey == "*" then
-            Dict.keys new
-            |> List.filterMap (\x -> Dict.get x new)
-            |> List.concat
-        else
+        -- if parsedkey == "*" then
+        --     Dict.keys new
+        --     |> List.filterMap (\x -> Dict.get x new)
+        --     |> List.concat
+        -- else
             Dict.keys new
                 |> List.filter
                     (\x ->
@@ -270,7 +272,8 @@ dict keySerializer old name callback kind acc =
                             |> Maybe.withDefault False
                     )
                 |> List.filterMap (\x -> Dict.get x new)
-                |> List.concat
+                |> List.head
+                |> Maybe.withDefault (Err KeyError)
 
 
 
@@ -374,26 +377,26 @@ result err val name callback kind acc =
 
 
 array : Form a msg -> Form (Array a) msg
-array old name callback kind acc =
+array old name callback kind acc f =
     let
         new =
-            Array.indexedMap (\index instance -> old name (callback << ArrayMsg index) instance rest) kind
+            Array.indexedMap (\index instance -> old name (callback << ArrayMsg index) instance rest f) kind
         (parsedIndex,rest) = parseHeadTail acc
     in
-        if parsedIndex == "*" then
-            new
-            |> Array.toList
-            |> List.concat
-        else
+        -- if parsedIndex == "*" then
+        --     new
+        --     |> Array.toList
+        --     |> List.concat
+        -- else
         String.toInt parsedIndex
         |> Maybe.andThen (\x -> Array.get x new)
-        |> Maybe.withDefault []
+        |> Maybe.withDefault (Err ArrayError)
         
 
 
 entity : Form a msg
-entity name callback kind acc =
-    []
+entity name callback kind acc f =
+    Err AttributeNotFound
 
 
 attribute : String -> (c -> a) -> Form a msg -> Form (c) msg -> Form c msg
@@ -407,9 +410,9 @@ attribute name getter childform parentform label callback kind acc =
             childform newname (callback<<AttrMsg head) (getter kind) tail
 
         else
-            if head == "*" then
-                parentform label callback kind acc ++ childform newname (callback<<AttrMsg head) (getter kind) tail
-            else
+            -- if head == "*" then
+            --     parentform label callback kind acc ++ childform newname (callback<<AttrMsg head) (getter kind) tail
+            -- else
             parentform label callback kind acc
     -- { view = \config -> (parentform callback kind).view config
     -- , config =
@@ -447,9 +450,9 @@ substruct name getter childform parentform label callback kind acc =
             childform newname (callback<<AttrMsg head) (getter kind) tail
 
         else
-            if head == "*" then
-                parentform newname callback kind acc ++ childform newname (callback<<AttrMsg head) (getter kind) tail
-            else
+            -- if head == "*" then
+            --     parentform newname callback kind acc ++ childform newname (callback<<AttrMsg head) (getter kind) tail
+            -- else
             parentform label callback kind acc
 
 

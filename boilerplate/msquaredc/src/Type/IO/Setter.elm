@@ -179,6 +179,7 @@ dict keySerializer keys values msg val =
                 
                 |> Result.map Dict.fromList
                 |> Result.map (\x -> Dict.union x val)
+        
         --TODO: Map keys
         _ ->
             Err <| Mismatch msg (DictKeyMsg "" ErrorMsg)

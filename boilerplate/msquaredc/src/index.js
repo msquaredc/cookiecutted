@@ -1,12 +1,12 @@
-import './css/main.css';
+//import './css/main.css';
 import {
   Elm
 } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
-require("material-components-web/dist/material-components-web.js");
-require("material-components-web/dist/material-components-web.css");
+// require("material-components-web/dist/material-components-web.min.js");
+// require("material-components-web/dist/material-components-web.min.css");
 
-// CONFIG
+// CONFIGmargin
 const storageName = "elm-spa-boilerplate" // key in localStorage
 const dbName = "elm-db"
 

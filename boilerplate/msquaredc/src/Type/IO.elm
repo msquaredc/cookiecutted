@@ -305,7 +305,7 @@ form2update fmsg =
             Nothing
         Form.FloatMsg (Just val) ->
             Just (Update.FloatMsg val)
-        Form.BoolMsg ->
+        Form.BoolMsg _ ->
             Just (Update.BoolUpdateMsg not)
         Form.ListMsg index msg ->
             case form2update msg of
