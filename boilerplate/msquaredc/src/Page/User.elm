@@ -4,7 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Session
-import Viewer
+import Viewer exposing (detailsConfig)
 import Msg exposing (UserMsg)
 import Page exposing (Page(..))
 
@@ -36,7 +36,7 @@ page session user_id =
             page = init user_id,
             view = view,
             toMsg = Msg.User,
-            header = Viewer.header,
+            -- header = Viewer.header,
             update = Page.liftupdate update}
     in
         (Page model, Cmd.none )
@@ -57,9 +57,9 @@ update msg model =
 -- VIEW
 
 
-view : Page Model UserMsg -> Viewer.Details UserMsg
+view : Page Model UserMsg -> Viewer.Details Msg.Msg
 view (Page model) =
-    { title = toTitle model.page
+    { detailsConfig | title = toTitle model.page
     , body =
         [ h1 [] [ text "elm-spa-boilerplate - Page With Subpage" ]
         , div [ class "content" ]

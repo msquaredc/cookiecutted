@@ -4,7 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Session
-import Viewer
+import Viewer exposing (detailsConfig)
 import Msg exposing (PageWithSubpageMsg)
 import Page
 
@@ -35,9 +35,9 @@ page session subpage =
         model = 
             {session = session,
             page = init subpage,
-            view = Page.liftview view,
+            view =  view,
             toMsg = Msg.PageWithSubpage,
-            header = Viewer.header,
+            -- header = Viewer.header,
             update = Page.liftupdate update}
     in
         (Page.Page model, Cmd.none )
@@ -58,14 +58,14 @@ update msg model =
 -- VIEW
 
 
-view : Model -> Viewer.Details PageWithSubpageMsg
-view model =
-    { title = toTitle model
+view : Page.Page Model PageWithSubpageMsg -> Viewer.Details Msg.Msg
+view (Page.Page model) =
+    { detailsConfig | title = toTitle model.page
     , body =
         [ h1 [] [ text "elm-spa-boilerplate - Page With Subpage" ]
         , div [ class "content" ]
             [ h3 [] [ text "This is a page that can handle subpaths in its routing." ]
-            , h3 [] [ text <| "The current subpath is : /" ++ model.subpage ]
+            , h3 [] [ text <| "The current subpath is : /" ++ model.page.subpage ]
             , div [] [ text "The subpath could be anything, or a specific type, like a string or integer. You can have many levels of subpaths if you wanted!" ]
             , div []
                 [ text " This demo accepts a single level subpath that can be any string. For example, "

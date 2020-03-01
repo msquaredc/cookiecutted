@@ -1,20 +1,23 @@
 module Msg exposing
-    ( Msg(..)
+    ( AdminMsg(..)
+    , DbMsg(..)
+    , Msg(..)
     , PageOneMsg(..)
     , PageWithSubpageMsg(..)
     , TopMsg(..)
-    , ViewerMsg(..)
     , UserMsg(..)
-    , AdminMsg(..)
-    , DbMsg (..)
+    , ViewerMsg(..)
+    , StudyMsg(..)
+    , EventMsg(..)
+    , QuestionaryMsg(..)
     )
 
 import Browser
 import Json.Encode
-import Url
+import Type.Database exposing (Type)
 import Type.IO.Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
-import Type.Database.TypeMatching exposing (Type)
+import Url
 
 
 type Msg
@@ -28,9 +31,17 @@ type Msg
     | Admin AdminMsg
       -- | NewPageMsg NewPage.Msg
     | PageOne PageOneMsg
+    | Study StudyMsg
+    | Event EventMsg
+    | Questionary QuestionaryMsg
     | PageWithSubpage PageWithSubpageMsg
     | Db Updater.Msg
     | OnDbChange Json.Encode.Value
+    | Search String
+    | CRUD DbMsg
+    | Form UpdateMsg
+    | Follow Type String
+    
 
 
 type ViewerMsg
@@ -43,9 +54,24 @@ type TopMsg
     | LocalStorageInputFieldChange String
     | SetLocalStorage
     | ClearLocalStorage
+    | SetUser String
+
+
+
+type StudyMsg
+    = StudyMsgNothing
+
+type EventMsg
+    = EventMsgNothing
+
+type QuestionaryMsg
+    = CurrentQuestionSelected (Maybe String)
+
 
 type DbMsg
-    = Create Type String
+    = Create Type String (List (String -> Msg))
+    | CreateRandom Type (List (String -> Msg))
+    | Update Updater.Msg
 
 
 type PageOneMsg

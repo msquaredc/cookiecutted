@@ -1,19 +1,27 @@
-module Viewer exposing (Details, Header, update, header, notFound, view)
+module Viewer exposing (Details, Header, detailsConfig, header, notFound, update, view, textForm, wideTextForm)
 
 --import Url.Builder
 
 import Browser
+import Device
 import Html exposing (Html, a, div, h1, h3, text)
 import Html.Attributes exposing (class, href, style)
-import Material.IconButton exposing (iconButton, iconButtonConfig)
+import Identicon exposing (identicon)
+import Material.Drawer as Drawer exposing (dismissibleDrawerConfig, drawerContent, drawerHeader)
+import Material.Icon exposing (icon, iconConfig)
+import Material.IconButton exposing (customIconButton, iconButton, iconButtonConfig)
+import Material.List exposing (list, listConfig, listGroupSubheader, listItem, listItemConfig, listItemDivider, listItemDividerConfig, listItemGraphic)
+import Material.TextField as TextField exposing (textFieldConfig)
+import Material.Theme as Theme
 import Material.TopAppBar as TopAppBar exposing (topAppBar, topAppBarConfig)
-import Material.Drawer as Drawer exposing (modalDrawer, modalDrawerConfig, dismissibleDrawerConfig, drawerContent, permanentDrawer, permanentDrawerConfig)
-import Material.List exposing (list, listConfig, listItem, listItemConfig, listItemGraphic)
 import Material.Typography as Typography
 import Msg exposing (ViewerMsg(..))
-import TestDrawer
 import Session
+import Type.IO.Form as Form
 import Utils
+import Viewer.Desktop as Desktop
+import Viewer.Handset as Handset
+import Viewer.Tablet as Tablet
 
 
 
@@ -26,6 +34,8 @@ import Utils
 type alias Details msg =
     { title : String
     , body : List (Html msg)
+    , search : Maybe String
+    , user : Maybe String
     }
 
 
@@ -36,39 +46,85 @@ type alias Header =
 
 
 -- UPDATE
+
+
 update : ViewerMsg -> Header -> Header
 update msg model =
     case msg of
         OpenDrawer ->
-            {model|drawerOpen = True}
-        
+            { model | drawerOpen = True }
+
         CloseDrawer ->
-            {model|drawerOpen = False}
+            { model | drawerOpen = False }
 
 
+
+-- Search s ->
+--     { model | search = Just s }
 -- VIEW
 
 
-view : Session.Session -> (a -> Msg.Msg) -> Details a -> Header -> Browser.Document Msg.Msg
+view : Session.Session -> (a -> Msg.Msg) -> Details Msg.Msg -> Header -> Browser.Document Msg.Msg
 view session msg details h =
     { title = details.title ++ Utils.genericTitle
     , body =
-        [TestDrawer.main]
-       --  [Html.map Msg.Viewer (viewAll h details.title)]
-        {- [ viewHeader2 h details.title
-            |> Html.map Msg.Viewer
+        let
+            device =
+                Device.fromPixel session.windowSize.width session.windowSize.height
+        in
+        (case ( device.device, device.orientation ) of
+            ( Device.Desktop, Device.Portrait ) ->
+                Desktop.viewPortrait
 
-        --, Utils.logo 256
-        , 
-            div
-                [ TopAppBar.fixedAdjust
---                , class "container"
---                , class "main"
---                , style "height" (String.fromInt (session.windowSize.height - headerHeight - footerHeight) ++ "px")
-                ]
-                    [viewDrawer h (List.map (Html.map msg) details.body)]
-        , viewFooter
-        ] -}
+            ( Device.Desktop, Device.Landscape ) ->
+                Desktop.viewLandscape
+
+            ( Device.Handset, Device.Portrait ) ->
+                Handset.viewPortrait
+
+            ( Device.Handset, Device.Landscape ) ->
+                Handset.viewLandscape
+
+            ( Device.Tablet, Device.Portrait ) ->
+                Tablet.viewPortrait
+
+            ( Device.Tablet, Device.Landscape ) ->
+                Tablet.viewLandscape
+        )
+            { title = details.title
+            , body = div [] details.body
+            , openDrawer = Just (Msg.Viewer OpenDrawer)
+            , user = Maybe.map text session.user
+            , closeDrawer = Just (Msg.Viewer CloseDrawer)
+            , drawerOpen = h.drawerOpen
+            , drawerTitle = text "User"
+            , drawerSubtitle = text <| "ID: " ++ Maybe.withDefault "" session.user
+            , drawerContent = viewDrawerContent 0
+            }
+
+    {- [
+           if session.windowSize.height > session.windowSize.width then
+               -- portrait mode
+
+           else
+               -- landscape mode
+       ]
+    -}
+    -- [TestDrawer.main]
+    --[Html.map Msg.Viewer (viewAll h details.title)]
+    {- [ viewHeader2 h details
+
+       --, Utils.logo 256
+       , div
+           [ TopAppBar.fixedAdjust
+
+           --    , class "container"
+           --    , class "main"
+           --                , style "height" (String.fromInt (session.windowSize.height - headerHeight - footerHeight) ++ "px")
+           ]
+           [ viewDrawer h details ]
+       ]
+    -}
     }
 
 
@@ -91,8 +147,61 @@ view session msg details h =
 -}
 
 
-viewHeader2 : Header -> String -> Html ViewerMsg
-viewHeader2 config name =
+viewDrawerContent : Int -> Html Msg.Msg
+viewDrawerContent selectedIndex =
+    let
+        listItemConfig_ index =
+            { listItemConfig
+                | activated = selectedIndex == index
+                , onClick = Nothing
+            }
+    in
+    list listConfig
+        [ listItem (listItemConfig_ 0)
+            [ listItemGraphic [] [ icon iconConfig "home" ]
+            , text "Home"
+            ]
+        , listItem (listItemConfig_ 1)
+            [ listItemGraphic [] [ icon iconConfig "local_library" ]
+            , text "Research"
+            ]
+        , listItem (listItemConfig_ 2)
+            [ listItemGraphic [] [ icon iconConfig "ballot" ]
+            , text "Coding"
+            ]
+
+        -- , listItem (listItemConfig_ 3)
+        --     [ listItemGraphic [] [ icon iconConfig "drafts" ]
+        --     , text "Drafts"
+        --     ]
+        , listItemDivider listItemDividerConfig
+        , listGroupSubheader [] [ text "Favorites" ]
+        , listItem (listItemConfig_ 4)
+            [ listItemGraphic [] [ icon iconConfig "bookmark" ]
+            , text "Family"
+            ]
+        , listItem (listItemConfig_ 5)
+            [ listItemGraphic [] [ icon iconConfig "bookmark" ]
+            , text "Friends"
+            ]
+        , listItem (listItemConfig_ 6)
+            [ listItemGraphic [] [ icon iconConfig "bookmark" ]
+            , text "Work"
+            ]
+        , listItemDivider listItemDividerConfig
+        , listItem (listItemConfig_ 7)
+            [ listItemGraphic [] [ icon iconConfig "settings" ]
+            , text "Settings"
+            ]
+        , listItem (listItemConfig_ 8)
+            [ listItemGraphic [] [ icon iconConfig "announcement" ]
+            , text "Help & feedback"
+            ]
+        ]
+
+
+viewHeader2 : Header -> Details Msg.Msg -> Html Msg.Msg
+viewHeader2 config details =
     let
         toggleDrawer =
             if config.drawerOpen then
@@ -101,21 +210,48 @@ viewHeader2 config name =
             else
                 Msg.OpenDrawer
     in
-    topAppBar { topAppBarConfig | fixed = True}
+    topAppBar { topAppBarConfig | fixed = True }
         [ TopAppBar.row []
-            [ TopAppBar.section [ TopAppBar.alignStart ]
-                [ iconButton
-                    { iconButtonConfig
-                        | additionalAttributes = [ TopAppBar.navigationIcon ]
-                        , onClick = Just toggleDrawer
-                    }
-                    "menu"
-                , Html.span
-                    [ TopAppBar.title
-                    , Html.Attributes.style "text-transform" "uppercase"
-                    , Html.Attributes.style "font-weight" "400"
+            [ Html.map Msg.Viewer <|
+                TopAppBar.section [ TopAppBar.alignStart ]
+                    [ iconButton
+                        { iconButtonConfig
+                            | additionalAttributes = [ TopAppBar.navigationIcon ]
+                            , onClick = Just toggleDrawer
+                        }
+                        "menu"
+                    , Html.span
+                        [ TopAppBar.title
+
+                        --, Html.Attributes.style "text-transform" "uppercase"
+                        --, Html.Attributes.style "font-weight" "400"
+                        --, Typography.headline5
+                        ]
+                        [ text details.title ]
                     ]
-                    [ text name ]
+            , TopAppBar.section [ TopAppBar.alignEnd ]
+                [ case details.search of
+                    Nothing ->
+                        div [] []
+
+                    Just s ->
+                        TextField.textField
+                            { textFieldConfig
+                                | trailingIcon = TextField.textFieldIcon iconConfig "search"
+                                , value = s
+
+                                --, outlined = True
+                                , additionalAttributes = [ Theme.surface ]
+                                , onInput = Just Msg.Search
+                            }
+                , case details.user of
+                    Nothing ->
+                        div [] []
+
+                    Just s ->
+                        customIconButton
+                            { iconButtonConfig | additionalAttributes = [ TopAppBar.actionItem ] }
+                            [ identicon "100%" s ]
                 ]
             ]
         ]
@@ -140,111 +276,66 @@ viewFooter =
 
 notFound : Details msg
 notFound =
-    { title = "Page Not Found"
-    , body =
-        [ div [ class "not-found" ]
-            [ div [ style "font-size" "12em" ] [ text "404" ]
-            , h1 [ style "font-size" "3.5em" ] [ text "Page Not Found" ]
-            , h3 [ style "font-size" "1.5em" ]
-                [ text "Oops - Looks like you got lost or clicked a bad link! "
-                , a [ href "/" ] [ text "Click here " ]
-                , text "to go back to the home page."
+    { detailsConfig
+        | title = "Page Not Found"
+        , body =
+            [ div [ class "not-found" ]
+                [ div [ style "font-size" "12em" ] [ text "404" ]
+                , h1 [ style "font-size" "3.5em" ] [ text "Page Not Found" ]
+                , h3 [ style "font-size" "1.5em" ]
+                    [ text "Oops - Looks like you got lost or clicked a bad link! "
+                    , a [ href "/" ] [ text "Click here " ]
+                    , text "to go back to the home page."
+                    ]
                 ]
             ]
-        ]
+    }
+
+
+detailsConfig : Details msg
+detailsConfig =
+    { title = ""
+    , body = []
+    , search = Nothing
+    , user = Nothing
     }
 
 
 header : Header
 header =
-    { drawerOpen = True
+    { drawerOpen = False
+
+    --, search = Nothing
     }
 
-viewDrawer : Header -> List (Html.Html Msg.Msg) -> (Html.Html Msg.Msg)
-viewDrawer config content =
+
+viewDrawer : Header -> Details Msg.Msg -> Html.Html Msg.Msg
+viewDrawer config detail =
     div demoPanel
-    [Drawer.modalDrawer
-        { modalDrawerConfig
-            | open = True
-            , onClose = Just (Msg.Viewer Msg.CloseDrawer)
-            , additionalAttributes =
-                        [ TopAppBar.fixedAdjust
-                        , Html.Attributes.style "z-index" "1"
-                        ]
-        }
-        [ drawerContent [][]
-        ]
-    , Html.div [] content
-    ]
-
-viewAll : Header -> String -> Html Msg.ViewerMsg
-viewAll config name =
-    let
-        toggleCatalogDrawer =
-            if config.drawerOpen then
-                Msg.CloseDrawer
-
-            else
-                Msg.OpenDrawer
-    in
-    Html.div catalogPageContainer
-        [ topAppBar topAppBarConfig
-            [ TopAppBar.row []
-                [ TopAppBar.section [ TopAppBar.alignStart ]
-                    [ iconButton
-                        { iconButtonConfig
-                            | additionalAttributes = [ TopAppBar.navigationIcon ]
-                            , onClick = Just toggleCatalogDrawer
-                        }
-                        "menu"
-                    , Html.span
-                        [ TopAppBar.title
-                        , Html.Attributes.style "text-transform" "uppercase"
-                        , Html.Attributes.style "font-weight" "400"
-                        ]
-                        [ text "Material Components for Elm" ]
+        [ Drawer.dismissibleDrawer
+            { dismissibleDrawerConfig
+                | open = config.drawerOpen
+                , onClose = Just (Msg.Viewer Msg.CloseDrawer)
+                , additionalAttributes =
+                    [ TopAppBar.fixedAdjust
                     ]
+            }
+            [ drawerHeader []
+                [ Maybe.map (identicon "100%") detail.user
+                    |> Maybe.withDefault (div [] [])
                 ]
+            , drawerContent [] []
             ]
-        , Html.div 
-            [ style "display" "flex"
-            , style "flex-flow" "row nowrap"
-            ]
-            [ modalDrawer {modalDrawerConfig | open = True}
-                [ drawerContent []
-                    [ list listConfig
-                        [ listItem listItemConfig
-                            [ text "Home" ]
-                        , listItem listItemConfig
-                            [ text "Log out" ]
-                        ]
-                    ]
-                ]
-            , Html.div [] [ text "Main Content" ]
-            ]
-            -- , 
-            --     Html.div (TopAppBar.fixedAdjust :: Drawer.appContent :: demoContent)
-            --         [ Html.div demoContentTransition
-            --             (Html.h1 [ Typography.headline5 ] [ text "catalogPage.title" ]
-            --                 :: Html.p [ Typography.body1 ] [ text "catalogPage.prelude" ]
-            --                 --:: Html.div hero catalogPage.hero
-            --                 :: Html.h2 (Typography.headline6 :: demoTitle)
-            --                     [ text "Resources" ]
-            --                 --:: resourcesList catalogPage.resources
-            --                 :: Html.h2 (Typography.headline6 :: demoTitle)
-            --                     [ text "Demos" ]
-            --                 :: [text "catalogPage.content"]
-            --             )
-            --         ]
-            --]
+        , div [ Drawer.appContent, Typography.typography ]
+            detail.body
         ]
+
+
 
 -- LOGO
 -- viewLogo : Html msg
 -- viewLogo =
 --     a [ href "/", style "text-decoration" "none" ] [ Utils.logo 32 ]
-
-
 -- STYLING HELPERS (lazy, hard-coded styling)
 
 
@@ -257,11 +348,13 @@ footerHeight : Int
 footerHeight =
     60
 
+
 catalogPageContainer : List (Html.Attribute msg)
 catalogPageContainer =
     [ Html.Attributes.style "position" "relative"
     , Typography.typography
     ]
+
 
 demoPanel : List (Html.Attribute msg)
 demoPanel =
@@ -271,6 +364,7 @@ demoPanel =
     , Html.Attributes.style "height" "100vh"
     , Html.Attributes.style "overflow" "hidden"
     ]
+
 
 demoContent : List (Html.Attribute msg)
 demoContent =
@@ -294,13 +388,42 @@ demoContent =
     , Html.Attributes.style "justify-content" "flex-start"
     ]
 
+
 demoContentTransition : List (Html.Attribute msg)
 demoContentTransition =
     [ Html.Attributes.style "max-width" "900px"
     , Html.Attributes.style "width" "100%"
     ]
 
+
 demoTitle : List (Html.Attribute msg)
 demoTitle =
     [ Html.Attributes.style "border-bottom" "1px solid rgba(0,0,0,.87)"
     ]
+
+
+
+--
+-- FORM FUNCTORS
+--
+
+
+textForm : Maybe String -> Form.FormFunctor msg
+textForm label value callback =
+    TextField.textField
+        { textFieldConfig
+            | value = value
+            , onInput = Just callback
+            , label = label
+            , outlined = True
+        }
+
+wideTextForm : Maybe String -> Form.FormFunctor msg
+wideTextForm label value callback =
+    TextField.textField
+        { textFieldConfig
+            | value = value
+            , onInput = Just callback
+            , label = label
+            , fullwidth = True
+        }

@@ -2,8 +2,9 @@ module Session exposing (Session, init)
 
 import Json.Decode
 import Time
-import Type.Database
+import Type.Database as Db
 import Type.Flags
+import Type.Database.TypeMatching as Match
 --import Type.LocalStorage
 
 
@@ -21,9 +22,9 @@ type alias Session =
         { width : Int
         , height : Int
         }
-
+    , user : Maybe String
     --    , localStorage : Maybe Type.LocalStorage.LocalStorage
-    , db : Type.Database.Database
+    , db : Db.Database
     }
 
 
@@ -37,17 +38,28 @@ init flags =
         --        localStorage =
         --            Json.Decode.decodeValue Type.LocalStorage.decode flags.localStorage
         db =
-            Json.Decode.decodeValue Type.Database.database.decoder flags.db
+            Json.Decode.decodeValue Db.database.decoder flags.db
 
         posixTime =
             Time.millisToPosix flags.timeAppStarted
+        
     in
     case db of
         Ok storage ->
-            Session posixTime flags.windowSize storage
+            let
+                user = Match.keys Db.UserType storage
+                       |> \x -> case List.length x of
+                                        1 -> 
+                                            List.head x
+                                        _ ->
+                                            Nothing
+                               
+                       
+            in
+            Session posixTime flags.windowSize user storage
 
         Err _ ->
-            Session posixTime flags.windowSize Type.Database.database.empty
+            Session posixTime flags.windowSize Nothing Db.database.empty
 
 
 

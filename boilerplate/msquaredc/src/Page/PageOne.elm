@@ -4,7 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Session
-import Viewer
+import Viewer exposing (detailsConfig)
 import Msg
 import Page
 
@@ -28,9 +28,9 @@ page session =
         model = 
             {session = session,
             page = init,
-            view = Page.liftview view,
+            view = view,
             toMsg = Msg.PageOne,
-            header = Viewer.header,
+            -- header = Viewer.header,
             update = Page.liftupdate update }
     in
         ( Page.Page model, Cmd.none )
@@ -49,9 +49,9 @@ update msg model =
 -- VIEW
 
 
-view : Model -> Viewer.Details Msg.PageOneMsg
+view : Page.Page Model Msg.PageOneMsg -> Viewer.Details Msg.Msg
 view model =
-    { title = toTitle
+    {detailsConfig | title = toTitle
     , body =
         [ h1 [] [ text "elm-spa-boilerplate - Page One" ]
         , div [] [ text "A beautiful, completely empty page in your application." ]
