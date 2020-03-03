@@ -3,7 +3,6 @@ module Page.Top exposing (Model, init, page, update, view)
 import Browser
 import Browser.Events
 import Browser.Navigation
-import Url.Builder
 import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -25,6 +24,7 @@ import Session
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Url.Builder
 import Utils exposing (..)
 import Viewer exposing (detailsConfig)
 import Viewer.Internal as I exposing (defaultCardConfig)
@@ -128,16 +128,14 @@ update message (Page.Page model) =
                     in
                     ( Page.Page { model | session = newSession }, Cmd.none )
 
-                -- Msg.ChooseTab tab ->
-                --     let
-                --         oldPage =
-                --             model.page
-
-                --         newPage =
-                --             { oldPage | currentTab = tab }
-                --     in
-                --     ( Page.Page { model | page = newPage }, Cmd.none )
-
+        -- Msg.ChooseTab tab ->
+        --     let
+        --         oldPage =
+        --             model.page
+        --         newPage =
+        --             { oldPage | currentTab = tab }
+        --     in
+        --     ( Page.Page { model | page = newPage }, Cmd.none )
         -- let
         --     newsession = {session | user = Just id}
         -- in
@@ -177,8 +175,18 @@ view (Page.Page model) =
                                 | onClick =
                                     Just
                                         (Msg.CRUD
-                                            (Msg.CreateRandom Db.StudyType [ Match.setField Db.StudyType "leader" Updater.StringMsg user
-                                                                           , Msg.Follow Db.StudyType])
+                                            (Msg.CreateRandom Db.StudyType
+                                                [ \x ->
+                                                    Match.setField
+                                                        { kind = Db.StudyType
+                                                        , attribute = "leader"
+                                                        , setter = Updater.StringMsg
+                                                        , id = x
+                                                        , value = user
+                                                        }
+                                                , Msg.Follow Db.StudyType
+                                                ]
+                                            )
                                         )
                             }
                             "Create"
@@ -221,8 +229,11 @@ studyOverview user (Page.Page model) =
 studyCard : String -> Db.Study -> Html Msg.Msg
 studyCard id study =
     I.viewCard
-        { defaultCardConfig | id = id
-                            , primaryAction = Just <| Msg.Follow Db.StudyType id }
+        { defaultCardConfig
+            | id = id
+            , primaryAction = Just <| Msg.Follow Db.StudyType id
+        }
+
 
 
 -- tabbedView : Model -> Html Msg.Msg

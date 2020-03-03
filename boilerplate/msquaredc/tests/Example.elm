@@ -131,23 +131,23 @@ suite =
             [ fuzz2 answer.fuzzer string.fuzzer "Answer: Question" <|
                 \answ question ->
                     Expect.equal
-                        { answ | question = question }
+                        (Ok { answ | question = question })
                         (answer.updater (AttributeMsg "question" <| StringMsg question) answ)
             , fuzz2 answer.fuzzer string.fuzzer "Answer: User" <|
-                \answ user ->
+                \answ test_subject ->
                     Expect.equal
-                        { answ | user = user }
-                        (answer.updater (AttributeMsg "user" <| StringMsg user) answ)
+                        (Ok { answ | test_subject = test_subject })
+                        (answer.updater (AttributeMsg "user" <| StringMsg test_subject) answ)
             , fuzz2 answer.fuzzer string.fuzzer "Answer: Value" <|
                 \answ question ->
                     Expect.equal
-                        { answ | question = question }
+                        (Ok { answ | question = question })
                         (answer.updater (AttributeMsg "question" <| StringMsg question) answ)
-            , fuzz2 coder.fuzzer string.fuzzer "Coder: Name" <|
-                \cod name ->
+            , fuzz2 coder.fuzzer string.fuzzer "Coder: User" <|
+                \cod user ->
                     Expect.equal
-                        { cod | name = name }
-                        (coder.updater (AttributeMsg "name" <| StringMsg name) cod)
+                        (Ok { cod | user = user })
+                        (coder.updater (AttributeMsg "user" <| StringMsg user) cod)
             , skip <| fuzz2 (table answer).fuzzer string.fuzzer "Pathlength 2" <|
                 \a q ->
                     case List.head <| Dict.keys a of
@@ -174,7 +174,7 @@ suite =
                                                         Set.StringMsg q
                                     in
                                     Expect.equal
-                                        res
+                                        (Ok res)
                                         ((table answer).updater (f id) a)
 
                                 Nothing ->

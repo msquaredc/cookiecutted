@@ -115,7 +115,7 @@ maybe old =
     , empty = Nothing
     , fields = []
     , form = Form.maybe old.form
-    , updater = Update.maybe old.updater
+    , updater = Update.maybe old.empty old.updater
     }
 
 
@@ -130,7 +130,7 @@ list old =
     , empty = []
     , fields = []
     , form = Form.list old.form
-    , updater = Update.list old.updater
+    , updater = Update.list old.empty old.updater
     }
 
 
@@ -149,7 +149,7 @@ dict keys values =
     , empty = Dict.empty
     , fields = []
     , form = Form.dict (\x -> Result.toMaybe (keys.toString "" x)) values.form
-    , updater = Update.dict (\x -> Result.toMaybe (keys.toString "" x)) keys.updater values.updater
+    , updater = Update.dict keys.empty values.empty (\x -> Result.toMaybe (keys.toString "" x)) keys.updater values.updater
     }
 
 
@@ -164,7 +164,7 @@ result err val =
     , empty = Result.Err err.empty
     , fields = []
     , form = Form.result err.form val.form
-    , updater = Update.result err.updater val.updater
+    , updater = Update.result err.empty val.empty err.updater val.updater
     }
 
 
@@ -179,7 +179,7 @@ array old =
     , empty = Array.empty
     , fields = []
     , form = Form.array old.form
-    , updater = Update.array old.updater
+    , updater = Update.array old.empty old.updater
     }
 
 
@@ -255,7 +255,7 @@ references name def getter lookup foreigngetter post parent =
     , empty = parent.empty (list def).empty
     , fields = parent.fields ++ [ name ]
     , form = Form.references name getter (list def).form parent.form
-    , updater = Update.references name getter def.updater parent.updater
+    , updater = Update.references name getter def.empty def.updater parent.updater
     }
 
 
@@ -310,17 +310,17 @@ form2update fmsg =
         Form.ListMsg index msg ->
             case form2update msg of
                 Just msg_ ->
-                    Just (Update.ListMsg index msg_)
+                    Just (Update.ListUpdateMsg index msg_)
                 Nothing ->
                     Nothing
         Form.ArrayMsg index msg ->
             case form2update msg of
                 Just msg_ ->
-                    Just (Update.ArrayMsg index msg_)
+                    Just (Update.ArrayUpdateIndexMsg index msg_)
                 Nothing ->
                     Nothing
         Form.MaybeMsg msg ->
-            Just (Update.MaybeMsg (form2update msg))
+            Just (Update.MaybeUpdateMsg (form2update msg))
         Form.DictMsg key msg ->
             case (form2update msg, key) of
                 (Just msg_, Just key_) ->

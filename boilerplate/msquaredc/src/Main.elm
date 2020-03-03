@@ -12,13 +12,13 @@ import Json.Decode
 import Msg
 import Page
 import Page.Admin as Admin
+import Page.Event as Event
 import Page.PageOne as PageOne
 import Page.PageWithSubpage as PageWithSubpage
+import Page.Questionary as Questionary
 import Page.Study as Study
 import Page.Top as Top
 import Page.User as User
-import Page.Event as Event
-import Page.Questionary as Questionary
 import Ports
 import Random exposing (generate)
 import Random.Char exposing (latin)
@@ -32,8 +32,8 @@ import Type.Flags
 import Type.IO exposing (form2update)
 import Type.IO.Setter as Updater
 import Url
-import Url.Parser as Parser exposing ((</>))
 import Url.Builder
+import Url.Parser as Parser exposing ((</>))
 import Viewer
 
 
@@ -54,6 +54,7 @@ type Page
     | Study (Page.Page Study.Model Msg.Msg)
     | Event (Page.Page Event.Model Msg.Msg)
     | Questionary (Page.Page Questionary.Model Msg.Msg)
+
 
 
 -- MODEL
@@ -115,8 +116,8 @@ defaultUpdate message ( model, effect ) =
                     Browser.Internal url ->
                         -- If you'd like to use hash-based routing:
                         ( model, Browser.Navigation.pushUrl model.key (Url.toString (toHashUrl url)) )
-                        -- ( model, Browser.Navigation.pushUrl model.key (Url.toString url) )
 
+                    -- ( model, Browser.Navigation.pushUrl model.key (Url.toString url) )
                     Browser.External href ->
                         ( model, Browser.Navigation.load href )
 
@@ -183,7 +184,7 @@ defaultUpdate message ( model, effect ) =
                     Msg.Create kind id callbacks ->
                         let
                             callbacksWithId =
-                                List.map (\y -> y id) callbacks 
+                                List.map (\y -> y id) callbacks
 
                             newDb =
                                 Match.new id kind (Maybe.withDefault "" session.user) db
@@ -191,16 +192,30 @@ defaultUpdate message ( model, effect ) =
                             -- |> (\x -> List.foldl (\a b -> a b) (Ok x) updatesWithId)
                         in
                         chainedUpdateAll callbacksWithId <|
-                        (\( x, y ) -> ( x, Cmd.batch [ y, Match.setTimestamp kind id "created" ] )) <|
-                            case kind of
-                                Db.UserType ->
-                                    updateDbSession model { session | user = Just id } newDb
+                            (\( x, y ) -> ( x, Cmd.batch [ y, Match.setTimestamp kind id "created" ] )) <|
+                                case kind of
+                                    Db.UserType ->
+                                        updateDbSession model { session | user = Just id } newDb
 
-                                Db.QuestionaryType ->
-                                    updateDbSession model session newDb
-                                    |> chainableUpdate (Msg.CRUD (Msg.CreateRandom Db.QuestionType [Match.setField Db.QuestionType "questionary" Updater.StringMsg id ]))
-                                _ ->
-                                    updateDbSession model session newDb
+                                    Db.QuestionaryType ->
+                                        updateDbSession model session newDb
+                                            |> chainableUpdate
+                                                (Msg.CRUD
+                                                    (Msg.CreateRandom Db.QuestionType
+                                                        [ \x ->
+                                                            Match.setField
+                                                                { kind = Db.QuestionType
+                                                                , attribute = "questionary"
+                                                                , setter = Updater.StringMsg
+                                                                , value = id
+                                                                , id = x
+                                                                }
+                                                        ]
+                                                    )
+                                                )
+
+                                    _ ->
+                                        updateDbSession model session newDb
 
                     Msg.CreateRandom kind callbacks ->
                         ( model, Random.generate (Msg.CRUD << (\x -> Msg.Create kind x callbacks)) (string 20 latin) )
@@ -233,6 +248,9 @@ defaultUpdate message ( model, effect ) =
 
                                     _ ->
                                         updateDbSession model session newDb
+                    Msg.SwapAttributes kind (first, second) attribute ->
+                        let
+                            firstValue = d
 
             Msg.Form msg ->
                 case form2update msg of
@@ -241,25 +259,29 @@ defaultUpdate message ( model, effect ) =
 
                     Nothing ->
                         ( model, Cmd.none )
+
             Msg.Follow kind id ->
-                ( model, Browser.Navigation.pushUrl model.key <| "#"++ (Url.Builder.absolute [Match.toString kind, id][]))
-            
+                ( model, Browser.Navigation.pushUrl model.key <| "#" ++ Url.Builder.absolute [ Match.toString kind, id ] [] )
 
             _ ->
                 ( model, Cmd.none )
 
-updateAll : List (Msg.Msg) -> Model -> ( Model, Cmd Msg.Msg)
+
+updateAll : List Msg.Msg -> Model -> ( Model, Cmd Msg.Msg )
 updateAll messages model =
-    chainedUpdateAll messages (model, Cmd.none)
+    chainedUpdateAll messages ( model, Cmd.none )
 
-chainedUpdateAll : List (Msg.Msg) -> ( Model, Cmd Msg.Msg) -> ( Model, Cmd Msg.Msg)
-chainedUpdateAll messages (model, effect) = 
-    List.foldl chainableUpdate (model, effect) messages
 
-chainableUpdate : Msg.Msg -> ( Model, Cmd Msg.Msg) -> ( Model, Cmd Msg.Msg)
-chainableUpdate message (model, effect) =
+chainedUpdateAll : List Msg.Msg -> ( Model, Cmd Msg.Msg ) -> ( Model, Cmd Msg.Msg )
+chainedUpdateAll messages ( model, effect ) =
+    List.foldl chainableUpdate ( model, effect ) messages
+
+
+chainableUpdate : Msg.Msg -> ( Model, Cmd Msg.Msg ) -> ( Model, Cmd Msg.Msg )
+chainableUpdate message ( model, effect ) =
     update message model
-    |> (\(x,y) -> (x, Cmd.batch [effect,y]))
+        |> (\( x, y ) -> ( x, Cmd.batch [ effect, y ] ))
+
 
 update : Msg.Msg -> Model -> ( Model, Cmd Msg.Msg )
 update message model =
@@ -338,10 +360,11 @@ update message model =
 
                 _ ->
                     defaultUpdate message ( newmodel, effect )
+
         Study m ->
             mapPageMsg model Study (Page.update message m)
                 |> defaultUpdate message
-        
+
         Event m ->
             mapPageMsg model Event (Page.update message m)
                 |> defaultUpdate message
@@ -385,13 +408,13 @@ view model =
 
         PageWithSubpage m ->
             Page.view m model.header
-        
+
         Study m ->
             Page.view m model.header
-        
+
         Event m ->
             Page.view m model.header
-        
+
         Questionary m ->
             Page.view m model.header
 
@@ -478,13 +501,13 @@ extractSession model =
         -- m.session
         PageWithSubpage m ->
             getSession m
-        
+
         Study m ->
             getSession m
-        
+
         Event m ->
             getSession m
-        
+
         Questionary m ->
             getSession m
 
@@ -519,17 +542,17 @@ updateSession model session =
         -- mapNewPageMsg model (NewPage.init session)
         PageWithSubpage (Page.Page m) ->
             mapPageMsg model PageWithSubpage (PageWithSubpage.page session m.page.subpage)
-        
+
         Study (Page.Page m) ->
-            Study.page session m.page.id 
+            Study.page session m.page.id
                 |> (\( x, y ) -> ( { model | page = Study x }, y ))
 
         Event (Page.Page m) ->
             Event.page session m.page.id
                 |> (\( x, y ) -> ( { model | page = Event x }, y ))
-        
+
         Questionary (Page.Page m) ->
-            Questionary.page session m.page.id m.page.activeQuestion
+            Questionary.page session m.page.id m.page.focus
                 |> (\( x, y ) -> ( { model | page = Questionary x }, y ))
 
 
@@ -561,7 +584,7 @@ routeUrl url model =
     in
     -- If you'd like to use hash-based routing:
     case Parser.parse (parser model session) hashUrl of
-    -- case Parser.parse (parser model session) url of
+        -- case Parser.parse (parser model session) url of
         Just success ->
             success
 
@@ -591,7 +614,7 @@ parser model session =
         , route (Parser.s paths.event </> Parser.string)
             (\id -> mapPageMsg model Event (Event.page session id))
         , route (Parser.s paths.questionary </> Parser.string)
-            (\id -> mapPageMsg model Questionary (Questionary.page session id Nothing))
+            (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus))
         , route (Parser.s paths.admin </> Admin.parser)
             (\presult -> mapPageMsg model Admin (Admin.page session presult))
 
@@ -615,12 +638,15 @@ paths =
     , study = "study"
     , event = "event"
     , questionary = "questionary"
+
     --, newPage = "newpage"
     }
 
 
 
 -- Uncomment  this helper function if you need to use hash-based routing.
+
+
 toHashUrl : Url.Url -> Url.Url
 toHashUrl url =
     { url | fragment = Just url.path, path = "" }

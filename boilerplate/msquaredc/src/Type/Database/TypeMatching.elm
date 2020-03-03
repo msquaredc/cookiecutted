@@ -360,12 +360,45 @@ setTimestamp kind id attribute =
         |> (\x -> perform x now)
 
 
-setField : Type -> String -> (a -> Updater.Msg) -> a -> String -> Msg.Msg
-setField kind attribute valuesetter value id =
+type alias FieldConfig a =
+    {
+        kind : Type,
+        attribute : String,
+        setter : (a -> Updater.Msg),
+        id : String,
+        value : a
+    }
+
+setField : FieldConfig a -> Msg.Msg
+setField {kind, attribute, setter, id, value} =
     Msg.CRUD <|
         Msg.Update <|
             Updater.AttributeMsg (toStringPlural kind) <|
                 Updater.DictKeyMsg id <|
                     Updater.AttributeMsg "value" <|
                         Updater.AttributeMsg attribute <|
-                            valuesetter value
+                            setter value
+
+type alias FieldUpdateConfig a =
+    {
+        kind : Type,
+        attribute : String,
+        setter : ((a -> a) -> Updater.Msg),
+        id : String
+    }
+
+updateField : FieldUpdateConfig a -> (a -> a)-> Updater.Msg
+updateField config updater =
+    Updater.AttributeMsg (toStringPlural config.kind) <|
+        Updater.DictKeyMsg config.id <|
+            Updater.AttributeMsg "value" <|
+                Updater.AttributeMsg config.attribute <|
+                    config.setter updater
+
+-- swapFields : FieldUpdateConfig a -> FieldUpdateConfig a -> Database -> Database
+-- swapFields first second db = 
+--     let
+--         firstMsg x = database.updater (updateField first x) db
+--         secondMsg y = database.updater (updateField second y) db
+--     in
+--         Tuple.mapBoth (\x -> database.updater (firstMsg x) db) (\y -> database.updater (secondMsg y) db)
