@@ -1,4 +1,4 @@
-# elm-spa-boilerplate
+# Msquaredc
 
 ## ----- WORK IN PROGRESS -----
 
