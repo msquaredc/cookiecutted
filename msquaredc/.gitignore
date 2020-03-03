@@ -1,0 +1,20 @@
+# Production Files
+build/
+
+# Compiled Elm code
+/elm.js
+
+# elm-package generated files
+elm-stuff
+
+# elm-repl generated files
+repl-temp-*
+
+# Node dependency directories
+node_modules/
+
+# Desktop Services Store on macOS
+.DS_Store
+
+# VS Code Workspace Settings
+.vscode/
