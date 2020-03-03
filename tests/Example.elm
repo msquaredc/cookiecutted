@@ -119,7 +119,7 @@ suite =
                         |> Json.Decode.decodeValue question.decoder
                         |> Expect.equal (Ok val)
             ]
-        , skip <|
+        , 
             describe "FullTest"
                 [ fuzz database.fuzzer "Database" <|
                     \db ->
@@ -148,7 +148,7 @@ suite =
                     Expect.equal
                         (Ok { cod | user = user })
                         (coder.updater (AttributeMsg "user" <| StringMsg user) cod)
-            , skip <| fuzz2 (table answer).fuzzer string.fuzzer "Pathlength 2" <|
+            , fuzz2 (table answer).fuzzer string.fuzzer "Pathlength 2" <|
                 \a q ->
                     case List.head <| Dict.keys a of
                         Just id ->
