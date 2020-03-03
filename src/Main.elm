@@ -249,9 +249,7 @@ defaultUpdate message ( model, effect ) =
                                     _ ->
                                         updateDbSession model session newDb
                     Msg.SwapAttributes kind (first, second) attribute ->
-                        let
-                            firstValue = d
-
+                        (model, Cmd.none)
             Msg.Form msg ->
                 case form2update msg of
                     Just dbmsg ->

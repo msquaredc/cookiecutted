@@ -229,9 +229,9 @@ map_dict_toString key_parser value s d =
         |> Maybe.andThen (value rest)
 
 
-map_result_toString : (String -> kind -> Maybe String) -> String -> Result error kind -> Maybe String
-map_result_toString old s r =
-    Debug.todo ""
+-- map_result_toString : (String -> kind -> Maybe String) -> String -> Result error kind -> Maybe String
+-- map_result_toString old s r =
+--     Debug.todo ""
 
 map_array_toString : (String -> kind -> Maybe String) -> String -> Array kind -> Maybe String
 map_array_toString old s a =
