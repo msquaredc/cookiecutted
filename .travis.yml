@@ -7,9 +7,9 @@ node_js:
 
 install:
   - npm i create-elm-app -g
-  - npm i elm-coverage -g
+  # - npm i elm-coverage -g
 
 script: 
   - elm-app test
-  - elm-coverage
-  - npm run coveralls
+  # - elm-coverage
+  # - npm run coveralls
