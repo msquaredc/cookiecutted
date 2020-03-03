@@ -8,4 +8,6 @@ node_js:
 install:
   - npm i create-elm-app -g
 
-script: elm-app test
+script: 
+  - elm-app test
+  - npm run coveralls
