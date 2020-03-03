@@ -24,23 +24,32 @@ type alias Car =
 
 type Msg
     = IntMsg (Int)
+    | IntUpdate (Int -> Int)
     | StringMsg (String)
     | FloatMsg (Float)
     | BoolUpdateMsg (Bool -> Bool)
     | BoolMsg (Bool)
     | AttributeMsg String Msg
-    | MaybeMsg (Maybe Msg)
-    | ListMsg Int Msg
+    | MaybeUpdateMsg (Maybe Msg)
+    | MaybeSetMsg (Maybe Msg)
+    | ListUpdateMsg Int Msg
+    | ListAppendMsg Msg
+    | ListMixedUpdate Int Msg
     | DictKeyMsg String Msg
+    | DictAddMsg Msg Msg
     | ResultErrMsg Msg
     | ResultOkMsg Msg
-    | ArrayMsg Int Msg
+    | ArrayUpdateIndexMsg Int Msg
+    | ArrayAppend Msg
     | ErrorMsg
+    | Custom String (Maybe Msg)
 
 type Error =
     Mismatch Msg Msg
     | IndexOutOfBounds
     | KeyError
+    | InvalidValue
+    | KeyAlreadyPresent
 
 errToString : Error -> String
 errToString err =
@@ -53,6 +62,12 @@ errToString err =
         
         KeyError -> 
             "Didn't find this key in my dict!"
+        
+        InvalidValue ->
+            "Cannot update this type with this value."
+
+        KeyAlreadyPresent ->
+            "Cannot create new value here. There is already a value on this key"
         
             
     
@@ -80,7 +95,8 @@ int msg val =
     case msg of
         IntMsg f ->
             Ok f
-            
+        IntUpdate f ->
+            Ok <| f val
         _ ->
             Err <| Mismatch msg (IntMsg val)
 
@@ -111,10 +127,10 @@ bool msg val =
         _ ->
             Err <| Mismatch msg (BoolMsg val)
 
-maybe : Updater a -> Updater (Maybe a)
-maybe old msg val =
+maybe : a -> Updater a -> Updater (Maybe a)
+maybe empty old msg val =
     case msg of
-        MaybeMsg (Just _)->
+        MaybeUpdateMsg (Just _)->
             case val of
                 Just v ->
                     case (old msg v) of
@@ -124,17 +140,21 @@ maybe old msg val =
                             Err e
                 Nothing ->
                     Ok Nothing
-        MaybeMsg (Nothing) ->
+        MaybeUpdateMsg (Nothing) ->
+            Ok Nothing
+        MaybeSetMsg (Just msg_) ->
+            Result.map Just <| old msg_ empty
+        MaybeSetMsg (Nothing) ->
             Ok Nothing
         _ ->
-            Err <| Mismatch msg (MaybeMsg Nothing)
+            Err <| Mismatch msg (MaybeUpdateMsg Nothing)
 -- TODO: Allow to Set
 
 
-list : Updater a -> Updater (List a)
-list old msg val =
+list : a -> Updater a -> Updater (List a)
+list empty old msg val =
     case msg of
-        ListMsg index msg_ ->
+        ListUpdateMsg index msg_ ->
             List.Extra.getAt index val
             |> Result.fromMaybe (IndexOutOfBounds)
             |> Result.andThen (old msg_)
@@ -143,11 +163,24 @@ list old msg val =
             -- |> Maybe.map (\x -> List.Extra.setAt index x val)
             -- |> Result.fromMaybe (Err IndexOutOfBounds)
             -- |> Maybe.withDefault val
-        _ ->
-            Err <| Mismatch msg (ListMsg 0 ErrorMsg)
 
-dict : (comparable -> Maybe String) -> Updater comparable -> Updater a -> Updater (Dict comparable a)
-dict keySerializer keys values msg val =
+        ListAppendMsg msg_ ->
+            case old msg_ empty of
+                Ok value ->
+                    Ok <| List.append val [value]
+                Err err ->
+                    Err err
+        ListMixedUpdate index msg_ ->
+            if index >= List.length val then
+                list empty old msg (val ++ [empty])
+            else
+                list empty old (ListUpdateMsg index msg_) val
+                
+        _ ->
+            Err <| Mismatch msg (ListUpdateMsg 0 ErrorMsg)
+
+dict : comparable -> a -> (comparable -> Maybe String) -> Updater comparable -> Updater a -> Updater (Dict comparable a)
+dict emptyKey emptyValue keySerializer keys values msg val =
     case msg of
         DictKeyMsg parsedkey msg_ ->
             Dict.keys val
@@ -179,13 +212,24 @@ dict keySerializer keys values msg val =
                 
                 |> Result.map Dict.fromList
                 |> Result.map (\x -> Dict.union x val)
+        DictAddMsg keymsg_ valuemsg_ ->
+            case (keys keymsg_ emptyKey, values valuemsg_ emptyValue) of
+                (Err err,_) ->
+                    Err err
+                (_, Err err) ->
+                    Err err
+                (Ok key, Ok value) ->
+                    if Dict.member key val then
+                        Err KeyAlreadyPresent
+                    else
+                        Ok <| Dict.insert key value val
         
         --TODO: Map keys
         _ ->
             Err <| Mismatch msg (DictKeyMsg "" ErrorMsg)
 
-result : Updater err -> Updater a -> Updater (Result err a)
-result err ok msg val =
+result : err -> a -> Updater err -> Updater a -> Updater (Result err a)
+result emptyErr emptyOk err ok msg val =
     case (msg, val) of
         (ResultErrMsg msg_, Err error) ->
             (err msg_ error)
@@ -196,17 +240,19 @@ result err ok msg val =
         _ ->  
             Err <| Mismatch msg (ResultErrMsg ErrorMsg)
             
-array : Updater a -> Updater (Array a)
-array old msg val =
+array : a -> Updater a -> Updater (Array a)
+array empty old msg val =
     case msg of
-        ArrayMsg index msg_ ->
+        ArrayUpdateIndexMsg index msg_ ->
             Array.get index val
             |> Result.fromMaybe IndexOutOfBounds
             |> Result.andThen (old msg_)
             |> Result.map (\x -> Array.set index x val)
-    
+        ArrayAppend msg_ ->
+            old msg_ empty
+            |> Result.map (\x -> Array.push x val)
         _ ->
-            Err <| Mismatch msg (ArrayMsg 0 ErrorMsg)
+            Err <| Mismatch msg (ArrayUpdateIndexMsg 0 ErrorMsg)
     
 
 
@@ -222,9 +268,9 @@ attribute name getter def parent msg car =
 reference : String -> (car -> comparable) ->  Updater comparable -> PartialUpdater car (comparable -> b) -> PartialUpdater car b
 reference = attribute
 
-references : String -> (car -> (List comparable)) -> Updater comparable -> PartialUpdater car ((List comparable) -> b) -> PartialUpdater car b
-references name getter def =
-    attribute name getter (list def)
+references : String -> (car -> (List comparable)) -> comparable -> Updater comparable -> PartialUpdater car ((List comparable) -> b) -> PartialUpdater car b
+references name getter empty def =
+    attribute name getter (list empty def)
 
 substruct : String -> (car -> string) -> Updater string -> PartialUpdater car (string -> b) -> PartialUpdater car b
 substruct = attribute
@@ -233,7 +279,7 @@ substruct = attribute
 carUpdater2 : Updater Car
 carUpdater2 =
     entity Car
-    |> attribute "brand" .brand (maybe string)
+    |> attribute "brand" .brand (maybe "" string)
     |> reference "model" .model string
     |> attribute "age" .age int
 
@@ -241,7 +287,7 @@ car1 : Car
 car1 = Car Nothing "mymodel" 12 
 
 car2 : Result Error Car
-car2 = carUpdater2 (AttributeMsg "brand" (MaybeMsg (Just (StringMsg "Hello")))) car1
+car2 = carUpdater2 (AttributeMsg "brand" (MaybeUpdateMsg (Just (StringMsg "Hello")))) car1
 
 
 -- first = (updateWith )

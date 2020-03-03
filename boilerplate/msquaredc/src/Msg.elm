@@ -66,12 +66,16 @@ type EventMsg
 
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
+    | FocusTitle
+    | LooseFocus
+    
 
 
 type DbMsg
     = Create Type String (List (String -> Msg))
     | CreateRandom Type (List (String -> Msg))
     | Update Updater.Msg
+    | SwapAttributes Type (String, String) String
 
 
 type PageOneMsg

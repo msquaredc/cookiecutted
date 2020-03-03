@@ -245,13 +245,15 @@ place =
 
 type alias Question =
     { questionary : String
+    , index : Int
     , text : String
-    , input_type : String
+    , input_type : IT.InputType
     }
 
 type alias QuestionView =
     {
         questionary : Questionary
+        , index : Int
         , text : String
         , input_type : IT.InputType
     }
@@ -260,8 +262,9 @@ question : IO Question Database QuestionView msg
 question =
     entity Question QuestionView
         |> reference "questionary" string .questionary .questionnaries Dict.get .value
+        |> attribute "index" int .index
         |> attribute "text" string .text
-        |> reference  "input_type" string .input_type .input_types Dict.get .value
+        |> attribute  "input_type" IT.input_type .input_type
         |> updateEmpty (\x -> {x | text = "Unnamed Question"})
 
 
