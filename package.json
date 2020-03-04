@@ -24,5 +24,8 @@
     "coveralls": "^3.0.9",
     "create-elm-app": "^4.2.1",
     "elm-coverage": "^0.3.0"
+  },
+  "dependencies": {
+    "typeface-roboto": "0.0.75"
   }
 }

@@ -4,13 +4,15 @@ import Html exposing (Html,text,div)
 import Viewer.Internal as I
 import Material.TopAppBar as TopAppBar exposing (shortTopAppBar, topAppBarConfig)
 import Material.Drawer as Drawer exposing (modalDrawerConfig, drawerScrim)
+import Html.Attributes exposing (style)
 
 viewLandscape : I.ViewerConfig msg -> List (Html msg)
 viewLandscape config =
     [
     I.viewDrawer
         {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
-                                                        , onClose = config.closeDrawer}
+                                                        , onClose = config.closeDrawer
+                                                        , additionalAttributes = [ style "z-index" "1" ]}
         , drawerTitle = config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
@@ -34,7 +36,8 @@ viewPortrait config =
     [
     I.viewDrawer
         {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
-                                                        , onClose = config.closeDrawer}
+                                                        , onClose = config.closeDrawer
+                                                        , additionalAttributes = [ style "z-index" "1" ]}
         , drawerTitle = config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent

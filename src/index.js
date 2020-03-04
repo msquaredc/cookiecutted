@@ -3,8 +3,10 @@ import {
   Elm
 } from './Main.elm';
 import registerServiceWorker from './registerServiceWorker';
-// require("material-components-web/dist/material-components-web.min.js");
-// require("material-components-web/dist/material-components-web.min.css");
+require("material-components-web/dist/material-components-web.min.js");
+require("material-components-web/dist/material-components-web.min.css");
+require('webpack-icons-installer/google');
+require('typeface-roboto');
 
 // CONFIGmargin
 const storageName = "elm-spa-boilerplate" // key in localStorage

@@ -1,6 +1,7 @@
 module Viewer.Desktop exposing (..)
 
 import Html exposing (Html,text,div)
+import Html.Attributes exposing (style)
 import Viewer.Internal as I
 import Material.TopAppBar as TopAppBar exposing (prominentTopAppBar, topAppBarConfig)
 import Material.Drawer as Drawer exposing (permanentDrawer,permanentDrawerConfig)
@@ -18,7 +19,7 @@ viewLandscape config =
         }
     , div [TopAppBar.prominentFixedAdjust] 
         [I.viewDrawer
-            {drawer = Drawer.permanentDrawer permanentDrawerConfig
+            {drawer = Drawer.permanentDrawer {permanentDrawerConfig | additionalAttributes = [ style "z-index" "1" ]}
             , drawerTitle = config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
@@ -41,7 +42,7 @@ viewPortrait config =
         }
     , div [TopAppBar.prominentFixedAdjust]
         [I.viewDrawer
-            {drawer = Drawer.permanentDrawer permanentDrawerConfig
+            {drawer = Drawer.permanentDrawer {permanentDrawerConfig | additionalAttributes = [ style "z-index" "1" ]}
             , drawerTitle = config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent

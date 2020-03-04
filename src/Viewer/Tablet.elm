@@ -1,6 +1,7 @@
 module Viewer.Tablet exposing (..)
 
 import Html exposing (Html,text,div)
+import Html.Attributes exposing (style)
 import Viewer.Internal as I
 import Material.TopAppBar as TopAppBar exposing (topAppBar, topAppBarConfig)
 import Material.Drawer as Drawer exposing (dismissibleDrawerConfig, modalDrawerConfig,drawerScrim)
@@ -18,7 +19,8 @@ viewLandscape config =
             },
         div [TopAppBar.denseFixedAdjust][
             I.viewDrawer
-            {drawer = Drawer.dismissibleDrawer {dismissibleDrawerConfig | open = config.drawerOpen}
+            {drawer = Drawer.dismissibleDrawer {dismissibleDrawerConfig | open = config.drawerOpen
+                                                                        , additionalAttributes = [ style "z-index" "1" ]}
             , drawerTitle = config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
@@ -33,7 +35,8 @@ viewPortrait : I.ViewerConfig msg -> List (Html msg)
 viewPortrait config =
     [
     I.viewDrawer
-        {drawer = Drawer.modalDrawer { modalDrawerConfig | open = config.drawerOpen}
+        {drawer = Drawer.modalDrawer { modalDrawerConfig | open = config.drawerOpen
+                                                         , additionalAttributes = [ style "z-index" "1" ]}
         , drawerTitle = config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
