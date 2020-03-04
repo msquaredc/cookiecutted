@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "material-components-web-elm": "^2.1.2",
-    "typeface-roboto": "0.0.75"
+    "typeface-roboto": "0.0.75",
+    "webpack-icons-installer": "^2.0.0"
   }
 }
