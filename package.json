@@ -26,6 +26,7 @@
     "elm-coverage": "^0.3.0"
   },
   "dependencies": {
+    "material-components-web-elm": "^2.1.2",
     "typeface-roboto": "0.0.75"
   }
 }
