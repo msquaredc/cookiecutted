@@ -12,46 +12,55 @@ viewLandscape config =
     I.viewDrawer
         {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
                                                         , onClose = config.closeDrawer
-                                                        , additionalAttributes = [ style "z-index" "1" ]}
+                                                        }
         , drawerTitle = config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
         } 
     , drawerScrim [] []
-    , div [TopAppBar.denseFixedAdjust][
+    , div [ Drawer.appContent][
         I.viewTopAppBar
             {topAppBar = shortTopAppBar {topAppBarConfig | dense = True
                                                 , fixed = False}
-            , navButton = Just {icon = "menu", message =  if config.drawerOpen then config.closeDrawer else config.openDrawer}
-            , title = "Title"
+            , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
+            , title = Maybe.withDefault "Landscape Handset" config.title
             , search = Nothing
             , user = Nothing
             }
-        , config.body
         ]
+    , div [TopAppBar.denseFixedAdjust][config.body]
     ]
 
 viewPortrait : I.ViewerConfig msg -> List (Html msg)
 viewPortrait config =
+    -- [
+    -- Drawer.modalDrawer
+    --     { modalDrawerConfig
+    --         | open = True
+    --         , onClose = config.closeDrawer
+    --     }
+    --     [ Drawer.drawerContent [] [] ]
+    -- , drawerScrim [] []
+    -- , Html.div [] [ text "Main Content" ]
     [
     I.viewDrawer
         {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
                                                         , onClose = config.closeDrawer
-                                                        , additionalAttributes = [ style "z-index" "1" ]}
+                                                        }
         , drawerTitle = config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
         } 
     , drawerScrim [][]
-    , div [TopAppBar.denseFixedAdjust][
+    , div [Drawer.appContent][
         I.viewTopAppBar
             {topAppBar = shortTopAppBar {topAppBarConfig | dense = True
                                                 , fixed = True}
-            , navButton = Just {icon = "menu", message =  if config.drawerOpen then config.closeDrawer else config.openDrawer}
-            , title = "Title"
+            , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
+            , title = Maybe.withDefault "Portrait Handset" config.title
             , search = Nothing
             , user = Nothing
             }
-        , config.body
         ]
+    , div [TopAppBar.denseFixedAdjust][config.body]
     ]

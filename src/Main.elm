@@ -261,6 +261,16 @@ defaultUpdate message ( model, effect ) =
             Msg.Follow kind id ->
                 ( model, Browser.Navigation.pushUrl model.key <| "#" ++ Url.Builder.absolute [ Match.toString kind, id ] [] )
 
+            Msg.SetUser id ->
+                    let
+                        newSession =
+                            { session | user = Just id }
+                    in
+                        updateSession model newSession
+            
+            Msg.Back ->
+                (model, Browser.Navigation.back model.key 1)
+
             _ ->
                 ( model, Cmd.none )
 

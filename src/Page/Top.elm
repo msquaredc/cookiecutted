@@ -121,12 +121,7 @@ update message (Page.Page model) =
                     in
                     ( Page.Page { model | session = newSession }, Ports.clearLocalStorage () )
 
-                Msg.SetUser id ->
-                    let
-                        newSession =
-                            { session | user = Just id }
-                    in
-                    ( Page.Page { model | session = newSession }, Cmd.none )
+                
 
         -- Msg.ChooseTab tab ->
         --     let
@@ -156,6 +151,7 @@ view (Page.Page model) =
     in
     { detailsConfig
         | title = toTitle
+        , top = True
         , body =
             case model.session.user of
                 Just user ->
@@ -205,8 +201,7 @@ view (Page.Page model) =
                 --]
                 Nothing ->
                     [ layoutGrid [] <|
-                        selectUser <|
-                            Match.keys Db.UserType model.session.db
+                        [text "ye should not get here"]
                     ]
         , user = model.session.user
     }
@@ -254,33 +249,6 @@ studyCard id study =
 --         ]
 
 
-selectUser : List String -> List (Html Msg.Msg)
-selectUser users =
-    if List.length users > 0 then
-        if List.length users == 1 then
-            [ List.head users
-                |> Maybe.withDefault ""
-                |> (\x -> layoutGridCell [] [ text <| "i have a user: " ++ x ])
-            ]
-
-        else
-            [ Html.h2 [ Typography.headline6 ] [ text "Please choose your account:" ]
-            , layoutGridCell []
-                [ ListItem.list listConfig <|
-                    List.map (\user -> ListItem.listItem { listItemConfig | onClick = Just (Msg.Top (Msg.SetUser user)) } [ ListItem.listItemGraphic [] [ identicon "100%" user ], text user ]) users
-                ]
-            ]
-
-    else
-        [ layoutGridCell []
-            [ p []
-                [ text "Looks like this is the first time you're using msquaredc!"
-                ]
-            , Button.textButton
-                { buttonConfig | onClick = Just (Msg.CRUD (Msg.CreateRandom Db.UserType [])) }
-                "Let's go!"
-            ]
-        ]
 
 
 viewCodingCard : String -> Db.Database -> Html Msg.Msg

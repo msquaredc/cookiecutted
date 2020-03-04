@@ -41,6 +41,8 @@ type Msg
     | CRUD DbMsg
     | Form UpdateMsg
     | Follow Type String
+    | SetUser String
+    | Back
     
 
 
@@ -54,7 +56,7 @@ type TopMsg
     | LocalStorageInputFieldChange String
     | SetLocalStorage
     | ClearLocalStorage
-    | SetUser String
+   
 
 
 

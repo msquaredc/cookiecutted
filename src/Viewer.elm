@@ -1,22 +1,28 @@
-module Viewer exposing (Details, Header, detailsConfig, header, notFound, update, view, textForm, wideTextForm)
+module Viewer exposing (Details, Header, detailsConfig, header, notFound, textForm, update, view, wideTextForm)
 
 --import Url.Builder
 
 import Browser
 import Device
-import Html exposing (Html, a, div, h1, h3, text)
+import Dict exposing (Dict)
+import Html exposing (Html, a, div, h1, h3, p, text)
 import Html.Attributes exposing (class, href, style)
 import Identicon exposing (identicon)
+import Material.Button as Button exposing (buttonConfig, textButton)
+import Material.Dialog exposing (dialog, dialogConfig)
 import Material.Drawer as Drawer exposing (dismissibleDrawerConfig, drawerContent, drawerHeader)
 import Material.Icon exposing (icon, iconConfig)
 import Material.IconButton exposing (customIconButton, iconButton, iconButtonConfig)
-import Material.List exposing (list, listConfig, listGroupSubheader, listItem, listItemConfig, listItemDivider, listItemDividerConfig, listItemGraphic)
+import Material.LayoutGrid exposing (layoutGridCell)
+import Material.List as ListItem exposing (list, listConfig, listGroupSubheader, listItem, listItemConfig, listItemDivider, listItemDividerConfig, listItemGraphic, listItemText)
 import Material.TextField as TextField exposing (textFieldConfig)
 import Material.Theme as Theme
 import Material.TopAppBar as TopAppBar exposing (topAppBar, topAppBarConfig)
 import Material.Typography as Typography
 import Msg exposing (ViewerMsg(..))
 import Session
+import Type.Database as Db
+import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
 import Utils
 import Viewer.Desktop as Desktop
@@ -36,6 +42,7 @@ type alias Details msg =
     , body : List (Html msg)
     , search : Maybe String
     , user : Maybe String
+    , top : Bool
     }
 
 
@@ -64,6 +71,16 @@ update msg model =
 -- VIEW
 
 
+toggleDrawer : Bool -> Msg.Msg
+toggleDrawer drawerOpen =
+    Msg.Viewer <|
+        if drawerOpen then
+            Msg.CloseDrawer
+
+        else
+            Msg.OpenDrawer
+
+
 view : Session.Session -> (a -> Msg.Msg) -> Details Msg.Msg -> Header -> Browser.Document Msg.Msg
 view session msg details h =
     { title = details.title ++ Utils.genericTitle
@@ -72,35 +89,48 @@ view session msg details h =
             device =
                 Device.fromPixel session.windowSize.width session.windowSize.height
         in
-        (case ( device.device, device.orientation ) of
-            ( Device.Desktop, Device.Portrait ) ->
-                Desktop.viewPortrait
+        case session.user of
+            Just _ ->
+                (case ( device.device, device.orientation ) of
+                    ( Device.Desktop, Device.Portrait ) ->
+                        Desktop.viewPortrait
 
-            ( Device.Desktop, Device.Landscape ) ->
-                Desktop.viewLandscape
+                    ( Device.Desktop, Device.Landscape ) ->
+                        Desktop.viewLandscape
 
-            ( Device.Handset, Device.Portrait ) ->
-                Handset.viewPortrait
+                    ( Device.Handset, Device.Portrait ) ->
+                        Handset.viewPortrait
 
-            ( Device.Handset, Device.Landscape ) ->
-                Handset.viewLandscape
+                    ( Device.Handset, Device.Landscape ) ->
+                        Handset.viewLandscape
 
-            ( Device.Tablet, Device.Portrait ) ->
-                Tablet.viewPortrait
+                    ( Device.Tablet, Device.Portrait ) ->
+                        Tablet.viewPortrait
 
-            ( Device.Tablet, Device.Landscape ) ->
-                Tablet.viewLandscape
-        )
-            { title = details.title
-            , body = div [] details.body
-            , openDrawer = Just (Msg.Viewer OpenDrawer)
-            , user = Maybe.map text session.user
-            , closeDrawer = Just (Msg.Viewer CloseDrawer)
-            , drawerOpen = h.drawerOpen
-            , drawerTitle = text "User"
-            , drawerSubtitle = text <| "ID: " ++ Maybe.withDefault "" session.user
-            , drawerContent = viewDrawerContent 0
-            }
+                    ( Device.Tablet, Device.Landscape ) ->
+                        Tablet.viewLandscape
+                )
+                    { title = Just details.title
+                    , body = div [] details.body
+                    , openDrawer = Just (Msg.Viewer OpenDrawer)
+                    , user = Maybe.map text session.user
+                    , closeDrawer = Just (Msg.Viewer CloseDrawer)
+                    , drawerOpen = h.drawerOpen
+                    , drawerTitle = text "User"
+                    , drawerSubtitle = text <| "ID: " ++ Maybe.withDefault "" session.user
+                    , drawerContent = viewDrawerContent 0
+                    , navButtonIcon = if details.top then "menu" else "arrow_back"
+                    , navButtonCallback = Just <| if details.top then (toggleDrawer h.drawerOpen) else Msg.Back
+                    }
+
+            Nothing ->
+                [ userDialog True (Dict.toList  session.db.users
+                                   |> List.map (\(x, y) -> (x, y.value)))
+
+                --    layoutGrid [] <|
+                --     selectUser <|
+                --         Match.keys Db.UserType session.db
+                ]
 
     {- [
            if session.windowSize.height > session.windowSize.width then
@@ -202,33 +232,24 @@ viewDrawerContent selectedIndex =
 
 viewHeader2 : Header -> Details Msg.Msg -> Html Msg.Msg
 viewHeader2 config details =
-    let
-        toggleDrawer =
-            if config.drawerOpen then
-                Msg.CloseDrawer
-
-            else
-                Msg.OpenDrawer
-    in
     topAppBar { topAppBarConfig | fixed = True }
         [ TopAppBar.row []
-            [ Html.map Msg.Viewer <|
-                TopAppBar.section [ TopAppBar.alignStart ]
-                    [ iconButton
-                        { iconButtonConfig
-                            | additionalAttributes = [ TopAppBar.navigationIcon ]
-                            , onClick = Just toggleDrawer
-                        }
-                        "menu"
-                    , Html.span
-                        [ TopAppBar.title
+            [ TopAppBar.section [ TopAppBar.alignStart ]
+                [ iconButton
+                    { iconButtonConfig
+                        | additionalAttributes = [ TopAppBar.navigationIcon ]
+                        , onClick = Just <| toggleDrawer config.drawerOpen
+                    }
+                    "menu"
+                , Html.span
+                    [ TopAppBar.title
 
-                        --, Html.Attributes.style "text-transform" "uppercase"
-                        --, Html.Attributes.style "font-weight" "400"
-                        --, Typography.headline5
-                        ]
-                        [ text details.title ]
+                    --, Html.Attributes.style "text-transform" "uppercase"
+                    --, Html.Attributes.style "font-weight" "400"
+                    --, Typography.headline5
                     ]
+                    [ text details.title ]
+                ]
             , TopAppBar.section [ TopAppBar.alignEnd ]
                 [ case details.search of
                     Nothing ->
@@ -298,6 +319,7 @@ detailsConfig =
     , body = []
     , search = Nothing
     , user = Nothing
+    , top = False
     }
 
 
@@ -418,6 +440,7 @@ textForm label value callback =
             , outlined = True
         }
 
+
 wideTextForm : Maybe String -> Form.FormFunctor msg
 wideTextForm label value callback =
     TextField.textField
@@ -426,4 +449,85 @@ wideTextForm label value callback =
             , onInput = Just callback
             , label = label
             , fullwidth = True
+        }
+
+
+selectUser : List String -> List (Html Msg.Msg)
+selectUser users =
+    if List.length users > 0 then
+        if List.length users == 1 then
+            [ List.head users
+                |> Maybe.withDefault ""
+                |> (\x -> layoutGridCell [] [ text <| "i have a user: " ++ x ])
+            ]
+
+        else
+            [ Html.h2 [ Typography.headline6 ] [ text "Please choose your account:" ]
+            , layoutGridCell []
+                [ ListItem.list listConfig <|
+                    List.map (\user -> ListItem.listItem { listItemConfig | onClick = Just (Msg.SetUser user) } [ ListItem.listItemGraphic [] [ identicon "100%" user ], text user ]) users
+                ]
+            ]
+
+    else
+        [ layoutGridCell []
+            [ p []
+                [ text "Looks like this is the first time you're using msquaredc!"
+                ]
+            , Button.textButton
+                { buttonConfig | onClick = Just (Msg.CRUD (Msg.CreateRandom Db.UserType [])) }
+                "Let's go!"
+            ]
+        ]
+
+
+userDialog : Bool -> List (String, Db.User) -> Html Msg.Msg
+userDialog open users =
+    dialog
+        { dialogConfig
+            | open = open
+            , onClose = Nothing
+        }
+        { title = Just "Select an account"
+        , content =
+            [ list { listConfig | avatarList = True } <|
+                List.map
+                    (\(id,user) ->
+                        listItem
+                            { listItemConfig
+                                | onClick = Just (Msg.SetUser id)
+                                , additionalAttributes =
+                                    [ Html.Attributes.tabindex 0
+
+                                    -- , Html.Events.onClick (Msg.Top (Msg.SetUser id))
+                                    ]
+                            }
+                            [ listItemGraphic
+                                [ Html.Attributes.style "background-color" "rgba(0,0,0,.3)"
+                                , Html.Attributes.style "color" "#fff"
+                                ]
+                                [ icon iconConfig "person" ]
+                            , listItemText [] [ text <| Maybe.withDefault id user.name ]
+                            ]
+                    )
+                    users
+                    ++ [ listItem
+                            { listItemConfig
+                                | onClick = Just (Msg.CRUD (Msg.CreateRandom Db.UserType []))
+                                , additionalAttributes =
+                                    [ Html.Attributes.tabindex 0
+
+                                    --    , Html.Events.onClick Close
+                                    ]
+                            }
+                            [ listItemGraphic
+                                [ Html.Attributes.style "background-color" "rgba(0,0,0,.3)"
+                                , Html.Attributes.style "color" "#fff"
+                                ]
+                                [ icon iconConfig "add" ]
+                            , listItemText [] [ text "Add account" ]
+                            ]
+                       ]
+            ]
+        , actions = []
         }

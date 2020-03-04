@@ -12,8 +12,8 @@ viewLandscape config =
     I.viewTopAppBar
         {topAppBar = prominentTopAppBar {topAppBarConfig | dense = False
                                             , fixed = True}
-        , navButton = Nothing
-        , title = config.title
+        , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
+        , title = Maybe.withDefault "Landscape Desktop" config.title
         , search = Nothing
         , user = Nothing
         }
@@ -35,8 +35,8 @@ viewPortrait config =
     I.viewTopAppBar
         {topAppBar = prominentTopAppBar {topAppBarConfig | dense = False
                                             , fixed = True}
-        , navButton = Nothing
-        , title = config.title
+        , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
+        , title = Maybe.withDefault "Portrait Desktop" config.title
         , search = Nothing
         , user = Nothing
         }

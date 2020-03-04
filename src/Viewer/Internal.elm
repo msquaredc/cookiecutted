@@ -19,7 +19,7 @@ import Material.Typography as Typography
 
 type alias ViewerConfig msg =
     {
-        title : String,
+        title : Maybe String,
         openDrawer : Maybe msg,
         body : Html msg,
         user : Maybe (Html msg),
@@ -28,6 +28,8 @@ type alias ViewerConfig msg =
         , drawerTitle : Html msg
         , drawerSubtitle : Html msg
         , drawerContent : Html msg
+        , navButtonIcon : String
+        , navButtonCallback : Maybe msg
     }
 
 --

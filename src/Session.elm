@@ -56,7 +56,7 @@ init flags =
                                
                        
             in
-            Session posixTime flags.windowSize user storage
+            Session posixTime flags.windowSize Nothing storage
 
         Err _ ->
             Session posixTime flags.windowSize Nothing Db.database.empty
