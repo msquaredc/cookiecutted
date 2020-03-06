@@ -15,17 +15,17 @@ viewLandscape config =
         , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
         , title = Maybe.withDefault "Landscape Desktop" config.title
         , search = Nothing
-        , user = Nothing
+        , user = config.user
         }
     , div [TopAppBar.prominentFixedAdjust] 
         [I.viewDrawer
             {drawer = Drawer.permanentDrawer {permanentDrawerConfig | additionalAttributes = [ style "z-index" "1" ]}
-            , drawerTitle = config.drawerTitle
+            , drawerTitle = text config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
             } 
-        , div [][ config.body ]
         ]
+    , div [Drawer.appContent][ config.body ]
     ]
     
 
@@ -43,10 +43,10 @@ viewPortrait config =
     , div [TopAppBar.prominentFixedAdjust]
         [I.viewDrawer
             {drawer = Drawer.permanentDrawer {permanentDrawerConfig | additionalAttributes = [ style "z-index" "1" ]}
-            , drawerTitle = config.drawerTitle
+            , drawerTitle = text config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
             } 
-        , div [][ config.body]
         ]
+    , div [Drawer.appContent][ config.body]
     ]

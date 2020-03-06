@@ -4,6 +4,8 @@ import Html exposing (Html,text,div)
 import Viewer.Internal as I
 import Material.TopAppBar as TopAppBar exposing (shortTopAppBar, topAppBarConfig)
 import Material.Drawer as Drawer exposing (modalDrawerConfig, drawerScrim)
+import Material.Typography as Typography
+import Material.List as MList exposing (listConfig, listItemConfig)
 import Html.Attributes exposing (style)
 
 viewLandscape : I.ViewerConfig msg -> List (Html msg)
@@ -13,7 +15,7 @@ viewLandscape config =
         {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
                                                         , onClose = config.closeDrawer
                                                         }
-        , drawerTitle = config.drawerTitle
+        , drawerTitle = text config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
         } 
@@ -33,27 +35,39 @@ viewLandscape config =
 
 viewPortrait : I.ViewerConfig msg -> List (Html msg)
 viewPortrait config =
-    -- [
-    -- Drawer.modalDrawer
-    --     { modalDrawerConfig
-    --         | open = True
-    --         , onClose = config.closeDrawer
-    --     }
-    --     [ Drawer.drawerContent [] [] ]
-    -- , drawerScrim [] []
-    -- , Html.div [] [ text "Main Content" ]
-    [
-    I.viewDrawer
-        {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
-                                                        , onClose = config.closeDrawer
-                                                        }
-        , drawerTitle = config.drawerTitle
-        , drawerSubtitle = config.drawerSubtitle
-        , content = config.drawerContent
-        } 
-    , drawerScrim [][]
-    , div [Drawer.appContent][
+    if config.drawerOpen then
+        [
+        -- I.viewDrawer
+        --     {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
+        --                                                     , onClose = config.closeDrawer
+        --                                                     }
+        --     , drawerTitle = config.drawerTitle
+        --     , drawerSubtitle = config.drawerSubtitle
+        --     , content = config.drawerContent
+        --     } 
+        -- , drawerScrim [][]
+        -- , div [Drawer.appContent][
         I.viewTopAppBar
+            {topAppBar = shortTopAppBar {topAppBarConfig | dense = True
+                                                , fixed = True}
+            , navButton = Just {icon = "arrow_back", message = config.closeDrawer}
+            , title = config.drawerTitle
+            , search = Nothing
+            , user = Nothing
+            }
+
+        , div [TopAppBar.denseFixedAdjust][
+                MList.list listConfig
+            [ MList.listItem listItemConfig [ text "Line item" ]
+            , MList.listItem listItemConfig [ text "Line item" ]
+            ]
+
+            --Html.h1 [Typography.headline6][config.drawerSubtitle]
+        ]
+        ]
+    else
+        [
+            I.viewTopAppBar
             {topAppBar = shortTopAppBar {topAppBarConfig | dense = True
                                                 , fixed = True}
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
@@ -61,6 +75,6 @@ viewPortrait config =
             , search = Nothing
             , user = Nothing
             }
+
+        , div [TopAppBar.denseFixedAdjust][config.body]
         ]
-    , div [TopAppBar.denseFixedAdjust][config.body]
-    ]

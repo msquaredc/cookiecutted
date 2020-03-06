@@ -22,7 +22,7 @@ viewLandscape config =
             {drawer = Drawer.dismissibleDrawer {dismissibleDrawerConfig | open = config.drawerOpen
                                                                         , onClose = config.closeDrawer
                                                                         , additionalAttributes = [ style "z-index" "1" ]}
-            , drawerTitle = config.drawerTitle
+            , drawerTitle = text config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
             }
@@ -35,42 +35,42 @@ viewLandscape config =
 viewPortrait : I.ViewerConfig msg -> List (Html msg)
 viewPortrait config =
 
-        [ topAppBar topAppBarConfig
-            [ TopAppBar.row []
-                [ TopAppBar.section [ TopAppBar.alignStart ]
-                    [ Html.span [ TopAppBar.title ]
-                        [ text "Title" ]
-                    ]
-                ]
-            ]
-            , Drawer.modalDrawer
-            { modalDrawerConfig
-                | open = True
-                , onClose = config.closeDrawer
-                , additionalAttributes = []
+        -- [ topAppBar topAppBarConfig
+        --     [ TopAppBar.row []
+        --         [ TopAppBar.section [ TopAppBar.alignStart ]
+        --             [ Html.span [ TopAppBar.title ]
+        --                 [ text "Title" ]
+        --             ]
+        --         ]
+        --     ]
+        --     , Drawer.modalDrawer
+        --     { modalDrawerConfig
+        --         | open = True
+        --         , onClose = config.closeDrawer
+        --         , additionalAttributes = []
+        --     }
+        --     [ Drawer.drawerContent [TopAppBar.fixedAdjust] [] ]
+        -- , drawerScrim [] []
+        -- , Html.div [Drawer.appContent] [ config.body ]
+        -- ]
+    [
+    I.viewDrawer
+        {drawer = Drawer.modalDrawer { modalDrawerConfig | open = config.drawerOpen
+                                                         , onClose = config.closeDrawer}
+        , drawerTitle = text config.drawerTitle
+        , drawerSubtitle = config.drawerSubtitle
+        , content = config.drawerContent
+        } 
+    , drawerScrim [] []
+    , div [Drawer.appContent] [
+        I.viewTopAppBar
+            {topAppBar = topAppBar {topAppBarConfig | dense = False
+                                                    , fixed = True}
+            , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
+            , title = Maybe.withDefault "Portrait Tablet" config.title
+            , search = Nothing
+            , user = Nothing
             }
-            [ Drawer.drawerContent [TopAppBar.fixedAdjust] [] ]
-        , drawerScrim [] []
-        , Html.div [Drawer.appContent] [ text "Main Content" ]
         ]
-    -- [
-    -- I.viewDrawer
-    --     {drawer = Drawer.modalDrawer { modalDrawerConfig | open = config.drawerOpen
-    --                                                      , onClose = config.closeDrawer}
-    --     , drawerTitle = config.drawerTitle
-    --     , drawerSubtitle = config.drawerSubtitle
-    --     , content = config.drawerContent
-    --     } 
-    -- , drawerScrim [] []
-    -- , div [Drawer.appContent] [
-    --     I.viewTopAppBar
-    --         {topAppBar = topAppBar {topAppBarConfig | dense = False
-    --                                                 , fixed = True}
-    --         , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
-    --         , title = Maybe.withDefault "Portrait Tablet" config.title
-    --         , search = Nothing
-    --         , user = Nothing
-    --         }
-    --     ]
-    -- , div [TopAppBar.fixedAdjust] [config.body]
-    -- ]
+    , div [TopAppBar.fixedAdjust] [config.body]
+    ]

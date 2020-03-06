@@ -4,11 +4,12 @@ module Viewer exposing (Details, Header, detailsConfig, header, notFound, textFo
 
 import Browser
 import Device
-import Dict exposing (Dict)
+import Dict
 import Html exposing (Html, a, div, h1, h3, p, text)
 import Html.Attributes exposing (class, href, style)
+import Html.Events
 import Identicon exposing (identicon)
-import Material.Button as Button exposing (buttonConfig, textButton)
+import Material.Button as Button exposing (buttonConfig, textButton, unelevatedButton)
 import Material.Dialog exposing (dialog, dialogConfig)
 import Material.Drawer as Drawer exposing (dismissibleDrawerConfig, drawerContent, drawerHeader)
 import Material.Icon exposing (icon, iconConfig)
@@ -24,6 +25,7 @@ import Session
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
+import Type.IO.Setter as Updater
 import Utils
 import Viewer.Desktop as Desktop
 import Viewer.Handset as Handset
@@ -48,6 +50,7 @@ type alias Details msg =
 
 type alias Header =
     { drawerOpen : Bool
+    , new_username : String
     }
 
 
@@ -63,6 +66,9 @@ update msg model =
 
         CloseDrawer ->
             { model | drawerOpen = False }
+
+        NewUsername text ->
+            { model | new_username = text }
 
 
 
@@ -110,22 +116,37 @@ view session msg details h =
                     ( Device.Tablet, Device.Landscape ) ->
                         Tablet.viewLandscape
                 )
-                    { title = Just details.title
+                    { title = Nothing --Just details.title
                     , body = div [] details.body
                     , openDrawer = Just (Msg.Viewer OpenDrawer)
                     , user = Maybe.map text session.user
                     , closeDrawer = Just (Msg.Viewer CloseDrawer)
                     , drawerOpen = h.drawerOpen
-                    , drawerTitle = text "User"
+                    , drawerTitle = "User"
                     , drawerSubtitle = text <| "ID: " ++ Maybe.withDefault "" session.user
                     , drawerContent = viewDrawerContent 0
-                    , navButtonIcon = if details.top then "menu" else "arrow_back"
-                    , navButtonCallback = Just <| if details.top then (toggleDrawer h.drawerOpen) else Msg.Back
+                    , navButtonIcon =
+                        if details.top then
+                            "menu"
+
+                        else
+                            "arrow_back"
+                    , navButtonCallback =
+                        Just <|
+                            if details.top then
+                                toggleDrawer h.drawerOpen
+
+                            else
+                                Msg.Back
                     }
 
             Nothing ->
-                [ userDialog True (Dict.toList  session.db.users
-                                   |> List.map (\(x, y) -> (x, y.value)))
+                [ userDialog
+                    True
+                    (Dict.toList session.db.users
+                        |> List.map (\( x, y ) -> ( x, y.value ))
+                    )
+                    h.new_username
 
                 --    layoutGrid [] <|
                 --     selectUser <|
@@ -326,6 +347,7 @@ detailsConfig =
 header : Header
 header =
     { drawerOpen = False
+    , new_username = ""
 
     --, search = Nothing
     }
@@ -481,18 +503,34 @@ selectUser users =
         ]
 
 
-userDialog : Bool -> List (String, Db.User) -> Html Msg.Msg
-userDialog open users =
+userDialog : Bool -> List ( String, Db.User ) -> String -> Html Msg.Msg
+userDialog open users new_username =
+    let
+        addUserWithName username =
+            
+                    Msg.CRUD
+                        (Msg.CreateRandom Db.UserType
+                            [ \x ->
+                                Match.setField
+                                    { kind = Db.UserType
+                                    , attribute = "name"
+                                    , setter = Updater.MaybeSetMsg << Just << Updater.StringMsg
+                                    , id = x
+                                    , value = username
+                                    }
+                            ]
+                        )
+    in
     dialog
         { dialogConfig
             | open = open
             , onClose = Nothing
         }
         { title = Just "Select an account"
-        , content =
+        , content = if List.length users > 0 then
             [ list { listConfig | avatarList = True } <|
                 List.map
-                    (\(id,user) ->
+                    (\( id, user ) ->
                         listItem
                             { listItemConfig
                                 | onClick = Just (Msg.SetUser id)
@@ -503,31 +541,61 @@ userDialog open users =
                                     ]
                             }
                             [ listItemGraphic
-                                [ Html.Attributes.style "background-color" "rgba(0,0,0,.3)"
-                                , Html.Attributes.style "color" "#fff"
-                                ]
-                                [ icon iconConfig "person" ]
+                                (userIdenticonIcon id).attributes
+                                (userIdenticonIcon id).elements
                             , listItemText [] [ text <| Maybe.withDefault id user.name ]
                             ]
                     )
-                    users
-                    ++ [ listItem
-                            { listItemConfig
-                                | onClick = Just (Msg.CRUD (Msg.CreateRandom Db.UserType []))
-                                , additionalAttributes =
-                                    [ Html.Attributes.tabindex 0
-
-                                    --    , Html.Events.onClick Close
-                                    ]
-                            }
-                            [ listItemGraphic
-                                [ Html.Attributes.style "background-color" "rgba(0,0,0,.3)"
-                                , Html.Attributes.style "color" "#fff"
-                                ]
-                                [ icon iconConfig "add" ]
-                            , listItemText [] [ text "Add account" ]
-                            ]
-                       ]
+                     <| List.reverse <| List.sortBy (\(_, b) -> b.last_login) users
             ]
-        , actions = []
+            else 
+            []
+        , actions =
+            [ list
+                { listConfig
+--                    | avatarList = True
+                    | nonInteractive = True
+                }
+                [ listItem
+                    { listItemConfig
+                        | additionalAttributes =
+                            [ Html.Attributes.tabindex 0
+                            --    , Html.Events.onClick Close
+                            ]
+                    }
+                    [ 
+                    listItemText []
+                        [ TextField.textField
+                            { textFieldConfig
+                                | onInput = Just <| Msg.Viewer << NewUsername
+                                , label = Just "Add new User"
+                                , onChange = Just addUserWithName
+                                , value = new_username
+                            }
+                        ]
+                    , unelevatedButton 
+                        {buttonConfig | additionalAttributes = [
+                            Html.Attributes.style "margin-left" "16px"
+                        ]
+                                      , icon = Just "add"} 
+                        "add"
+                    ]
+                ]
+            ]
         }
+
+
+type alias HtmlElement msg =
+    { attributes : List (Html.Attribute msg)
+    , elements : List (Html msg)
+    }
+
+
+userIdenticonIcon : String -> HtmlElement msg
+userIdenticonIcon id =
+    { attributes =
+        [ Html.Attributes.style "background-color" "rgba(0,0,0,.1)"
+        , Html.Attributes.style "color" "#fff"
+        ]
+    , elements = [ identicon "66%" id ]
+    }

@@ -196,6 +196,7 @@ defaultUpdate message ( model, effect ) =
                                 case kind of
                                     Db.UserType ->
                                         updateDbSession model { session | user = Just id } newDb
+                                        |> chainableUpdate (Msg.SetUser id)
 
                                     Db.QuestionaryType ->
                                         updateDbSession model session newDb
@@ -267,6 +268,19 @@ defaultUpdate message ( model, effect ) =
                             { session | user = Just id }
                     in
                         updateSession model newSession
+                        |> (\(x, y) -> (x, Cmd.batch [y 
+                                                     , 
+                                                            perform
+                                                                (\z ->
+                                                                    Match.setField 
+                                                                        { kind = Db.UserType
+                                                                        , attribute = "last_login"
+                                                                        , setter = Updater.IntMsg << Time.posixToMillis
+                                                                        , value = z
+                                                                        , id = id
+                                                                        }
+                                                                )
+                                                                now]))
             
             Msg.Back ->
                 (model, Browser.Navigation.back model.key 1)

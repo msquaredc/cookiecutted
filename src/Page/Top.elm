@@ -160,9 +160,9 @@ view (Page.Page model) =
                             studyOverview user (Page.Page model)
                     in
                     if List.length studies > 0 then
-                        [ layoutGrid [] <|
+                        [ layoutGrid [] <| [LG.layoutGridInner [] <|
                             List.map (\x -> layoutGridCell [] [ x ]) studies
-                        ]
+                        ]]
 
                     else
                         [ text "Create"

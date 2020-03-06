@@ -25,7 +25,7 @@ type alias ViewerConfig msg =
         user : Maybe (Html msg),
         drawerOpen : Bool,
         closeDrawer : Maybe msg
-        , drawerTitle : Html msg
+        , drawerTitle : String
         , drawerSubtitle : Html msg
         , drawerContent : Html msg
         , navButtonIcon : String

@@ -49,6 +49,7 @@ type Msg
 type ViewerMsg
     = OpenDrawer
     | CloseDrawer
+    | NewUsername String
 
 
 type TopMsg

@@ -1,26 +1,26 @@
 module Type.Database exposing (..)
 
 import Dict exposing (..)
-import Fuzz
-import Json.Decode
-import Json.Encode
-import Type.IO.Encoder exposing (Encoder(..))
-import Type.IO exposing (..)
-import Type.IO.Form as Form
 import Type.Database.InputType as IT
+import Type.IO exposing (..)
+import Type.IO.Encoder exposing (Encoder(..))
+
 
 
 --import Type.Database.User exposing (..)
 --import Type.Database.User as User
 
+
 type alias Table a =
     Dict String (Timestamp a)
 
-type alias TableView a = 
+
+type alias TableView a =
     Dict String (TimestampView a)
 
+
 table : IO a Database b msg -> IO (Table a) Database (TableView b) msg
-table kind = 
+table kind =
     dict string (timestamp kind)
 
 
@@ -42,9 +42,9 @@ type alias Database =
     , users : Table User
     }
 
+
 type alias DatabaseView =
-    {
-    answers : TableView AnswerView
+    { answers : TableView AnswerView
     , coders : TableView CoderView
     , codings : TableView CodingView
     , coding_answers : TableView CodingAnswerView
@@ -60,6 +60,7 @@ type alias DatabaseView =
     , test_subjects : TableView TestSubject
     , users : TableView User
     }
+
 
 database : IO Database Database DatabaseView msg
 database =
@@ -88,12 +89,12 @@ type alias Answer =
     , event : String
     }
 
+
 type alias AnswerView =
-    {
-        question : Question
-        , test_subject : TestSubject
-        , value : String
-        , event : Event
+    { question : Question
+    , test_subject : TestSubject
+    , value : String
+    , event : Event
     }
 
 
@@ -110,9 +111,9 @@ type alias Coder =
     { user : String
     }
 
+
 type alias CoderView =
-    {
-        user : User
+    { user : User
     }
 
 
@@ -126,10 +127,11 @@ type alias Coding =
     { coder : String
     }
 
-type alias CodingView  =
-    {
-        coder : Coder
+
+type alias CodingView =
+    { coder : Coder
     }
+
 
 coding : IO Coding Database CodingView msg
 coding =
@@ -143,11 +145,11 @@ type alias CodingAnswer =
     , value : String
     }
 
-type alias CodingAnswerView = 
-    {
-        coding_question : CodingQuestion
-        , coding_frame : CodingFrame
-        , value : String
+
+type alias CodingAnswerView =
+    { coding_question : CodingQuestion
+    , coding_frame : CodingFrame
+    , value : String
     }
 
 
@@ -160,88 +162,93 @@ coding_answer =
 
 
 type alias CodingFrame =
-    {
-        answer : String,
-        coding : String
+    { answer : String
+    , coding : String
     }
 
+
 type alias CodingFrameView =
-    {
-        answer : Answer
-        , coding : Coding
+    { answer : Answer
+    , coding : Coding
     }
+
 
 coding_frame : IO CodingFrame Database CodingFrameView msg
 coding_frame =
     entity CodingFrame CodingFrameView
-    |> reference "answer" string .answer .answers Dict.get .value
-    |> reference "coding" string .coding .codings Dict.get .value
+        |> reference "answer" string .answer .answers Dict.get .value
+        |> reference "coding" string .coding .codings Dict.get .value
+
 
 type alias CodingQuestion =
-    {
-        coding_questionary : String
+    { coding_questionary : String
     }
 
+
 type alias CodingQuestionView =
-    {
-        coding_questionary : CodingQuestionary
+    { coding_questionary : CodingQuestionary
     }
+
 
 coding_question : IO CodingQuestion Database CodingQuestionView msg
 coding_question =
     entity CodingQuestion CodingQuestionView
         |> reference "coding_questionary" string .coding_questionary .coding_questionnaries Dict.get .value
 
-type alias CodingQuestionary = 
-    {
-        question : String
+
+type alias CodingQuestionary =
+    { question : String
     }
+
 
 type alias CodingQuestionaryView =
-    {
-        question : Question
+    { question : Question
     }
 
+
 coding_questionary : IO CodingQuestionary Database CodingQuestionaryView msg
-coding_questionary = 
+coding_questionary =
     entity CodingQuestionary CodingQuestionaryView
         |> reference "question" string .question .questions Dict.get .value
 
-type alias Event = 
-    {
-        place : String,
-        day : Int,
-        study : String
+
+type alias Event =
+    { place : String
+    , day : Int
+    , study : String
     }
 
+
 type alias EventView =
-    {
-        place : Place,
-        day : Int,
-        study : Study
+    { place : Place
+    , day : Int
+    , study : Study
     }
+
 
 event : IO Event Database EventView msg
 event =
     entity Event EventView
-    |> reference "place" string .place .places Dict.get .value
-    |> attribute "day" int .day
-    |> reference "study" string .study .studies Dict.get .value
+        |> reference "place" string .place .places Dict.get .value
+        |> attribute "day" int .day
+        |> reference "study" string .study .studies Dict.get .value
+
 
 type alias Place =
-    {
-        name : String,
-        latitude : Float,
-        longitude : Float
+    { name : String
+    , latitude : Float
+    , longitude : Float
     }
+
 
 place : IO Place Database Place msg
 place =
     entity Place Place
-    |> attribute "name" string .name
-    |> attribute "latitude" float .latitude
-    |> attribute "longitude" float .longitude
-    |> updateEmpty (\x -> {x | name = "Unnamed Place"})
+        |> attribute "name" string .name
+        |> attribute "latitude" float .latitude
+        |> attribute "longitude" float .longitude
+        |> updateEmpty (\x -> { x | name = "Unnamed Place" })
+
 
 type alias Question =
     { questionary : String
@@ -250,13 +257,14 @@ type alias Question =
     , input_type : IT.InputType
     }
 
+
 type alias QuestionView =
-    {
-        questionary : Questionary
-        , index : Int
-        , text : String
-        , input_type : IT.InputType
+    { questionary : Questionary
+    , index : Int
+    , text : String
+    , input_type : IT.InputType
     }
+
 
 question : IO Question Database QuestionView msg
 question =
@@ -264,18 +272,19 @@ question =
         |> reference "questionary" string .questionary .questionnaries Dict.get .value
         |> attribute "index" int .index
         |> attribute "text" string .text
-        |> attribute  "input_type" IT.input_type .input_type
-        |> updateEmpty (\x -> {x | text = "Unnamed Question"})
+        |> attribute "input_type" IT.input_type .input_type
+        |> updateEmpty (\x -> { x | text = "Unnamed Question" })
 
 
 type alias Questionary =
-    { name : String,
-    study : String
+    { name : String
+    , study : String
     }
 
+
 type alias QuestionaryView =
-    { name : String,
-    study : Study
+    { name : String
+    , study : Study
     }
 
 
@@ -284,45 +293,47 @@ questionary =
     entity Questionary QuestionaryView
         |> attribute "name" string .name
         |> reference "study" string .study .studies Dict.get .value
-        |> updateEmpty (\x -> {x | name = "Unnamed Questionary "})
+        |> updateEmpty (\x -> { x | name = "Unnamed Questionary " })
+
 
 type alias Study =
-    {
-        name : String,
-        description : String,
-        leader : String
+    { name : String
+    , description : String
+    , leader : String
     }
 
+
 type alias StudyView =
-    {
-        name : String,
-        description : String,
-        leader : User
+    { name : String
+    , description : String
+    , leader : User
     }
 
 
 study : IO Study Database StudyView msg
 study =
-    
     entity Study StudyView
-    |> attribute "name" string .name
-    |> attribute "description" string .description
-    |> reference "leader" string .leader .users Dict.get .value
-    |> updateEmpty (\x -> {x | name = "Unnamed Study "})
+        |> attribute "name" string .name
+        |> attribute "description" string .description
+        |> reference "leader" string .leader .users Dict.get .value
+        |> updateEmpty (\x -> { x | name = "Unnamed Study " })
+
 
 type alias TestSubject =
-    {
-        infos : Dict String String
+    { infos : Dict String String
     }
+
 
 test_subject : IO TestSubject Database TestSubject msg
 test_subject =
     entity TestSubject TestSubject
-    |> attribute "infos" (dict string string) .infos
+        |> attribute "infos" (dict string string) .infos
+
 
 type alias User =
     { name : Maybe String
     , email : Maybe String
+    , last_login : Int
     }
 
 
@@ -331,6 +342,7 @@ user =
     entity User User
         |> attribute "name" (maybe string) .name
         |> attribute "email" (maybe string) .email
+        |> attribute "last_login" int .last_login
 
 
 type alias Timestamp a =
@@ -338,47 +350,56 @@ type alias Timestamp a =
     , created : Int
     , modified : Int
     , accessed : Int
+    , deleted : Maybe Int
     , value : a
     }
+
 
 type alias TimestampView a =
     { creator : User
     , created : Int
     , modified : Int
     , accessed : Int
+    , deleted : Maybe Int
     , value : a
     }
 
-timestamp : IO a Database b msg -> IO (Timestamp a) Database (TimestampView b) msg
-timestamp other = 
-    let
-        t = 
-            entity Timestamp TimestampView
-            |> reference "creator" string .creator .users Dict.get .value
-            |> attribute "created" int .created
-            |> attribute "modified" int .modified
-            |> attribute "accessed" int .accessed
-            |> substruct "value" other .value
-    in 
-        t
-        -- {
-        --     decoder = t.decoder,
-        --     encoder = t.encoder,
-        --     fuzzer = t.fuzzer,
-        --     toString = t.toString,
-        --     empty = t.empty,
-        --     viewer = \db full -> Maybe.map (\x -> x.value ) (t.viewer db full),
-        --     fields = t.fields,
-        --     form = \name callback value acc -> t.form name callback value ("value." ++acc),
-        --     updater = t.updater,
-        --     strDecoder = t.strDecoder
-        -- }
 
-type Type =
-    AnswerType 
+timestamp : IO a Database b msg -> IO (Timestamp a) Database (TimestampView b) msg
+timestamp other =
+    let
+        t =
+            entity Timestamp TimestampView
+                |> reference "creator" string .creator .users Dict.get .value
+                |> attribute "created" int .created
+                |> attribute "modified" int .modified
+                |> attribute "accessed" int .accessed
+                |> attribute "deleted" (maybe int) .deleted
+                |> substruct "value" other .value
+    in
+    t
+
+
+
+-- {
+--     decoder = t.decoder,
+--     encoder = t.encoder,
+--     fuzzer = t.fuzzer,
+--     toString = t.toString,
+--     empty = t.empty,
+--     viewer = \db full -> Maybe.map (\x -> x.value ) (t.viewer db full),
+--     fields = t.fields,
+--     form = \name callback value acc -> t.form name callback value ("value." ++acc),
+--     updater = t.updater,
+--     strDecoder = t.strDecoder
+-- }
+
+
+type Type
+    = AnswerType
     | CoderType
     | CodingType
-    | CodingAnswerType 
+    | CodingAnswerType
     | CodingFrameType
     | CodingQuestionType
     | CodingQuestionaryType
@@ -388,6 +409,7 @@ type Type =
     | UserType
     | EventType
 
+
 updateEmpty : (a -> a) -> IO a b c msg -> IO a b c msg
 updateEmpty f prev =
-    {prev | empty = f prev.empty}
+    { prev | empty = f prev.empty }
