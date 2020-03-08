@@ -152,7 +152,7 @@ view (Page.Page model) =
     { detailsConfig
         | title = toTitle
         , top = True
-        , body =
+        , body = \_ -> 
             case model.session.user of
                 Just user ->
                     let

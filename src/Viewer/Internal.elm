@@ -2,6 +2,7 @@ module Viewer.Internal exposing (..)
 
 import Html exposing (Html,text,div)
 import Html.Attributes
+import Time exposing (Posix)
 import Identicon exposing (identicon)
 import Material.Button as Button exposing (buttonConfig)
 import Material.TopAppBar as TopAppBar exposing (topAppBar)

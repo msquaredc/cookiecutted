@@ -92,11 +92,11 @@ view (Page.Page model) =
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
-                , body =
+                , body = \_ -> 
                     [ layoutGrid [ Typography.typography ]
                         [ layoutGridInner []
                             [ layoutGridCell []
-                                [ Html.h1 [ Typography.headline5 ] [ text <| "Study: " ++ infos.title ]
+                                [ Html.h1 [ Typography.headline5 ] [ text "Study: ", text infos.title ]
                                 , p [] [ text <| "Description:" ++ infos.description ]
                                 , p [] [ text <| "Leader: " ++ viewLeader infos.leader model.session.user ]
                                 ]
@@ -153,7 +153,7 @@ view (Page.Page model) =
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
-                , body =
+                , body = \_ ->
                     [ layoutGrid []
                         [ layoutGridInner []
                             [ layoutGridCell []

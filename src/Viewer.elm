@@ -8,6 +8,7 @@ import Dict
 import Html exposing (Html, a, div, h1, h3, p, text)
 import Html.Attributes exposing (class, href, style)
 import Html.Events
+import DateFormat.Relative exposing (relativeTime)
 import Identicon exposing (identicon)
 import Material.Button as Button exposing (buttonConfig, textButton, unelevatedButton)
 import Material.Dialog exposing (dialog, dialogConfig)
@@ -15,13 +16,14 @@ import Material.Drawer as Drawer exposing (dismissibleDrawerConfig, drawerConten
 import Material.Icon exposing (icon, iconConfig)
 import Material.IconButton exposing (customIconButton, iconButton, iconButtonConfig)
 import Material.LayoutGrid exposing (layoutGridCell)
-import Material.List as ListItem exposing (list, listConfig, listGroupSubheader, listItem, listItemConfig, listItemDivider, listItemDividerConfig, listItemGraphic, listItemText)
+import Material.List as ListItem exposing (list, listConfig, listGroupSubheader, listItem, listItemPrimaryText, listItemSecondaryText, listItemConfig, listItemDivider, listItemDividerConfig, listItemGraphic, listItemText)
 import Material.TextField as TextField exposing (textFieldConfig)
 import Material.Theme as Theme
 import Material.TopAppBar as TopAppBar exposing (topAppBar, topAppBarConfig)
 import Material.Typography as Typography
 import Msg exposing (ViewerMsg(..))
 import Session
+import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
@@ -41,7 +43,7 @@ import Viewer.Tablet as Tablet
 
 type alias Details msg =
     { title : String
-    , body : List (Html msg)
+    , body : Maybe Posix -> List (Html msg)
     , search : Maybe String
     , user : Maybe String
     , top : Bool
@@ -87,8 +89,8 @@ toggleDrawer drawerOpen =
             Msg.OpenDrawer
 
 
-view : Session.Session -> (a -> Msg.Msg) -> Details Msg.Msg -> Header -> Browser.Document Msg.Msg
-view session msg details h =
+view : Session.Session -> (a -> Msg.Msg) -> Details Msg.Msg -> Header -> Maybe Posix -> Browser.Document Msg.Msg
+view session msg details h time =
     { title = details.title ++ Utils.genericTitle
     , body =
         let
@@ -117,7 +119,7 @@ view session msg details h =
                         Tablet.viewLandscape
                 )
                     { title = Nothing --Just details.title
-                    , body = div [] details.body
+                    , body = div [] <| details.body time
                     , openDrawer = Just (Msg.Viewer OpenDrawer)
                     , user = Maybe.map text session.user
                     , closeDrawer = Just (Msg.Viewer CloseDrawer)
@@ -147,6 +149,7 @@ view session msg details h =
                         |> List.map (\( x, y ) -> ( x, y.value ))
                     )
                     h.new_username
+                    time
 
                 --    layoutGrid [] <|
                 --     selectUser <|
@@ -320,7 +323,7 @@ notFound : Details msg
 notFound =
     { detailsConfig
         | title = "Page Not Found"
-        , body =
+        , body = \_ -> 
             [ div [ class "not-found" ]
                 [ div [ style "font-size" "12em" ] [ text "404" ]
                 , h1 [ style "font-size" "3.5em" ] [ text "Page Not Found" ]
@@ -337,7 +340,7 @@ notFound =
 detailsConfig : Details msg
 detailsConfig =
     { title = ""
-    , body = []
+    , body = \_ -> []
     , search = Nothing
     , user = Nothing
     , top = False
@@ -353,26 +356,26 @@ header =
     }
 
 
-viewDrawer : Header -> Details Msg.Msg -> Html.Html Msg.Msg
-viewDrawer config detail =
-    div demoPanel
-        [ Drawer.dismissibleDrawer
-            { dismissibleDrawerConfig
-                | open = config.drawerOpen
-                , onClose = Just (Msg.Viewer Msg.CloseDrawer)
-                , additionalAttributes =
-                    [ TopAppBar.fixedAdjust
-                    ]
-            }
-            [ drawerHeader []
-                [ Maybe.map (identicon "100%") detail.user
-                    |> Maybe.withDefault (div [] [])
-                ]
-            , drawerContent [] []
-            ]
-        , div [ Drawer.appContent, Typography.typography ]
-            detail.body
-        ]
+-- viewDrawer : Header -> Details Msg.Msg -> Html.Html Msg.Msg
+-- viewDrawer config detail =
+--     div demoPanel
+--         [ Drawer.dismissibleDrawer
+--             { dismissibleDrawerConfig
+--                 | open = config.drawerOpen
+--                 , onClose = Just (Msg.Viewer Msg.CloseDrawer)
+--                 , additionalAttributes =
+--                     [ TopAppBar.fixedAdjust
+--                     ]
+--             }
+--             [ drawerHeader []
+--                 [ Maybe.map (identicon "100%") detail.user
+--                     |> Maybe.withDefault (div [] [])
+--                 ]
+--             , drawerContent [] []
+--             ]
+--         , div [ Drawer.appContent, Typography.typography ]
+--             detail.body
+--         ]
 
 
 
@@ -503,23 +506,22 @@ selectUser users =
         ]
 
 
-userDialog : Bool -> List ( String, Db.User ) -> String -> Html Msg.Msg
-userDialog open users new_username =
+userDialog : Bool -> List ( String, Db.User ) -> String -> Maybe Posix -> Html Msg.Msg
+userDialog open users new_username time =
     let
         addUserWithName username =
-            
-                    Msg.CRUD
-                        (Msg.CreateRandom Db.UserType
-                            [ \x ->
-                                Match.setField
-                                    { kind = Db.UserType
-                                    , attribute = "name"
-                                    , setter = Updater.MaybeSetMsg << Just << Updater.StringMsg
-                                    , id = x
-                                    , value = username
-                                    }
-                            ]
-                        )
+            Msg.CRUD
+                (Msg.CreateRandom Db.UserType
+                    [ \x ->
+                        Match.setField
+                            { kind = Db.UserType
+                            , attribute = "name"
+                            , setter = Updater.MaybeSetMsg << Just << Updater.StringMsg
+                            , id = x
+                            , value = username
+                            }
+                    ]
+                )
     in
     dialog
         { dialogConfig
@@ -527,44 +529,56 @@ userDialog open users new_username =
             , onClose = Nothing
         }
         { title = Just "Select an account"
-        , content = if List.length users > 0 then
-            [ list { listConfig | avatarList = True } <|
-                List.map
-                    (\( id, user ) ->
-                        listItem
-                            { listItemConfig
-                                | onClick = Just (Msg.SetUser id)
-                                , additionalAttributes =
-                                    [ Html.Attributes.tabindex 0
+        , content =
+            if List.length users > 0 then
+                [ list { listConfig | avatarList = True } <|
+                    List.indexedMap
+                        (\index ( id, user ) ->
+                            listItem
+                                { listItemConfig
+                                    | onClick = Just (Msg.SetUser id)
+                                    , activated = index == 0
+                                    , selected = False
+                                    , additionalAttributes =
+                                        [ Html.Attributes.tabindex 0
 
-                                    -- , Html.Events.onClick (Msg.Top (Msg.SetUser id))
+                                        -- , Html.Events.onClick (Msg.Top (Msg.SetUser id))
+                                        ]
+                                }
+                                [ listItemGraphic
+                                    (userIdenticonIcon id).attributes
+                                    (userIdenticonIcon id).elements
+                                , listItemText []
+                                    [ listItemPrimaryText []
+                                        [ text <| Maybe.withDefault id user.name
+                                        ]
+                                    , listItemSecondaryText []
+                                        [ text <| "Last login " ++ ( Maybe.withDefault "" <| Maybe.map (\x -> relativeTime x (Time.millisToPosix user.last_login)) time) ]
                                     ]
-                            }
-                            [ listItemGraphic
-                                (userIdenticonIcon id).attributes
-                                (userIdenticonIcon id).elements
-                            , listItemText [] [ text <| Maybe.withDefault id user.name ]
-                            ]
-                    )
-                     <| List.reverse <| List.sortBy (\(_, b) -> b.last_login) users
-            ]
-            else 
-            []
+                                ]
+                        )
+                    <|
+                        List.reverse <|
+                            List.sortBy (\( _, b ) -> b.last_login) users
+                ]
+
+            else
+                []
         , actions =
             [ list
                 { listConfig
---                    | avatarList = True
+                  --                    | avatarList = True
                     | nonInteractive = True
                 }
                 [ listItem
                     { listItemConfig
                         | additionalAttributes =
                             [ Html.Attributes.tabindex 0
+
                             --    , Html.Events.onClick Close
                             ]
                     }
-                    [ 
-                    listItemText []
+                    [ listItemText []
                         [ TextField.textField
                             { textFieldConfig
                                 | onInput = Just <| Msg.Viewer << NewUsername
@@ -573,11 +587,13 @@ userDialog open users new_username =
                                 , value = new_username
                             }
                         ]
-                    , unelevatedButton 
-                        {buttonConfig | additionalAttributes = [
-                            Html.Attributes.style "margin-left" "16px"
-                        ]
-                                      , icon = Just "add"} 
+                    , unelevatedButton
+                        { buttonConfig
+                            | additionalAttributes =
+                                [ Html.Attributes.style "margin-left" "16px"
+                                ]
+                            , icon = Just "add"
+                        }
                         "add"
                     ]
                 ]

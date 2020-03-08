@@ -17,6 +17,7 @@ import Json.Encode
 import Type.Database exposing (Type)
 import Type.IO.Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
+import Time exposing (Posix)
 import Url
 
 
@@ -43,6 +44,7 @@ type Msg
     | Follow Type String
     | SetUser String
     | Back
+    | Tick Posix
     
 
 

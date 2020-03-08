@@ -86,7 +86,7 @@ view (Page.Page model) =
                 | title = toTitle model.page
                 , user = model.session.user
             
-                , body =
+                , body =\_ -> 
                     [
                         layoutGrid [Typography.typography] [
                             layoutGridInner [][
@@ -128,7 +128,7 @@ view (Page.Page model) =
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
-                , body =
+                , body = \_ -> 
                     [
                         layoutGrid [] [
                             layoutGridInner [][

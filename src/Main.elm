@@ -25,7 +25,7 @@ import Random.Char exposing (latin)
 import Random.String exposing (string)
 import Session
 import Task exposing (perform)
-import Time exposing (now)
+import Time exposing (now, Posix)
 import Type.Database as Db exposing (database)
 import Type.Database.TypeMatching as Match
 import Type.Flags
@@ -64,6 +64,7 @@ type alias Model =
     { key : Browser.Navigation.Key -- Required in a Browser.application
     , page : Page
     , header : Viewer.Header
+    , time : Maybe Posix
     }
 
 
@@ -83,7 +84,7 @@ init flags url key =
             Json.Decode.decodeValue Db.database.decoder flags.db
 
         ( model, cmds ) =
-            routeUrl url <| Model key (NotFound <| Session.init flags) Viewer.header
+            routeUrl url <| Model key (NotFound <| Session.init flags) Viewer.header Nothing
     in
     --  On loading the application, we read form local storage. If the object is incorrectly formatted, clear localStorage
     case localStorage of
@@ -285,6 +286,8 @@ defaultUpdate message ( model, effect ) =
             Msg.Back ->
                 (model, Browser.Navigation.back model.key 1)
 
+            Msg.Tick time ->
+                ({model | time = Just time}, Cmd.none)
             _ ->
                 ( model, Cmd.none )
 
@@ -412,33 +415,33 @@ view model =
     in
     case model.page of
         NotFound _ ->
-            Viewer.view session never Viewer.notFound Viewer.header
+            Viewer.view session never Viewer.notFound Viewer.header model.time
 
         User m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
         Admin m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
         Top m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
         -- NewPage _ ->
         -- Viewer.view session             NewPageMsg (NewPage.view m) model.route
         PageOne m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
         PageWithSubpage m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
         Study m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
         Event m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
         Questionary m ->
-            Page.view m model.header
+            Page.view m model.header model.time
 
 
 
@@ -452,6 +455,7 @@ subscriptions _ =
         [ Browser.Events.onResize Msg.OnWindowResize
         , Ports.onLocalStorageChange Msg.OnLocalStorageChange
         , Ports.onDbChange Msg.OnDbChange
+        , Time.every 1000 Msg.Tick
         ]
 
 

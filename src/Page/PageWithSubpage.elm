@@ -61,7 +61,7 @@ update msg model =
 view : Page.Page Model PageWithSubpageMsg -> Viewer.Details Msg.Msg
 view (Page.Page model) =
     { detailsConfig | title = toTitle model.page
-    , body =
+    , body = \_ ->
         [ h1 [] [ text "elm-spa-boilerplate - Page With Subpage" ]
         , div [ class "content" ]
             [ h3 [] [ text "This is a page that can handle subpaths in its routing." ]

@@ -176,7 +176,7 @@ view : Page Model Msg.Msg -> Viewer.Details Msg.Msg
 view (Page.Page model) =
     { detailsConfig
         | title = toTitle model.page
-        , body =
+        , body = \_ ->
             [ h1 [] [ text "Admin Panel" ]
             , div [ class "content" ] <|
                 case model.page.subpage of

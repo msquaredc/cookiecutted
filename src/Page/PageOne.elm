@@ -52,7 +52,7 @@ update msg model =
 view : Page.Page Model Msg.PageOneMsg -> Viewer.Details Msg.Msg
 view model =
     {detailsConfig | title = toTitle
-    , body =
+    , body = \_ ->
         [ h1 [] [ text "elm-spa-boilerplate - Page One" ]
         , div [] [ text "A beautiful, completely empty page in your application." ]
         ]

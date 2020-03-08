@@ -26,7 +26,8 @@
             "elm-community/string-extra": "4.0.1",
             "elm-explorations/test": "1.2.2",
             "gdamjan/elm-identicon": "1.0.0",
-            "rluiten/stringdistance": "1.0.4"
+            "rluiten/stringdistance": "1.0.4",
+            "ryannhg/date-format": "2.3.0"
         },
         "indirect": {
             "avh4/elm-color": "1.0.0",

@@ -6,6 +6,7 @@ import Msg
 import Browser exposing (Document)
 import Session
 import Html
+import Time exposing (Posix)
 
 
 type Page a msg=
@@ -18,7 +19,7 @@ type Page a msg=
         update : (msg -> Page a msg -> (Page a msg, Cmd msg))
     }
 
-view : Page a msg -> Viewer.Header -> Document Msg.Msg
+view : Page a msg -> Viewer.Header -> Maybe Posix -> Document Msg.Msg
 view (Page model) header = 
     Viewer.view model.session model.toMsg (model.view (Page model)) header
 

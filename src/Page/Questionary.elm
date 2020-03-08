@@ -157,7 +157,7 @@ view (Page.Page model) =
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
-                , body =
+                , body = \_ ->
                     [ layoutGrid [ Typography.typography ]
                         [ layoutGridInner [] <|
                             [ layoutGridCell [ LG.span12 ]
@@ -230,7 +230,7 @@ view (Page.Page model) =
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
-                , body =
+                , body = \_ ->
                     [ layoutGrid []
                         [ layoutGridInner []
                             [ layoutGridCell []
