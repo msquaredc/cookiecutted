@@ -85,15 +85,16 @@ init flags url key =
 
         ( model, cmds ) =
             routeUrl url <| Model key (NotFound <| Session.init flags) Viewer.header Nothing
+        newCmds = Cmd.batch [cmds, perform Msg.Tick now]
     in
     --  On loading the application, we read form local storage. If the object is incorrectly formatted, clear localStorage
     case localStorage of
         Ok _ ->
-            ( model, cmds )
+            ( model, newCmds )
 
         Err _ ->
             -- If localstorage decoder failed, clear localstorage
-            ( model, Cmd.batch [ cmds, Ports.clearLocalStorage () ] )
+            ( model, Cmd.batch [ newCmds, Ports.clearLocalStorage () ] )
 
 
 
