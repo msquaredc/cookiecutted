@@ -8,7 +8,7 @@ import Html.Attributes
 import Html.Events exposing (onClick)
 import Identicon exposing (identicon)
 import List.Extra
-import Material.Button exposing (buttonConfig)
+import Material.Button as Button
 import Material.Card as Card exposing (cardActionButton, cardActionIcon, cardActions, cardBlock, cardConfig, cardPrimaryActionConfig)
 import Material.Checkbox as Checkbox exposing (checkboxConfig)
 import Material.IconButton exposing (iconButtonConfig)

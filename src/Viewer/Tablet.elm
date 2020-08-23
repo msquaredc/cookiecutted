@@ -3,15 +3,18 @@ module Viewer.Tablet exposing (..)
 import Html exposing (Html,text,div)
 import Html.Attributes exposing (style)
 import Viewer.Internal as I
-import Material.TopAppBar as TopAppBar exposing (topAppBar, topAppBarConfig)
-import Material.Drawer as Drawer exposing (dismissibleDrawerConfig, modalDrawerConfig,drawerScrim)
+import Material.TopAppBar as TopAppBar
+import Material.Drawer.Dismissible as DDrawer
+import Material.Drawer.Modal as MDrawer
 
 viewLandscape : I.ViewerConfig msg -> List (Html msg)
 viewLandscape config =
     [
         I.viewTopAppBar
-            {topAppBar = topAppBar {topAppBarConfig | dense = True
-                                                , fixed = True}
+            {topAppBar = TopAppBar.regular 
+                (TopAppBar.config
+                    |> TopAppBar.setDense True
+                    |> TopAppBar.setFixed True)
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
             , title = Maybe.withDefault "Landscape Tablet" config.title
             , search = Nothing
@@ -19,14 +22,16 @@ viewLandscape config =
             },
         div [TopAppBar.denseFixedAdjust][
             I.viewDrawer
-            {drawer = Drawer.dismissibleDrawer {dismissibleDrawerConfig | open = config.drawerOpen
-                                                                        , onClose = config.closeDrawer
-                                                                        , additionalAttributes = [ style "z-index" "1" ]}
+            {drawer = DDrawer.drawer 
+                        (DDrawer.config 
+                            |> DDrawer.setOpen config.drawerOpen
+                            |> DDrawer.setOnClose config.closeDrawer
+                            |> DDrawer.setAttributes [ style "z-index" "1" ])
             , drawerTitle = text config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
             }
-            , Html.div [Drawer.appContent ] [
+            , DDrawer.content [] [
                 config.body
             ]
     ]
@@ -55,17 +60,21 @@ viewPortrait config =
         -- ]
     [
     I.viewDrawer
-        {drawer = Drawer.modalDrawer { modalDrawerConfig | open = config.drawerOpen
-                                                         , onClose = config.closeDrawer}
+        {drawer = MDrawer.drawer (MDrawer.config
+                                    |> MDrawer.setOpen config.drawerOpen
+                                    |> MDrawer.setOnClose config.closeDrawer) 
         , drawerTitle = text config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
         } 
-    , drawerScrim [] []
-    , div [Drawer.appContent] [
+    , MDrawer.scrim [] []
+    , MDrawer.content [] [
         I.viewTopAppBar
-            {topAppBar = topAppBar {topAppBarConfig | dense = False
-                                                    , fixed = True}
+            {topAppBar = 
+                TopAppBar.regular 
+                (TopAppBar.config
+                    |> TopAppBar.setDense True
+                    |> TopAppBar.setFixed True)
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
             , title = Maybe.withDefault "Portrait Tablet" config.title
             , search = Nothing

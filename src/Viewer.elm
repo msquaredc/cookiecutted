@@ -10,16 +10,18 @@ import Html.Attributes exposing (class, href, style)
 import Html.Events
 import DateFormat.Relative exposing (relativeTime)
 import Identicon exposing (identicon)
-import Material.Button as Button exposing (buttonConfig, textButton, unelevatedButton)
-import Material.Dialog exposing (dialog, dialogConfig)
-import Material.Drawer as Drawer exposing (dismissibleDrawerConfig, drawerContent, drawerHeader)
-import Material.Icon exposing (icon, iconConfig)
-import Material.IconButton exposing (customIconButton, iconButton, iconButtonConfig)
-import Material.LayoutGrid exposing (layoutGridCell)
-import Material.List as ListItem exposing (list, listConfig, listGroupSubheader, listItem, listItemPrimaryText, listItemSecondaryText, listItemConfig, listItemDivider, listItemDividerConfig, listItemGraphic, listItemText)
-import Material.TextField as TextField exposing (textFieldConfig)
+import Material.Button as Button exposing (text, unelevated)
+import Material.Dialog as Dialog exposing (dialog, config)
+import Material.Drawer.Dismissible as Drawer exposing (config, content, header)
+import Material.Icon as Icon exposing (icon)
+import Material.IconButton as IconButton exposing (custom, iconButton, config)
+import Material.LayoutGrid as LayoutGrid exposing (cell)
+import Material.List as MList exposing (list, config, group, subheader)
+import Material.List.Item as MLItem exposing (listItem, text, config,  graphic)
+import Material.List.Divider as MLDivider exposing (listItem, config)
+import Material.TextField as TextField exposing (config)
 import Material.Theme as Theme
-import Material.TopAppBar as TopAppBar exposing (topAppBar, topAppBarConfig)
+import Material.TopAppBar as TopAppBar exposing (regular, config)
 import Material.Typography as Typography
 import Msg exposing (ViewerMsg(..))
 import Session
@@ -32,6 +34,7 @@ import Utils
 import Viewer.Desktop as Desktop
 import Viewer.Handset as Handset
 import Viewer.Tablet as Tablet
+
 
 
 
@@ -120,21 +123,19 @@ view session msg details h time =
                 )
                     { title = Nothing --Just details.title
                     , body = div [] <| details.body time
-                    , openDrawer = Just (Msg.Viewer OpenDrawer)
-                    , user = Maybe.map text session.user
-                    , closeDrawer = Just (Msg.Viewer CloseDrawer)
+                    , openDrawer = Msg.Viewer OpenDrawer
+                    , user = Maybe.map Html.text session.user
+                    , closeDrawer = Msg.Viewer CloseDrawer
                     , drawerOpen = h.drawerOpen
                     , drawerTitle = "User"
-                    , drawerSubtitle = text <| "ID: " ++ Maybe.withDefault "" session.user
+                    , drawerSubtitle = Html.text <| "ID: " ++ Maybe.withDefault "" session.user
                     , drawerContent = viewDrawerContent 0
                     , navButtonIcon =
                         if details.top then
                             "menu"
-
                         else
                             "arrow_back"
                     , navButtonCallback =
-                        Just <|
                             if details.top then
                                 toggleDrawer h.drawerOpen
 
@@ -205,65 +206,67 @@ viewDrawerContent : Int -> Html Msg.Msg
 viewDrawerContent selectedIndex =
     let
         listItemConfig_ index =
-            { listItemConfig
-                | activated = selectedIndex == index
-                , onClick = Nothing
-            }
+            MLItem.config
+                |> MLItem.setSelected (
+                    if index == selectedIndex then
+                        Just MLItem.selected
+                    else
+                        Nothing) -- selected == activated
     in
-    list listConfig
-        [ listItem (listItemConfig_ 0)
-            [ listItemGraphic [] [ icon iconConfig "home" ]
-            , text "Home"
+    list MList.config
+        ( MLItem.listItem (listItemConfig_ 0)
+            [ MLItem.graphic [] [ Icon.icon [] "home" ]
+            , Html.text "Home"
+            ])
+        [ MLItem.listItem (listItemConfig_ 1)
+            [ MLItem.graphic [] [ Icon.icon [] "local_library" ]
+            , Html.text "Research"
             ]
-        , listItem (listItemConfig_ 1)
-            [ listItemGraphic [] [ icon iconConfig "local_library" ]
-            , text "Research"
-            ]
-        , listItem (listItemConfig_ 2)
-            [ listItemGraphic [] [ icon iconConfig "ballot" ]
-            , text "Coding"
+        , MLItem.listItem (listItemConfig_ 2)
+            [ MLItem.graphic [] [ Icon.icon [] "ballot" ]
+            , Html.text "Coding"
             ]
 
         -- , listItem (listItemConfig_ 3)
         --     [ listItemGraphic [] [ icon iconConfig "drafts" ]
         --     , text "Drafts"
         --     ]
-        , listItemDivider listItemDividerConfig
-        , listGroupSubheader [] [ text "Favorites" ]
-        , listItem (listItemConfig_ 4)
-            [ listItemGraphic [] [ icon iconConfig "bookmark" ]
-            , text "Family"
+        , MLDivider.listItem MLDivider.config
+        --, MList.group [] [ Html.text "Favorites" ] TODO: Uncomment
+        , MLItem.listItem (listItemConfig_ 4)
+            [ MLItem.graphic [] [ icon [] "bookmark" ]
+            , Html.text "Family"
             ]
-        , listItem (listItemConfig_ 5)
-            [ listItemGraphic [] [ icon iconConfig "bookmark" ]
-            , text "Friends"
+        , MLItem.listItem (listItemConfig_ 5)
+            [ MLItem.graphic [] [ icon [] "bookmark" ]
+            , Html.text "Friends"
             ]
-        , listItem (listItemConfig_ 6)
-            [ listItemGraphic [] [ icon iconConfig "bookmark" ]
-            , text "Work"
+        , MLItem.listItem (listItemConfig_ 6)
+            [ MLItem.graphic [] [ icon [] "bookmark" ]
+            , Html.text "Work"
             ]
-        , listItemDivider listItemDividerConfig
-        , listItem (listItemConfig_ 7)
-            [ listItemGraphic [] [ icon iconConfig "settings" ]
-            , text "Settings"
+        , MLDivider.listItem MLDivider.config
+        , MLItem.listItem (listItemConfig_ 7)
+            [ MLItem.graphic [] [ icon [] "settings" ]
+            , Html.text "Settings"
             ]
-        , listItem (listItemConfig_ 8)
-            [ listItemGraphic [] [ icon iconConfig "announcement" ]
-            , text "Help & feedback"
+        , MLItem.listItem (listItemConfig_ 8)
+            [ MLItem.graphic [] [ icon [] "announcement" ]
+            , Html.text "Help & feedback"
             ]
         ]
 
 
 viewHeader2 : Header -> Details Msg.Msg -> Html Msg.Msg
 viewHeader2 config details =
-    topAppBar { topAppBarConfig | fixed = True }
+    regular (TopAppBar.config
+                |> TopAppBar.setFixed True) 
         [ TopAppBar.row []
             [ TopAppBar.section [ TopAppBar.alignStart ]
                 [ iconButton
-                    { iconButtonConfig
-                        | additionalAttributes = [ TopAppBar.navigationIcon ]
-                        , onClick = Just <| toggleDrawer config.drawerOpen
-                    }
+                    (IconButton.config
+                        |> IconButton.setAttributes [ TopAppBar.navigationIcon ] 
+                        |> IconButton.setOnClick (toggleDrawer config.drawerOpen))
                     "menu"
                 , Html.span
                     [ TopAppBar.title
@@ -272,7 +275,7 @@ viewHeader2 config details =
                     --, Html.Attributes.style "font-weight" "400"
                     --, Typography.headline5
                     ]
-                    [ text details.title ]
+                    [ Html.text details.title ]
                 ]
             , TopAppBar.section [ TopAppBar.alignEnd ]
                 [ case details.search of
@@ -280,22 +283,20 @@ viewHeader2 config details =
                         div [] []
 
                     Just s ->
-                        TextField.textField
-                            { textFieldConfig
-                                | trailingIcon = TextField.textFieldIcon iconConfig "search"
-                                , value = s
-
-                                --, outlined = True
-                                , additionalAttributes = [ Theme.surface ]
-                                , onInput = Just Msg.Search
-                            }
+                        TextField.filled
+                            ( TextField.config
+                                |> TextField.setTrailingIcon (Just <| TextField.icon [] "search")
+                                |> TextField.setValue (Just s)
+                                |> TextField.setAttributes [Theme.surface]
+                                |> TextField.setOnInput Msg.Search
+                            )
                 , case details.user of
                     Nothing ->
                         div [] []
 
                     Just s ->
-                        customIconButton
-                            { iconButtonConfig | additionalAttributes = [ TopAppBar.actionItem ] }
+                        IconButton.custom 
+                            (IconButton.config |> IconButton.setAttributes [TopAppBar.actionItem ])
                             [ identicon "100%" s ]
                 ]
             ]
@@ -309,9 +310,9 @@ viewHeader2 config details =
 viewFooter : Html msg
 viewFooter =
     div [ class "footer", class "container" ]
-        [ text "A simple, no-frills boilerplate for creating delightful Single Page Applications (SPAs) in Elm."
-        , a [ href "https://github.com/jzxhuang/elm-spa-boilerplate" ] [ text "Check it out on Github!" ]
-        , text "© 2018 - present Jeffrey Huang."
+        [ Html.text "A simple, no-frills boilerplate for creating delightful Single Page Applications (SPAs) in Elm."
+        , a [ href "https://github.com/jzxhuang/elm-spa-boilerplate" ] [ Html.text "Check it out on Github!" ]
+        , Html.text "© 2018 - present Jeffrey Huang."
         ]
 
 
@@ -325,12 +326,12 @@ notFound =
         | title = "Page Not Found"
         , body = \_ -> 
             [ div [ class "not-found" ]
-                [ div [ style "font-size" "12em" ] [ text "404" ]
-                , h1 [ style "font-size" "3.5em" ] [ text "Page Not Found" ]
+                [ div [ style "font-size" "12em" ] [ Html.text "404" ]
+                , h1 [ style "font-size" "3.5em" ] [ Html.text "Page Not Found" ]
                 , h3 [ style "font-size" "1.5em" ]
-                    [ text "Oops - Looks like you got lost or clicked a bad link! "
-                    , a [ href "/" ] [ text "Click here " ]
-                    , text "to go back to the home page."
+                    [ Html.text "Oops - Looks like you got lost or clicked a bad link! "
+                    , a [ href "/" ] [ Html.text "Click here " ]
+                    , Html.text "to go back to the home page."
                     ]
                 ]
             ]
@@ -457,24 +458,23 @@ demoTitle =
 
 textForm : Maybe String -> Form.FormFunctor msg
 textForm label value callback =
-    TextField.textField
-        { textFieldConfig
-            | value = value
-            , onInput = Just callback
-            , label = label
-            , outlined = True
-        }
-
+    TextField.filled
+        (TextField.config 
+            |> TextField.setValue (Just value)
+            |> TextField.setOnInput callback
+            |> TextField.setLabel label
+            --|> TextField.outlined True TODO: Uncomment
+        )
 
 wideTextForm : Maybe String -> Form.FormFunctor msg
 wideTextForm label value callback =
-    TextField.textField
-        { textFieldConfig
-            | value = value
-            , onInput = Just callback
-            , label = label
-            , fullwidth = True
-        }
+    TextField.filled
+        (TextField.config 
+            |> TextField.setValue (Just value)
+            |> TextField.setOnInput callback
+            |> TextField.setLabel label
+            --|> TextField.outlined True TODO: Uncomment
+            |> TextField.setFullwidth True)
 
 
 selectUser : List String -> List (Html Msg.Msg)
@@ -483,24 +483,32 @@ selectUser users =
         if List.length users == 1 then
             [ List.head users
                 |> Maybe.withDefault ""
-                |> (\x -> layoutGridCell [] [ text <| "i have a user: " ++ x ])
+                |> (\x -> LayoutGrid.cell [] [ Html.text <| "i have a user: " ++ x ])
             ]
 
         else
-            [ Html.h2 [ Typography.headline6 ] [ text "Please choose your account:" ]
-            , layoutGridCell []
-                [ ListItem.list listConfig <|
-                    List.map (\user -> ListItem.listItem { listItemConfig | onClick = Just (Msg.SetUser user) } [ ListItem.listItemGraphic [] [ identicon "100%" user ], text user ]) users
-                ]
+            [ Html.h2 [ Typography.headline6 ] [ Html.text "Please choose your account:" ]
+            , LayoutGrid.cell [] <|
+                let
+                    sList = List.map (\user -> MLItem.listItem (MLItem.config |> MLItem.setOnClick (Msg.SetUser user)) [ MLItem.graphic [] [ identicon "100%" user ], Html.text user ]) users
+                in 
+                    case sList of
+                        fir :: res ->
+                            [ MList.list MList.config 
+                                fir
+                                res
+                            ]
+                        _ ->
+                            []
             ]
 
     else
-        [ layoutGridCell []
+        [ LayoutGrid.cell []
             [ p []
-                [ text "Looks like this is the first time you're using msquaredc!"
+                [ Html.text "Looks like this is the first time you're using msquaredc!"
                 ]
-            , Button.textButton
-                { buttonConfig | onClick = Just (Msg.CRUD (Msg.CreateRandom Db.UserType [])) }
+            , Button.text
+                (Button.config |> Button.setOnClick (Msg.CRUD (Msg.CreateRandom Db.UserType [])))
                 "Let's go!"
             ]
         ]
@@ -522,81 +530,69 @@ userDialog open users new_username time =
                             }
                     ]
                 )
-    in
-    dialog
-        { dialogConfig
-            | open = open
-            , onClose = Nothing
-        }
-        { title = Just "Select an account"
-        , content =
-            if List.length users > 0 then
-                [ list { listConfig | avatarList = True } <|
-                    List.indexedMap
+        uList = List.indexedMap
                         (\index ( id, user ) ->
-                            listItem
-                                { listItemConfig
-                                    | onClick = Just (Msg.SetUser id)
-                                    , activated = index == 0
-                                    , selected = False
-                                    , additionalAttributes =
-                                        [ Html.Attributes.tabindex 0
+                            MLItem.listItem
+                                (MLItem.config 
+                                    |> MLItem.setOnClick (Msg.SetUser id)
+                                    --|> MLItem.activated (index == 0) TODO: Uncomment
+                                    --|> MLItem.selected False TODO: Uncomment
+                                    |> MLItem.setAttributes [Html.Attributes.tabindex 0])
 
-                                        -- , Html.Events.onClick (Msg.Top (Msg.SetUser id))
-                                        ]
-                                }
-                                [ listItemGraphic
+                                [ MLItem.graphic
                                     (userIdenticonIcon id).attributes
                                     (userIdenticonIcon id).elements
-                                , listItemText []
-                                    [ listItemPrimaryText []
-                                        [ text <| Maybe.withDefault id user.name
-                                        ]
-                                    , listItemSecondaryText []
-                                        [ text <| "Last login " ++ ( Maybe.withDefault "" <| Maybe.map (\x -> relativeTime x (Time.millisToPosix user.last_login)) time) ]
-                                    ]
+                                , MLItem.text []
+                                    { primary = [Html.text <| Maybe.withDefault id user.name]
+                                    , secondary = [Html.text <| "Last login " ++ ( Maybe.withDefault "" <| Maybe.map (\x -> relativeTime x (Time.millisToPosix user.last_login)) time)]}
                                 ]
                         )
                     <|
                         List.reverse <|
                             List.sortBy (\( _, b ) -> b.last_login) users
-                ]
 
-            else
-                []
+    in
+    Dialog.dialog
+        (Dialog.config
+            |> Dialog.setOpen open
+            )
+        { title = Just "Select an account"
+        , content =
+            case uList of
+                f :: rest ->
+                    [ list (MList.config |> MList.setAvatarList True) 
+                        f
+                        rest   
+                    ]
+
+                _ ->
+                    []
         , actions =
             [ list
-                { listConfig
-                  --                    | avatarList = True
-                    | nonInteractive = True
-                }
-                [ listItem
-                    { listItemConfig
-                        | additionalAttributes =
-                            [ Html.Attributes.tabindex 0
+                (MList.config |> MList.setNonInteractive True)
+                ( MLItem.listItem
+                    (MLItem.config
+                        |> MLItem.setAttributes [ Html.Attributes.tabindex 0
 
                             --    , Html.Events.onClick Close
-                            ]
-                    }
-                    [ listItemText []
-                        [ TextField.textField
-                            { textFieldConfig
-                                | onInput = Just <| Msg.Viewer << NewUsername
-                                , label = Just "Add new User"
-                                , onChange = Just addUserWithName
-                                , value = new_username
-                            }
-                        ]
-                    , unelevatedButton
-                        { buttonConfig
-                            | additionalAttributes =
-                                [ Html.Attributes.style "margin-left" "16px"
-                                ]
-                            , icon = Just "add"
-                        }
+                            ])
+                    
+                    [ 
+                        TextField.filled
+                            (TextField.config 
+                                |> TextField.setOnInput (Msg.Viewer << NewUsername)
+                                |> TextField.setLabel (Just "Add new User")
+                                |> TextField.setOnChange addUserWithName
+                                |> TextField.setValue (Just new_username)
+                            )
+                    , Button.unelevated
+                        (Button.config 
+                            |> Button.setAttributes [ Html.Attributes.style "margin-left" "16px"]
+                            |> Button.setIcon (Just "add"))
                         "add"
                     ]
-                ]
+                )
+                []
             ]
         }
 
@@ -615,3 +611,4 @@ userIdenticonIcon id =
         ]
     , elements = [ identicon "66%" id ]
     }
+

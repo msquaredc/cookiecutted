@@ -2,28 +2,32 @@ module Viewer.Handset exposing (..)
 
 import Html exposing (Html,text,div)
 import Viewer.Internal as I
-import Material.TopAppBar as TopAppBar exposing (shortTopAppBar, topAppBarConfig)
-import Material.Drawer as Drawer exposing (modalDrawerConfig, drawerScrim)
+import Material.TopAppBar as TopAppBar exposing (short, config)
+import Material.Drawer.Modal as Drawer exposing (config, scrim)
 import Material.Typography as Typography
-import Material.List as MList exposing (listConfig, listItemConfig)
+import Material.List as MList exposing (config)
+import Material.List.Item as MLItem exposing (config)
 import Html.Attributes exposing (style)
 
 viewLandscape : I.ViewerConfig msg -> List (Html msg)
 viewLandscape config =
     [
     I.viewDrawer
-        {drawer = Drawer.modalDrawer {modalDrawerConfig | open = config.drawerOpen
-                                                        , onClose = config.closeDrawer
-                                                        }
+        {drawer = Drawer.drawer
+            (Drawer.config
+                |> Drawer.setOpen config.drawerOpen
+                |> Drawer.setOnClose config.closeDrawer)
         , drawerTitle = text config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
         } 
-    , drawerScrim [] []
-    , div [ Drawer.appContent][
+    , scrim [] []
+    , Drawer.content [][
         I.viewTopAppBar
-            {topAppBar = shortTopAppBar {topAppBarConfig | dense = True
-                                                , fixed = False}
+            {topAppBar = TopAppBar.short
+                (TopAppBar.config
+                    |> TopAppBar.setDense True
+                    |> TopAppBar.setFixed False)
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
             , title = Maybe.withDefault "Landscape Handset" config.title
             , search = Nothing
@@ -48,8 +52,10 @@ viewPortrait config =
         -- , drawerScrim [][]
         -- , div [Drawer.appContent][
         I.viewTopAppBar
-            {topAppBar = shortTopAppBar {topAppBarConfig | dense = True
-                                                , fixed = True}
+            {topAppBar = TopAppBar.short
+                (TopAppBar.config
+                    |> TopAppBar.setDense True
+                    |> TopAppBar.setFixed False)
             , navButton = Just {icon = "arrow_back", message = config.closeDrawer}
             , title = config.drawerTitle
             , search = Nothing
@@ -57,10 +63,10 @@ viewPortrait config =
             }
 
         , div [TopAppBar.denseFixedAdjust][
-                MList.list listConfig
-            [ MList.listItem listItemConfig [ text "Line item" ]
-            , MList.listItem listItemConfig [ text "Line item" ]
-            ]
+                MList.list MList.config
+                    ( MLItem.listItem MLItem.config [ text "Line item" ])
+                    [ MLItem.listItem MLItem.config [ text "Line item" ]
+                    ]
 
             --Html.h1 [Typography.headline6][config.drawerSubtitle]
         ]
@@ -68,8 +74,10 @@ viewPortrait config =
     else
         [
             I.viewTopAppBar
-            {topAppBar = shortTopAppBar {topAppBarConfig | dense = True
-                                                , fixed = True}
+            {topAppBar = TopAppBar.short
+                (TopAppBar.config
+                    |> TopAppBar.setDense True
+                    |> TopAppBar.setFixed False)
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
             , title = Maybe.withDefault "Portrait Handset" config.title
             , search = Nothing

@@ -21,11 +21,12 @@
   },
   "homepage": "https://github.com/jzxhuang/elm-spa-boilerplate#readme",
   "devDependencies": {
-    "coveralls": "^3.0.9",
-    "create-elm-app": "^4.2.1",
+    "coveralls": "^3.1.0",
+    "create-elm-app": "^4.2.26",
     "elm-coverage": "^0.3.0"
   },
   "dependencies": {
+    "elm-json": "^0.2.7",
     "material-components-web-elm": "^2.1.2",
     "typeface-roboto": "0.0.75",
     "webpack-icons-installer": "^2.0.0"
