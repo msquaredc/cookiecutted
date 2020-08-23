@@ -5,9 +5,10 @@ module Page.Study exposing (Model, init, page, update, view)
 import Dict exposing (Dict)
 import Html exposing (Html, div, p, text)
 import Identicon exposing (identicon)
-import Material.Button as Button exposing (buttonConfig, unelevatedButton)
-import Material.LayoutGrid as LG exposing (layoutGrid, layoutGridCell, layoutGridInner)
-import Material.List exposing (list, listConfig, listItem, listItemConfig, listItemGraphic)
+import Material.Button as Button exposing (unelevated)
+import Material.LayoutGrid as LG exposing (layoutGrid, cell, inner)
+import Material.List as MList exposing (list)
+import Material.List.Item as MLItem exposing (listItem, graphic)
 import Material.Typography as Typography
 import Msg
 import Page exposing (Page(..))
@@ -94,20 +95,20 @@ view (Page.Page model) =
                 , user = model.session.user
                 , body = \_ -> 
                     [ layoutGrid [ Typography.typography ]
-                        [ layoutGridInner []
-                            [ layoutGridCell []
+                        [ inner[]
+                            [ cell []
                                 [ Html.h1 [ Typography.headline5 ] [ text "Study: ", text infos.title ]
                                 , p [] [ text <| "Description:" ++ infos.description ]
                                 , p [] [ text <| "Leader: " ++ viewLeader infos.leader model.session.user ]
                                 ]
-                            , layoutGridCell []
+                            , cell []
                                 [ Html.h1 [ Typography.headline5 ] [ text "Events" ]
                                 , viewList infos.events (Msg.Follow Db.EventType) .place
-                                , unelevatedButton
-                                    { buttonConfig
-                                        | icon = Just "add"
-                                        , onClick =
-                                            Just <|
+                                , unelevated
+                                    (Button.config
+                                        |> Button.setIcon (Just "add")
+                                        |> Button.setOnClick (
+                                            --Just <|
                                                 Msg.CRUD <|
                                                     Msg.CreateRandom Db.EventType
                                                         [ \x ->
@@ -119,17 +120,17 @@ view (Page.Page model) =
                                                                 , value = infos.id
                                                                 }
                                                         ]
-                                    }
+                                        ))
                                     "Add"
                                 ]
-                            , layoutGridCell []
+                            , cell []
                                 [ Html.h1 [ Typography.headline5 ] [ text "Questionnaries" ]
                                 , viewList infos.questionnaries (Msg.Follow Db.QuestionaryType) .name
-                                , unelevatedButton
-                                    { buttonConfig
-                                        | icon = Just "add"
-                                        , onClick =
-                                            Just <|
+                                , unelevated
+                                    (Button.config 
+                                        |> Button.setIcon (Just "add")
+                                        |> Button.setOnClick (
+                                            --Just <|
                                                 Msg.CRUD <|
                                                     Msg.CreateRandom Db.QuestionaryType
                                                         [ \x ->
@@ -141,7 +142,8 @@ view (Page.Page model) =
                                                                 , value = infos.id
                                                                 }
                                                         ]
-                                    }
+                                        )
+                                        )
                                     "Add"
                                 ]
                             ]
@@ -155,8 +157,8 @@ view (Page.Page model) =
                 , user = model.session.user
                 , body = \_ ->
                     [ layoutGrid []
-                        [ layoutGridInner []
-                            [ layoutGridCell []
+                        [ inner []
+                            [ cell []
                                 [ Html.h1 [ Typography.headline5 ] [ text <| "Study not Found" ]
                                 ]
                             ]
@@ -219,14 +221,17 @@ viewLeader ( id, mbLeader ) cur =
 
 viewList : List ( String, a ) -> (String -> msg) -> (a -> String) -> Html msg
 viewList elements onClick nameGetter =
-    if List.length elements > 0 then
-        list listConfig <|
-            List.map (\( x, y ) -> listItem { listItemConfig | onClick = Just (onClick x) } [ listItemGraphic [] [ identicon "100%" x ], text <| nameGetter y ]) elements
+    let
+        mlist =  List.map (\( x, y ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick x) ) [ graphic [] [ identicon "100%" x ], text <| nameGetter y ]) elements
+    in
+        case mlist of 
+            f :: r ->
+                list MList.config f r
+            _ ->
+                list MList.config
 
-    else
-        list listConfig
-            [ listItem listItemConfig [ text "Nothing here, create one?" ]
-            ]
+                    (listItem MLItem.config [ text "Nothing here, create one?" ])
+                    []
 
 
 toTitle : Model -> String
