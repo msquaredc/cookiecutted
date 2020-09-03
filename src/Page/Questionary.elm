@@ -8,20 +8,23 @@ import Html.Attributes
 import Html.Events exposing (onClick)
 import Identicon exposing (identicon)
 import List.Extra
-import Material.Button exposing (buttonConfig)
-import Material.Card as Card exposing (cardActionButton, cardActionIcon, cardActions, cardBlock, cardConfig, cardPrimaryActionConfig)
-import Material.Checkbox as Checkbox exposing (checkboxConfig)
-import Material.IconButton exposing (iconButtonConfig)
-import Material.LayoutGrid as LG exposing (layoutGrid, layoutGridCell, layoutGridInner)
-import Material.List exposing (list, listConfig, listItem, listItemConfig, listItemGraphic)
-import Material.Radio as Radio exposing (radioConfig)
-import Material.Select as Select exposing (selectConfig, selectOptionConfig)
-import Material.TextArea as TextArea exposing (textAreaConfig)
-import Material.TextField as TextField exposing (textFieldConfig)
+import Material.Button as Button
+import Material.Card as Card exposing (actions, block, primaryAction)
+import Material.Checkbox as Checkbox
+import Material.IconButton as IconButton
+import Material.LayoutGrid as LG exposing (cell, inner, layoutGrid)
+import Material.List as MList exposing (list)
+import Material.List.Item as MLItem exposing (graphic, listItem)
+import Material.Radio as Radio
+import Material.Select as Select
+import Material.Select.Item as SelectItem
+import Material.TextArea as TextArea
+import Material.TextField as TextField
 import Material.Typography as Typography
 import Msg
 import Page exposing (Page(..))
 import Session
+import Svg.Attributes exposing (x)
 import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.InputType as IT
@@ -133,8 +136,7 @@ update message (Page model) =
                             { oldmodel | focus = defaultFokus }
                     in
                     ( Page { model | page = newmodel }, Cmd.none )
-                
-                
+
         _ ->
             ( Page model, Cmd.none )
 
@@ -157,39 +159,39 @@ view (Page.Page model) =
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
-                , body = \_ ->
-                    [ layoutGrid [ Typography.typography ]
-                        [ layoutGridInner [] <|
-                            [ layoutGridCell [ LG.span12 ]
-                                [ Html.h1 [ Typography.headline5 ]
-                                    [ editableText
-                                        model.page.focus.titleFocused
-                                        (Msg.Questionary Msg.FocusTitle)
-                                        (\x -> Msg.Questionary Msg.LooseFocus)
-                                        infos.name
-                                      <|
-                                        \x ->
-                                            Match.setField
-                                                { kind = Db.QuestionaryType
-                                                , attribute = "name"
-                                                , setter = Updater.StringMsg
-                                                , id = model.page.id
-                                                , value = x
-                                                }
-                                    ]
+                , body =
+                    \_ ->
+                        [ layoutGrid [ Typography.typography ]
+                            [ inner [] <|
+                                [ cell [ LG.span12 ]
+                                    [ Html.h1 [ Typography.headline5 ]
+                                        [ editableText
+                                            model.page.focus.titleFocused
+                                            (Msg.Questionary Msg.FocusTitle)
+                                            (\x -> Msg.Questionary Msg.LooseFocus)
+                                            infos.name
+                                          <|
+                                            \x ->
+                                                Match.setField
+                                                    { kind = Db.QuestionaryType
+                                                    , attribute = "name"
+                                                    , setter = Updater.StringMsg
+                                                    , id = model.page.id
+                                                    , value = x
+                                                    }
+                                        ]
 
-                                -- , p [][ text <| "Location:" ++ infos.location]
-                                , p [] [ text <| "Study: " ++ viewStudy infos.study model.session.user ]
+                                    -- , p [][ text <| "Location:" ++ infos.location]
+                                    , p [] [ text <| "Study: " ++ viewStudy infos.study model.session.user ]
+                                    ]
                                 ]
-                            ]
-                                ++ List.map (\x -> layoutGridCell [] [ viewQuestionCard db model.page.focus.activeQuestion x ]) infos.questions
-                                ++ [ layoutGridCell []
-                                        [ list listConfig <|
-                                            [ listItem
-                                                { listItemConfig
-                                                    | onClick =
-                                                        Just <|
-                                                            Msg.CRUD <|
+                                    ++ List.map (\x -> cell [] [ viewQuestionCard db model.page.focus.activeQuestion x ]) infos.questions
+                                    ++ [ cell []
+                                            [ list MList.config
+                                                (listItem
+                                                    (MLItem.config
+                                                        |> MLItem.setOnClick
+                                                            (Msg.CRUD <|
                                                                 Msg.CreateRandom Db.QuestionType
                                                                     [ \x ->
                                                                         Match.setField
@@ -208,37 +210,40 @@ view (Page.Page model) =
                                                                             , value = Maybe.withDefault 0 <| Maybe.map ((+) 1) infos.max_index
                                                                             }
                                                                     ]
-                                                }
-                                                [ Html.h3 [ Typography.headline3, Html.Attributes.style "justify-content" "center" ] [ text "+" ] ]
+                                                            )
+                                                    )
+                                                    [ Html.h3 [ Typography.headline3, Html.Attributes.style "justify-content" "center" ] [ text "+" ] ]
+                                                )
+                                                []
                                             ]
-                                        ]
 
-                                   -- , layoutGridCell [][
-                                   --     Html.h1 [ Typography.headline5 ] [ text "Questionnaries" ]
-                                   --     , viewList infos.questionnaries (Msg.Follow Db.QuestionaryType)
-                                   --     , unelevatedButton
-                                   --         {buttonConfig| icon = Just "add"
-                                   --                      , onClick =  }
-                                   --         "Add"
-                                   -- ]
-                                   ]
+                                       -- , layoutGridCell [][
+                                       --     Html.h1 [ Typography.headline5 ] [ text "Questionnaries" ]
+                                       --     , viewList infos.questionnaries (Msg.Follow Db.QuestionaryType)
+                                       --     , unelevatedButton
+                                       --         {buttonConfig| icon = Just "add"
+                                       --                      , onClick =  }
+                                       --         "Add"
+                                       -- ]
+                                       ]
+                            ]
                         ]
-                    ]
             }
 
         Nothing ->
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
-                , body = \_ ->
-                    [ layoutGrid []
-                        [ layoutGridInner []
-                            [ layoutGridCell []
-                                [ Html.h1 [ Typography.headline5 ] [ text <| "Questionary not Found" ]
+                , body =
+                    \_ ->
+                        [ layoutGrid []
+                            [ inner []
+                                [ cell []
+                                    [ Html.h1 [ Typography.headline5 ] [ text <| "Questionary not Found" ]
+                                    ]
                                 ]
                             ]
                         ]
-                    ]
             }
 
 
@@ -248,17 +253,15 @@ editableText active activator deactivator value callback =
         -- list {listConfig | nonInteractive = True}
         --     [ listItem listItemConfig
         --         [
-        TextField.textField
-            { textFieldConfig
-                | value = value
-                , onInput = Just callback
-                , onChange = Just deactivator
-                , label = Nothing
-                , outlined = True
-
+        TextField.outlined
+            (TextField.config
+                |> TextField.setValue (Just value)
+                |> TextField.setOnInput callback
+                |> TextField.setOnChange deactivator
+                |> TextField.setLabel Nothing
                 -- , fullwidth = True
-                , additionalAttributes = [ Typography.headline5 ]
-            }
+                |> TextField.setAttributes [ Typography.headline5 ]
+            )
         --     ]
         -- ]
 
@@ -275,7 +278,7 @@ editableText active activator deactivator value callback =
 
 
 viewQuestionCard : Db.Database -> Maybe String -> OrderAware Db.Question -> Html Msg.Msg
-viewQuestionCard db mbCur {id, value, previous, next} =
+viewQuestionCard db mbCur { id, value, previous, next } =
     let
         setMsg x callback =
             Match.setField
@@ -285,98 +288,111 @@ viewQuestionCard db mbCur {id, value, previous, next} =
                 , value = id
                 , id = x
                 }
-        question = value
+
+        question =
+            value
     in
     if mbCur == Just id then
-        Card.card cardConfig
+        Card.card Card.config
             { blocks =
-                [ cardBlock <|
+                [ block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ]
                         [ Result.withDefault (div [] []) <| Match.forms id Db.QuestionType "text" db <| wideTextForm Nothing ]
-                , cardBlock <|
-                    Html.div [ Html.Attributes.style "padding" "1rem" ]
-                        [ Select.outlinedSelect
-                            { selectConfig
-                                | label = "Question Type"
-                                , value = Just (IT.toString question.input_type)
-                                , onChange = Just (\x -> setMsg x Nothing)
-                            }
-                          <|
-                            List.map
+                , block <|
+                    Html.div [ Html.Attributes.style "padding" "1rem" ] <|
+                        let
+                            mlist = List.map
                                 (\x ->
-                                    Select.selectOption
-                                        { selectOptionConfig | value = IT.toString x }
+                                    SelectItem.selectItem
+                                        (SelectItem.config { value = IT.toString x })
                                         [ text <| IT.toString x ]
                                 )
                                 IT.inputTypes
-                        ]
-                , cardBlock <|
+                        in
+                            case mlist of
+                                f :: r ->
+                                    [ Select.outlined
+                                        (Select.config
+                                            |> Select.setLabel (Just "Question Type")
+                                            |> Select.setSelected (Just (IT.toString question.input_type))
+                                            |> Select.setOnChange ((\x -> setMsg x Nothing))
+                                        )
+                                    f
+                                    r
+                                    ]
+                                _ ->
+                                    []
+                , block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ]
                         [ viewInputTypeActive question.input_type <| setMsg (IT.toString question.input_type) ]
                 ]
             , actions =
                 Just <|
-                    cardActions
+                    actions
                         { buttons =
-                            [ cardActionButton buttonConfig
+                            [ Card.button Button.config
                                 "Visit"
                             ]
                         , icons =
                             (case previous of
                                 Just prev ->
-                                    [cardActionIcon {iconButtonConfig | onClick = Just <| Msg.CRUD <| Msg.SwapAttributes Db.QuestionType (prev, id) "index" }
-                                    "arrow_upward"]
+                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( prev, id ) "index"))
+                                        (IconButton.icon "arrow_upward")
+                                    ]
+
                                 Nothing ->
                                     []
                             )
-                            ++ 
-                            (case next of
-                                Just post ->
-                                    [cardActionIcon {iconButtonConfig | onClick = Just <| Msg.CRUD <| Msg.SwapAttributes Db.QuestionType (post, id) "index" }
-                                    "arrow_downward"]
-                                Nothing ->
-                                    []
-                            )
+                                ++ (case next of
+                                        Just post ->
+                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( post, id ) "index"))
+                                                (IconButton.icon "arrow_downward")
+                                            ]
+
+                                        Nothing ->
+                                            []
+                                   )
                         }
             }
 
     else
-        Card.card cardConfig
+        Card.card Card.config
             { blocks =
-                Card.cardPrimaryAction
-                    { cardPrimaryActionConfig
-                        | onClick = Just <| Msg.Questionary <| Msg.CurrentQuestionSelected <| Just id
-                    }
-                    [ cardBlock <|
+                Card.primaryAction
+                    [ Html.Events.onClick <| Msg.Questionary <| Msg.CurrentQuestionSelected <| Just id ]
+                    [ block <|
                         div [ Html.Attributes.style "padding" "1rem", Typography.headline6 ]
                             [ text question.text ]
-                    , cardBlock <|
+                    , block <|
                         Html.div [ Html.Attributes.style "padding" "1rem" ]
                             [ viewInputTypePassive question.input_type ]
                     ]
             , actions =
                 Just <|
-                    cardActions
+                    actions
                         { buttons =
-                            [ cardActionButton buttonConfig
+                            [ Card.button Button.config
                                 "Visit"
                             ]
                         , icons =
                             (case previous of
                                 Just prev ->
-                                    [cardActionIcon iconButtonConfig
-                                    "arrow_upward"]
+                                    [ Card.icon IconButton.config
+                                        (IconButton.icon "arrow_upward")
+                                    ]
+
                                 Nothing ->
                                     []
                             )
-                            ++ 
-                            (case next of
-                                Just post ->
-                                    [cardActionIcon iconButtonConfig
-                                    "arrow_downward"]
-                                Nothing ->
-                                    []
-                            )
+                                ++ (case next of
+                                        Just post ->
+                                            [ Card.icon IconButton.config
+                                                (IconButton.icon "arrow_downward")
+                                            ]
+
+                                        Nothing ->
+                                            []
+                                   )
                         }
             }
 
@@ -385,35 +401,23 @@ viewInputTypeActive : IT.InputType -> (Maybe Updater.Msg -> Msg.Msg) -> Html Msg
 viewInputTypeActive kind callback =
     case kind of
         IT.ShortAnswer config ->
-            TextField.textField
-                { textFieldConfig
-                    | value = ""
-                    , onInput = Nothing
-                    , label = Nothing
-                    , outlined = True
-                }
+            TextField.outlined
+                TextField.config
 
         IT.LongAnswer config ->
-            TextArea.textArea
-                { textAreaConfig
-                    | label = Nothing
-                    , value = ""
-                    , onInput = Nothing
-                    , rows = Just 4
-                    , cols = Just 20
-                }
+            TextArea.filled TextArea.config
 
         IT.List config ->
-            list { listConfig | nonInteractive = True } <|
-                List.indexedMap
+            let
+                mlist = List.indexedMap
                     (\index x ->
-                        listItem listItemConfig
+                        listItem MLItem.config
                             [ viewSingleInputType config.singleInput
-                            , TextField.textField
-                                { textFieldConfig
-                                    | value = x
-                                    , onInput =
-                                        Just <|
+                            , TextField.outlined
+                                (TextField.config
+                                    |> TextField.setValue (Just x)
+                                    |> TextField.setOnInput
+                                        (
                                             \y ->
                                                 callback <|
                                                     Just
@@ -421,13 +425,19 @@ viewInputTypeActive kind callback =
                                                             Updater.ListMixedUpdate index <|
                                                                 Updater.StringMsg y
                                                         )
-                                    , label = Nothing
-                                    , outlined = True
-                                    , placeholder = Just "Add a question"
-                                }
+                                        )
+                                    |> TextField.setPlaceholder (Just "Add a question")
+                                )
                             ]
                     )
                     (config.choices ++ [ "" ])
+            in
+                case mlist of
+                    f :: r ->
+                        list (MList.config |> MList.setNonInteractive True) f r
+                    _ ->
+                        Html.text "No entry"
+                
 
 
 
@@ -439,44 +449,39 @@ viewInputTypePassive : IT.InputType -> Html msg
 viewInputTypePassive kind =
     case kind of
         IT.ShortAnswer config ->
-            TextField.textField
-                { textFieldConfig
-                    | value = ""
-                    , onInput = Nothing
-                    , label = Nothing
-                    , outlined = True
-                }
+            TextField.outlined TextField.config
 
         IT.LongAnswer config ->
-            TextArea.textArea
-                { textAreaConfig
-                    | label = Nothing
-                    , value = ""
-                    , onInput = Nothing
-                    , rows = Just 4
-                    , cols = Just 20
-                }
+            TextArea.outlined TextArea.config
 
         IT.List config ->
-            list { listConfig | nonInteractive = True } <|
-                List.indexedMap
-                    (\index x ->
-                        listItem listItemConfig
-                            [ viewSingleInputType config.singleInput
-                            , text x
-                            ]
-                    )
-                    config.choices
+            let
+                tlist =
+                    List.indexedMap
+                        (\index x ->
+                            listItem MLItem.config
+                                [ viewSingleInputType config.singleInput
+                                , text x
+                                ]
+                        )
+                        config.choices
+            in
+            case tlist of
+                f :: r ->
+                    list (MList.config |> MList.setNonInteractive True) f r
+
+                _ ->
+                    Html.text "List is empty"
 
 
 viewSingleInputType : IT.SingleInputType -> Html msg
 viewSingleInputType kind =
     case kind of
         IT.Box ->
-            Checkbox.checkbox checkboxConfig
+            Checkbox.checkbox Checkbox.config
 
         IT.Radio ->
-            Radio.radio radioConfig
+            Radio.radio Radio.config
 
 
 
@@ -512,10 +517,12 @@ relatedData id db =
     case Dict.get id db.questionnaries of
         Just timestampedQuestionary ->
             let
-                questions = List.sortBy (\( _, y ) -> y.index) <|
-                            List.filter (\( _, y ) -> y.questionary == id) <|
-                                List.map (\( x, y ) -> ( x, y.value )) <|
-                                    Dict.toList db.questions
+                questions =
+                    List.sortBy (\( _, y ) -> y.index) <|
+                        List.filter (\( _, y ) -> y.questionary == id) <|
+                            List.map (\( x, y ) -> ( x, y.value )) <|
+                                Dict.toList db.questions
+
                 questionary =
                     timestampedQuestionary.value
             in
@@ -523,7 +530,7 @@ relatedData id db =
                 { id = id
                 , name = questionary.name
                 , study = ( questionary.study, Maybe.map .value <| Dict.get questionary.study db.studies )
-                , max_index = List.maximum <| List.map (\(_, x)-> (x.index)) questions
+                , max_index = List.maximum <| List.map (\( _, x ) -> x.index) questions
                 , questions = orderAwareList questions
                 , created = Time.millisToPosix timestampedQuestionary.created
                 , creator = ( timestampedQuestionary.creator, Maybe.map .value <| Dict.get timestampedQuestionary.creator db.users )
@@ -578,14 +585,18 @@ viewStudy ( id, mbStudy ) cur =
 
 viewList : List ( String, a ) -> (String -> msg) -> Html msg
 viewList elements onClick =
-    if List.length elements > 0 then
-        list { listConfig | nonInteractive = True } <|
-            List.map (\( x, _ ) -> listItem { listItemConfig | onClick = Just (onClick x) } [ listItemGraphic [] [ identicon "100%" x ], text x ]) elements
+    let
+        mlist =
+            List.map (\( x, _ ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick x)) [ MLItem.graphic [] [ identicon "100%" x ], text x ]) elements
+    in
+    case mlist of
+        f :: r ->
+            list (MList.config |> MList.setNonInteractive True) f r
 
-    else
-        list listConfig
-            [ listItem listItemConfig [ text "Nothing here, create one?" ]
-            ]
+        _ ->
+            list MList.config
+                (listItem MLItem.config [ text "Nothing here, create one?" ])
+                []
 
 
 toTitle : Model -> String
@@ -595,23 +606,22 @@ toTitle _ =
 
 textForm : Maybe String -> Form.FormFunctor msg
 textForm label value callback =
-    TextField.textField
-        { textFieldConfig
-            | value = value
-            , onInput = Just callback
-            , label = label
-            , outlined = True
-        }
+    TextField.outlined
+        (TextField.config
+            |> TextField.setValue (Just value)
+            |> TextField.setOnInput callback
+            |> TextField.setLabel label
+         --|> TextField.setOutlined
+        )
 
 
 wideTextForm : Maybe String -> Form.FormFunctor msg
 wideTextForm label value callback =
-    TextField.textField
-        { textFieldConfig
-            | value = value
-            , onInput = Just callback
-            , label = label
-            , fullwidth = True
-
-            -- , outlined = True
-        }
+    TextField.filled
+        (TextField.config
+            |> TextField.setValue (Just value)
+            |> TextField.setOnInput callback
+            |> TextField.setLabel label
+            |> TextField.setFullwidth True
+         --|> TextField.setOutlined
+        )

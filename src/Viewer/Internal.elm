@@ -4,14 +4,15 @@ import Html exposing (Html,text,div)
 import Html.Attributes
 import Time exposing (Posix)
 import Identicon exposing (identicon)
-import Material.Button as Button exposing (buttonConfig)
-import Material.TopAppBar as TopAppBar exposing (topAppBar)
-import Material.IconButton as IconButton exposing (customIconButton,iconButton, iconButtonConfig)
-import Material.TextField as TextField exposing (textFieldConfig)
-import Material.Icon as Icon exposing (iconConfig)
-import Material.Card as Card exposing (cardConfig, cardPrimaryActionConfig)
+import Material.Button as Button exposing (config)
+import Material.TopAppBar as TopAppBar exposing (config)
+import Material.IconButton as IconButton exposing (customIcon,iconButton, config)
+import Material.TextField as TextField exposing (config)
+import Material.TextField.Icon as TextFieldIcon
+import Material.Icon as Icon exposing (icon)
+import Material.Card as Card exposing (config, primaryAction)
 import Material.Theme as Theme
-import Material.Drawer as Drawer
+import Material.Drawer.Modal as Drawer
 import Material.Typography as Typography
 
 --
@@ -21,16 +22,16 @@ import Material.Typography as Typography
 type alias ViewerConfig msg =
     {
         title : Maybe String,
-        openDrawer : Maybe msg,
+        openDrawer : msg,
         body : Html msg,
-        user : Maybe (Html msg),
+        user : Maybe (Html Never),
         drawerOpen : Bool,
-        closeDrawer : Maybe msg
+        closeDrawer : msg
         , drawerTitle : String
         , drawerSubtitle : Html msg
         , drawerContent : Html msg
         , navButtonIcon : String
-        , navButtonCallback : Maybe msg
+        , navButtonCallback :  msg
     }
 
 --
@@ -42,13 +43,13 @@ type alias TopAppBarConfig msg =
         , navButton : Maybe (NavButtonConfig msg)
         , title : String
         , search : Maybe (SearchConfig msg)
-        , user : Maybe (Html msg)
+        , user : Maybe (Html Never)
     }
 
 type alias NavButtonConfig msg =
     {
         icon : String,
-        message : Maybe msg
+        message : msg
     }
 
 type alias SearchConfig msg =
@@ -81,35 +82,56 @@ viewTopAppBar config =
                         div [] []
 
                     Just s ->
-                        TextField.textField
-                            { textFieldConfig
-                                | trailingIcon = TextField.textFieldIcon iconConfig "search"
-                                , value = s.search
+                        TextField.filled <|
+                            (TextField.config
+                            |> TextField.setTrailingIcon (Just <| TextFieldIcon.icon "search")
+                            |> TextField.setValue (Just <| s.search)
+                            |> TextField.setAttributes [Theme.surface]
+                            |> TextField.setOnInput s.callback
 
-                                --, outlined = True
-                                , additionalAttributes = [ Theme.surface ]
-                                , onInput = Just s.callback
-                            }
+                            -- { textFieldConfig
+                            --     | trailingIcon = TextField.textFieldIcon iconConfig "search"
+                            --     , value = s.search
+
+                            --     --, outlined = True
+                            --     , additionalAttributes = [ Theme.surface ]
+                            --     , onInput = Just s.callback
+                            -- }
+                            )
                 , case config.user of
                     Nothing ->
                         div [] []
 
                     Just s ->
-                        customIconButton
-                            { iconButtonConfig | additionalAttributes = [ TopAppBar.actionItem ] }
-                            [ s ]
+                        IconButton.iconButton
+                            (IconButton.config
+                            |> IconButton.setAttributes [ TopAppBar.actionItem ] )
+                            (IconButton.customIcon Html.i []
+                            [s])
+                        
+                    
+                        -- customIconButton
+                        --     { iconButtonConfig | additionalAttributes = [ TopAppBar.actionItem ] }
+                        --     [ s ]
                 ]
             ]
         ]
 
 navButton : NavButtonConfig msg -> Html msg
 navButton config =
-    iconButton
-        { iconButtonConfig
-            | additionalAttributes = [ TopAppBar.navigationIcon ]
-            , onClick = config.message
-        }
-        config.icon
+    IconButton.iconButton
+        (
+            IconButton.config
+            |> IconButton.setAttributes [TopAppBar.navigationIcon]
+            |> IconButton.setOnClick config.message
+        )
+        <| IconButton.icon config.icon
+    -- iconButton
+    --     { iconButtonConfig
+    --         | additionalAttributes = [ TopAppBar.navigationIcon ]
+    --         , onClick = config.message
+    --     }
+    --     config.icon
 
 --
 -- DRAWER
@@ -133,9 +155,9 @@ viewDrawer config  =
         --             [ TopAppBar.fixedAdjust
         --             ]
         --     }
-            [ Drawer.drawerHeader []
-                [Html.h3 [ Drawer.drawerTitle ] [ config.drawerTitle]
-                , Html.h6 [ Drawer.drawerSubtitle ] [ config.drawerSubtitle ]
+            [ Drawer.header []
+                [Html.h3 [ Drawer.title ] [ config.drawerTitle]
+                , Html.h6 [ Drawer.subtitle ] [ config.drawerSubtitle ]
                 ]
                 -- drawerHeader []
                 -- [ Maybe.map (identicon "100%") detail.user
@@ -165,16 +187,20 @@ type alias CardConfig msg =
 
 viewCard : CardConfig msg -> Html msg
 viewCard config = 
-    Card.card cardConfig
-        { blocks = Card.cardPrimaryAction {cardPrimaryActionConfig | onClick = config.primaryAction}
-            [ Card.cardBlock <|
-                div [Html.Attributes.style "margin-left" "auto"
-                    , Html.Attributes.style "margin-right" "auto"
-                    , Html.Attributes.style "padding-top" "1rem"
-                    , Html.Attributes.style "width" "25%"]
-                [identicon "100%" config.id]
-            , Card.cardBlock <|
-                Html.div [ Html.Attributes.style "padding" "1rem" ]
+    Card.card 
+    
+        Card.config
+        {
+            blocks = [
+                Card.block <|
+                    div 
+                        [Html.Attributes.style "margin-left" "auto"
+                        , Html.Attributes.style "margin-right" "auto"
+                        , Html.Attributes.style "padding-top" "1rem"
+                        , Html.Attributes.style "width" "25%"]
+                        [identicon "100%" config.id]
+                , Card.block <|
+                    Html.div [ Html.Attributes.style "padding" "1rem" ]
                     [ Html.h2
                         [ Typography.headline6
                         , Html.Attributes.style "margin" "0"
@@ -187,24 +213,67 @@ viewCard config =
                         ]
                         [ text "Some interesting Subtitle" ]
                     ]
-            , Card.cardBlock <|
-                Html.div
+                , Card.block <|
+                    Html.div
                     [ Html.Attributes.style "padding" "0 1rem 0.5rem 1rem"
                     , Typography.body2
                     , Theme.textSecondaryOnBackground
                     ]
                     [ Html.p [] [ text "Description" ] ]
             ]
-        , actions =
-            Just <|
-                Card.cardActions
-                    { buttons =
-                        [ Card.cardActionButton buttonConfig
+            , actions = Just <| Card.actions
+                { buttons =
+                        [ Card.button Button.config
                             "Visit"
                         ]
                     , icons =
-                        [ Card.cardActionIcon iconButtonConfig
-                            "favorite"
+                        [ Card.icon IconButton.config
+                            <| IconButton.icon "favorite"
                         ]
                     }
+
         }
+    
+    -- Card.card cardConfig
+    --     { blocks = Card.cardPrimaryAction {cardPrimaryActionConfig | onClick = config.primaryAction}
+    --         [ Card.cardBlock <|
+    --             div [Html.Attributes.style "margin-left" "auto"
+    --                 , Html.Attributes.style "margin-right" "auto"
+    --                 , Html.Attributes.style "padding-top" "1rem"
+    --                 , Html.Attributes.style "width" "25%"]
+    --             [identicon "100%" config.id]
+    --         , Card.cardBlock <|
+    --             Html.div [ Html.Attributes.style "padding" "1rem" ]
+    --                 [ Html.h2
+    --                     [ Typography.headline6
+    --                     , Html.Attributes.style "margin" "0"
+    --                     ]
+    --                     [ text <| "Coding: "++ config.id ]
+    --                 , Html.h3
+    --                     [ Typography.subtitle2
+    --                     , Theme.textSecondaryOnBackground
+    --                     , Html.Attributes.style "margin" "0"
+    --                     ]
+    --                     [ text "Some interesting Subtitle" ]
+    --                 ]
+    --         , Card.cardBlock <|
+    --             Html.div
+    --                 [ Html.Attributes.style "padding" "0 1rem 0.5rem 1rem"
+    --                 , Typography.body2
+    --                 , Theme.textSecondaryOnBackground
+    --                 ]
+    --                 [ Html.p [] [ text "Description" ] ]
+    --         ]
+    --     , actions =
+    --         Just <|
+    --             Card.cardActions
+    --                 { buttons =
+    --                     [ Card.cardActionButton buttonConfig
+    --                         "Visit"
+    --                     ]
+    --                 , icons =
+    --                     [ Card.cardActionIcon iconButtonConfig
+    --                         "favorite"
+    --                     ]
+    --                 }
+    --     }

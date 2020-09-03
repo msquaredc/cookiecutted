@@ -9,14 +9,16 @@ import Html.Attributes exposing (..)
 import Html.Events
 import Identicon exposing (identicon)
 import Json.Decode
-import Material.Button as Button exposing (buttonConfig)
-import Material.Card as Card exposing (card, cardActionButton, cardActionIcon, cardActions, cardBlock, cardConfig, cardPrimaryActionConfig)
-import Material.IconButton exposing (iconButtonConfig)
-import Material.LayoutGrid as LG exposing (layoutGrid, layoutGridCell)
-import Material.List as ListItem exposing (listConfig, listItemConfig)
-import Material.TabBar as TabBar exposing (tabBarConfig, tabConfig)
+import Material.Button as Button
+import Material.Card as Card exposing (card, actions, block)
+import Material.IconButton as IconButton
+import Material.LayoutGrid as LG exposing (layoutGrid, cell)
+import Material.List as MList
+import Material.List.Item as MLItem
+import Material.TabBar as TabBar
 import Material.Theme as Theme
 import Material.Typography as Typography
+import Material.Icon as Icon
 import Msg
 import Page
 import Ports
@@ -160,16 +162,16 @@ view (Page.Page model) =
                             studyOverview user (Page.Page model)
                     in
                     if List.length studies > 0 then
-                        [ layoutGrid [] <| [LG.layoutGridInner [] <|
-                            List.map (\x -> layoutGridCell [] [ x ]) studies
+                        [ layoutGrid [] <| [LG.inner [] <|
+                            List.map (\x -> cell [] [ x ]) studies
                         ]]
 
                     else
                         [ text "Create"
-                        , Button.textButton
-                            { buttonConfig
-                                | onClick =
-                                    Just
+                        , Button.text
+                            (Button.config 
+                                |> Button.setOnClick (
+                                    
                                         (Msg.CRUD
                                             (Msg.CreateRandom Db.StudyType
                                                 [ \x ->
@@ -184,7 +186,9 @@ view (Page.Page model) =
                                                 ]
                                             )
                                         )
-                            }
+                                )
+                            )
+                            
                             "Create"
                         ]
 
@@ -253,10 +257,10 @@ studyCard id study =
 
 viewCodingCard : String -> Db.Database -> Html Msg.Msg
 viewCodingCard user db =
-    card cardConfig
+    card Card.config
         { blocks =
-            Card.cardPrimaryAction cardPrimaryActionConfig
-                [ cardBlock <|
+            Card.primaryAction []
+                [ block <|
                     div
                         [ Html.Attributes.style "margin-left" "auto"
                         , Html.Attributes.style "margin-right" "auto"
@@ -264,7 +268,7 @@ viewCodingCard user db =
                         , Html.Attributes.style "width" "25%"
                         ]
                         [ identicon "100%" user ]
-                , cardBlock <|
+                , block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ]
                         [ Html.h2
                             [ Typography.headline6
@@ -278,7 +282,7 @@ viewCodingCard user db =
                             ]
                             [ text "Some interesting Subtitle" ]
                         ]
-                , cardBlock <|
+                , block <|
                     Html.div
                         [ Html.Attributes.style "padding" "0 1rem 0.5rem 1rem"
                         , Typography.body2
@@ -288,14 +292,14 @@ viewCodingCard user db =
                 ]
         , actions =
             Just <|
-                cardActions
+                actions
                     { buttons =
-                        [ cardActionButton buttonConfig
+                        [ Card.button Button.config
                             "Visit"
                         ]
                     , icons =
-                        [ cardActionIcon iconButtonConfig
-                            "favorite"
+                        [ Card.icon IconButton.config
+                            <| IconButton.icon "favorite"
                         ]
                     }
         }

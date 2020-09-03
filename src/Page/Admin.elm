@@ -5,18 +5,13 @@ module Page.Admin exposing (Model, init, page, parser, update, url, view)
 import Dict
 import Html exposing (a, div, h1, h3, li, p, text, ul)
 import Html.Attributes exposing (class, href)
-import Material.Button exposing (buttonConfig, textButton)
-import Material.DataTable
+import Material.Button as Button exposing (config)
+import Material.DataTable as DataTable
     exposing
         ( dataTable
-        , dataTableCell
-        , dataTableCellConfig
-        , dataTableConfig
-        , dataTableHeaderCell
-        , dataTableHeaderCellConfig
-        , dataTableHeaderRow
-        , dataTableRow
-        , dataTableRowConfig
+        , cell
+        , config
+        , row
         )
 import Msg exposing (AdminMsg)
 import Page exposing (Page(..))
@@ -251,13 +246,14 @@ toTable keys kind db =
         values =
             List.map (\id -> id :: List.map (\fname -> Match.getField id fname kind db |> Maybe.withDefault "") (Match.fields kind)) keys
     in
-    dataTable dataTableConfig
+    DataTable.dataTable 
+        (DataTable.config)
         { thead =
-            [ dataTableHeaderRow [] <|
+            [ row [] <|
                 List.map
                     (\x ->
-                        dataTableHeaderCell
-                            dataTableHeaderCellConfig
+                        cell
+                            []
                             [ text x ]
                     )
                     headers
@@ -265,10 +261,10 @@ toTable keys kind db =
         , tbody =
             List.map
                 (\row ->
-                    dataTableRow dataTableRowConfig <|
+                    DataTable.row [] <|
                         List.map
                             (\x ->
-                                dataTableCell dataTableCellConfig
+                                cell []
                                     [ text x ]
                             )
                             row
@@ -293,18 +289,15 @@ edit db kind id =
                 case Match.forms id kind x db (Viewer.textForm <| Just x) of
                     Ok form ->
                         [ form
-                        , textButton
-                            { buttonConfig
-                                | onClick =
-                                    Just
+                        , Button.text
+                            (Button.config |> Button.setOnClick 
                                         (Msg.Form <|
                                             Form.AttrMsg (Match.toStringPlural kind) <|
                                                 Form.DictMsg (Just id) <|
                                                     Form.AttrMsg "value" <|
                                                         Form.AttrMsg x <|
                                                             Form.StringMsg (Just "Value")
-                                        )
-                            }
+                                        ))
                             "SetValue!"
                         , case
                             Db.database.toString
@@ -336,8 +329,7 @@ edit db kind id =
 
                     Err _ ->
                         [ text "ID not found"
-                        , textButton
-                            { buttonConfig | onClick = Just (Msg.CRUD <| Msg.Create kind id []) }
+                        , Button.text (Button.config |> Button.setOnClick (Msg.CRUD <| Msg.Create kind id []))
                             "Create!"
                         ]
             )
@@ -421,8 +413,7 @@ viewValue id kind db =
     else
         div []
             [ text "No result found! Create One?"
-            , textButton
-                { buttonConfig | onClick = Just (Msg.AdminDb <| Msg.Create kind id []) }
+            , Button.text (Button.config |> Button.setOnClick (Msg.AdminDb <| Msg.Create kind id []) )
                 "Create!"
             ]
 

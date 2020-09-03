@@ -7,8 +7,8 @@ import Html.Attributes
 import Html.Events 
 import Json.Decode exposing (map)
 import List.Extra
-import Material.Checkbox as Checkbox exposing (checkboxConfig)
-import Material.TextField as TextField exposing (textFieldConfig)
+import Material.Checkbox as Checkbox exposing (config)
+import Material.TextField as TextField exposing (config)
 import Maybe.Extra
 
 
@@ -141,13 +141,13 @@ bool _ callback kind _ f =
         bool2state state =
             case state of
                 Just True ->
-                    Checkbox.Checked
+                    Checkbox.checked
 
                 Just False ->
-                    Checkbox.Unchecked
+                    Checkbox.unchecked
 
                 Nothing ->
-                    Checkbox.Indeterminate
+                    Checkbox.indeterminate
     in
     Ok <|
         f (if kind then "TRUE" else "FALSE") (\x -> callback <| BoolMsg <| Just (x == "TRUE") )

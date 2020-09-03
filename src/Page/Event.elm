@@ -10,11 +10,12 @@ import Session
 import Identicon exposing (identicon)
 import Time exposing (Posix)
 import Viewer exposing (detailsConfig)
-import Material.LayoutGrid as LG exposing (layoutGrid, layoutGridCell, layoutGridInner)
+import Material.LayoutGrid as LG exposing (layoutGrid, cell, inner)
 import Material.Typography as Typography
-import Material.Button as Button exposing (unelevatedButton, buttonConfig)
+import Material.Button as Button exposing (unelevated)
 import Type.Database as Db
-import Material.List exposing (list,listConfig, listItem, listItemConfig, listItemGraphic)
+import Material.List as MList exposing (list)
+import Material.List.Item as MLItem
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
 
@@ -89,8 +90,8 @@ view (Page.Page model) =
                 , body =\_ -> 
                     [
                         layoutGrid [Typography.typography] [
-                            layoutGridInner [][
-                                layoutGridCell [][
+                            inner [][
+                                cell [][
                                     Html.h1 [ Typography.headline5 ] [ text <| "Event: "++ infos.id ]
                                     , p [][ text <| "Location:" ++ infos.location]
                                     --, p [][ text <| "Leader: " ++ viewLeader infos.leader model.session.user]                                   
@@ -131,8 +132,8 @@ view (Page.Page model) =
                 , body = \_ -> 
                     [
                         layoutGrid [] [
-                            layoutGridInner [][
-                                layoutGridCell [][
+                            inner [][
+                                cell [][
                                     Html.h1 [ Typography.headline5 ] [ text <| "Event not Found" ]
                                 ]
                             ]
@@ -184,14 +185,21 @@ viewLeader (id, mbLeader) cur =
 
 viewList : List (String, a) -> (String -> msg) -> Html msg
 viewList elements onClick =
-    if List.length elements > 0 then
-        list listConfig <|
-            List.map (\(x,_) -> listItem {listItemConfig | onClick = Just (onClick x)} [ listItemGraphic [] [ identicon "100%" x],text x ]) elements
-    else
-        list listConfig 
-            [
-                listItem listItemConfig [ text "Nothing here, create one?"]
-            ]
+    let
+        iList = List.map (\(x,_) -> 
+                    MLItem.listItem 
+                        (MLItem.config |> MLItem.setOnClick (onClick x))
+                        [ MLItem.graphic [] [ identicon "100%" x],text x ]) elements
+    in
+        case iList of
+            f :: r ->
+                list MList.config f r
+            _ ->
+                list MList.config 
+                    (
+                        MLItem.listItem MLItem.config [ text "Nothing here, create one?"]
+                    )
+                    []
 
 toTitle : Model -> String
 toTitle _ =
