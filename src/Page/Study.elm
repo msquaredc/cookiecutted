@@ -10,6 +10,8 @@ import Material.LayoutGrid as LG exposing (layoutGrid, cell, inner)
 import Material.List as MList exposing (list)
 import Material.List.Item as MLItem exposing (listItem, graphic)
 import Material.Typography as Typography
+import Material.Icon as Icon
+import Material.IconButton as IconButton
 import Msg
 import Page exposing (Page(..))
 import Session
@@ -106,7 +108,7 @@ view (Page.Page model) =
                                 , viewList infos.events (Msg.Follow Db.EventType) .place
                                 , unelevated
                                     (Button.config
-                                        |> Button.setIcon (Just "add")
+                                        |> Button.setIcon (Just <| Button.icon "add")
                                         |> Button.setOnClick (
                                             --Just <|
                                                 Msg.CRUD <|
@@ -128,7 +130,7 @@ view (Page.Page model) =
                                 , viewList infos.questionnaries (Msg.Follow Db.QuestionaryType) .name
                                 , unelevated
                                     (Button.config 
-                                        |> Button.setIcon (Just "add")
+                                        |> Button.setIcon (Just <| Button.icon "add")
                                         |> Button.setOnClick (
                                             --Just <|
                                                 Msg.CRUD <|

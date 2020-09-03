@@ -6,8 +6,9 @@ import Time exposing (Posix)
 import Identicon exposing (identicon)
 import Material.Button as Button exposing (config)
 import Material.TopAppBar as TopAppBar exposing (config)
-import Material.IconButton as IconButton exposing (custom, iconButton, config)
+import Material.IconButton as IconButton exposing (customIcon,iconButton, config)
 import Material.TextField as TextField exposing (config)
+import Material.TextField.Icon as TextFieldIcon
 import Material.Icon as Icon exposing (icon)
 import Material.Card as Card exposing (config, primaryAction)
 import Material.Theme as Theme
@@ -23,7 +24,7 @@ type alias ViewerConfig msg =
         title : Maybe String,
         openDrawer : msg,
         body : Html msg,
-        user : Maybe (Html msg),
+        user : Maybe (Html Never),
         drawerOpen : Bool,
         closeDrawer : msg
         , drawerTitle : String
@@ -42,7 +43,7 @@ type alias TopAppBarConfig msg =
         , navButton : Maybe (NavButtonConfig msg)
         , title : String
         , search : Maybe (SearchConfig msg)
-        , user : Maybe (Html msg)
+        , user : Maybe (Html Never)
     }
 
 type alias NavButtonConfig msg =
@@ -83,7 +84,7 @@ viewTopAppBar config =
                     Just s ->
                         TextField.filled <|
                             (TextField.config
-                            |> TextField.setTrailingIcon (Just <| TextField.icon [] "search")
+                            |> TextField.setTrailingIcon (Just <| TextFieldIcon.icon "search")
                             |> TextField.setValue (Just <| s.search)
                             |> TextField.setAttributes [Theme.surface]
                             |> TextField.setOnInput s.callback
@@ -102,12 +103,13 @@ viewTopAppBar config =
                         div [] []
 
                     Just s ->
-                        custom (
-
+                        IconButton.iconButton
                             (IconButton.config
-                            |> IconButton.setAttributes [ TopAppBar.actionItem ])
-                            )
-                            [s]
+                            |> IconButton.setAttributes [ TopAppBar.actionItem ] )
+                            (IconButton.customIcon Html.i []
+                            [s])
+                        
+                    
                         -- customIconButton
                         --     { iconButtonConfig | additionalAttributes = [ TopAppBar.actionItem ] }
                         --     [ s ]
@@ -123,7 +125,7 @@ navButton config =
             |> IconButton.setAttributes [TopAppBar.navigationIcon]
             |> IconButton.setOnClick config.message
         )
-        config.icon
+        <| IconButton.icon config.icon
     -- iconButton
     --     { iconButtonConfig
     --         | additionalAttributes = [ TopAppBar.navigationIcon ]
@@ -226,7 +228,7 @@ viewCard config =
                         ]
                     , icons =
                         [ Card.icon IconButton.config
-                            "favorite"
+                            <| IconButton.icon "favorite"
                         ]
                     }
 

@@ -14,12 +14,13 @@ import Material.Button as Button exposing (text, unelevated)
 import Material.Dialog as Dialog exposing (dialog, config)
 import Material.Drawer.Dismissible as Drawer exposing (config, content, header)
 import Material.Icon as Icon exposing (icon)
-import Material.IconButton as IconButton exposing (custom, iconButton, config)
+import Material.IconButton as IconButton exposing (customIcon, iconButton, config)
 import Material.LayoutGrid as LayoutGrid exposing (cell)
 import Material.List as MList exposing (list, config, group, subheader)
 import Material.List.Item as MLItem exposing (listItem, text, config,  graphic)
 import Material.List.Divider as MLDivider exposing (listItem, config)
 import Material.TextField as TextField exposing (config)
+import Material.TextField.Icon as TextFieldIcon
 import Material.Theme as Theme
 import Material.TopAppBar as TopAppBar exposing (regular, config)
 import Material.Typography as Typography
@@ -267,7 +268,7 @@ viewHeader2 config details =
                     (IconButton.config
                         |> IconButton.setAttributes [ TopAppBar.navigationIcon ] 
                         |> IconButton.setOnClick (toggleDrawer config.drawerOpen))
-                    "menu"
+                    <| IconButton.icon "menu"
                 , Html.span
                     [ TopAppBar.title
 
@@ -285,7 +286,7 @@ viewHeader2 config details =
                     Just s ->
                         TextField.filled
                             ( TextField.config
-                                |> TextField.setTrailingIcon (Just <| TextField.icon [] "search")
+                                |> TextField.setTrailingIcon (Just <| TextFieldIcon.icon "search")
                                 |> TextField.setValue (Just s)
                                 |> TextField.setAttributes [Theme.surface]
                                 |> TextField.setOnInput Msg.Search
@@ -295,9 +296,11 @@ viewHeader2 config details =
                         div [] []
 
                     Just s ->
-                        IconButton.custom 
+                        IconButton.iconButton
+                        
                             (IconButton.config |> IconButton.setAttributes [TopAppBar.actionItem ])
-                            [ identicon "100%" s ]
+                            <| IconButton.customIcon Html.i []
+                                [ identicon "100%" s ]
                 ]
             ]
         ]
@@ -588,7 +591,7 @@ userDialog open users new_username time =
                     , Button.unelevated
                         (Button.config 
                             |> Button.setAttributes [ Html.Attributes.style "margin-left" "16px"]
-                            |> Button.setIcon (Just "add"))
+                            |> Button.setIcon (Just <| Button.icon "add"))
                         "add"
                     ]
                 )

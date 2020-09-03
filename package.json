@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "elm-json": "^0.2.7",
-    "material-components-web-elm": "^4.0.0",
+    "material-components-web-elm": "^5.0.0",
     "typeface-roboto": "0.0.75",
     "webpack-icons-installer": "^2.0.0"
   }

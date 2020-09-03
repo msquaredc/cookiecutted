@@ -299,7 +299,7 @@ viewCodingCard user db =
                         ]
                     , icons =
                         [ Card.icon IconButton.config
-                            "favorite"
+                            <| IconButton.icon "favorite"
                         ]
                     }
         }

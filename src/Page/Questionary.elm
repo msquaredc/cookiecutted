@@ -337,7 +337,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             (case previous of
                                 Just prev ->
                                     [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( prev, id ) "index"))
-                                        "arrow_upward"
+                                        (IconButton.icon "arrow_upward")
                                     ]
 
                                 Nothing ->
@@ -346,7 +346,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                                 ++ (case next of
                                         Just post ->
                                             [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( post, id ) "index"))
-                                                "arrow_downward"
+                                                (IconButton.icon "arrow_downward")
                                             ]
 
                                         Nothing ->
@@ -378,7 +378,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             (case previous of
                                 Just prev ->
                                     [ Card.icon IconButton.config
-                                        "arrow_upward"
+                                        (IconButton.icon "arrow_upward")
                                     ]
 
                                 Nothing ->
@@ -387,7 +387,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                                 ++ (case next of
                                         Just post ->
                                             [ Card.icon IconButton.config
-                                                "arrow_downward"
+                                                (IconButton.icon "arrow_downward")
                                             ]
 
                                         Nothing ->
