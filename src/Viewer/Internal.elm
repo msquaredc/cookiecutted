@@ -14,6 +14,7 @@ import Material.Card as Card exposing (config, primaryAction)
 import Material.Theme as Theme
 import Material.Drawer.Modal as Drawer
 import Material.Typography as Typography
+import Html.Events
 
 --
 -- External
@@ -187,52 +188,59 @@ type alias CardConfig msg =
 
 viewCard : CardConfig msg -> Html msg
 viewCard config = 
-    Card.card 
-    
-        Card.config
-        {
-            blocks = [
-                Card.block <|
-                    div 
-                        [Html.Attributes.style "margin-left" "auto"
-                        , Html.Attributes.style "margin-right" "auto"
-                        , Html.Attributes.style "padding-top" "1rem"
-                        , Html.Attributes.style "width" "25%"]
-                        [identicon "100%" config.id]
-                , Card.block <|
-                    Html.div [ Html.Attributes.style "padding" "1rem" ]
-                    [ Html.h2
-                        [ Typography.headline6
-                        , Html.Attributes.style "margin" "0"
+    let
+        primod x = case config.primaryAction of
+                        Just pA ->
+                            Card.primaryAction [Html.Events.onClick pA] x
+                        Nothing ->
+                            x
+    in
+        Card.card
+        
+            Card.config
+            {
+                blocks = primod [
+                    Card.block <|
+                        div 
+                            [Html.Attributes.style "margin-left" "auto"
+                            , Html.Attributes.style "margin-right" "auto"
+                            , Html.Attributes.style "padding-top" "1rem"
+                            , Html.Attributes.style "width" "25%"]
+                            [identicon "100%" config.id]
+                    , Card.block <|
+                        Html.div [ Html.Attributes.style "padding" "1rem" ]
+                        [ Html.h2
+                            [ Typography.headline6
+                            , Html.Attributes.style "margin" "0"
+                            ]
+                            [ text <| "Coding: "++ config.id ]
+                        , Html.h3
+                            [ Typography.subtitle2
+                            , Theme.textSecondaryOnBackground
+                            , Html.Attributes.style "margin" "0"
+                            ]
+                            [ text "Some interesting Subtitle" ]
                         ]
-                        [ text <| "Coding: "++ config.id ]
-                    , Html.h3
-                        [ Typography.subtitle2
+                    , Card.block <|
+                        Html.div
+                        [ Html.Attributes.style "padding" "0 1rem 0.5rem 1rem"
+                        , Typography.body2
                         , Theme.textSecondaryOnBackground
-                        , Html.Attributes.style "margin" "0"
                         ]
-                        [ text "Some interesting Subtitle" ]
-                    ]
-                , Card.block <|
-                    Html.div
-                    [ Html.Attributes.style "padding" "0 1rem 0.5rem 1rem"
-                    , Typography.body2
-                    , Theme.textSecondaryOnBackground
-                    ]
-                    [ Html.p [] [ text "Description" ] ]
-            ]
-            , actions = Just <| Card.actions
-                { buttons =
-                        [ Card.button Button.config
-                            "Visit"
-                        ]
-                    , icons =
-                        [ Card.icon IconButton.config
-                            <| IconButton.icon "favorite"
-                        ]
-                    }
+                        [ Html.p [] [ text "Description" ] ]
+                ]
+                , actions = Just <| Card.actions
+                    { buttons =
+                            [ Card.button Button.config
+                                "Visit"
+                            ]
+                        , icons =
+                            [ Card.icon IconButton.config
+                                <| IconButton.icon "favorite"
+                            ]
+                        }
 
-        }
+            }
     
     -- Card.card cardConfig
     --     { blocks = Card.cardPrimaryAction {cardPrimaryActionConfig | onClick = config.primaryAction}
