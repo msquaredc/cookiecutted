@@ -20,6 +20,7 @@ import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
 import Viewer exposing (detailsConfig)
+import Viewer.EditableText as EditableText
 
 
 
@@ -31,6 +32,7 @@ import Viewer exposing (detailsConfig)
 
 type alias Model =
     { id : String
+    , nameFocus : Bool
     }
 
 
@@ -38,17 +40,28 @@ type alias Model =
 -- INIT
 
 
-init : String -> Model
+init : String -> Bool -> Model
 init =
-    Model
+    Model 
+     {-
+        { active = False
+        , activator = Msg.Study <| Msg.StudyNameEdit Msg.GetFocus
+        , deactivator = Msg.Study <| Msg.StudyNameEdit Msg.LooseFocus
+        , callback = \y -> Match.setField
+                                { kind = Db.StudyType
+                                , attribute = "name"
+                                , setter = Updater.StringMsg
+                                , id = model.page.id
+                                , value = y
+                                }}
+    -}
 
-
-page : Session.Session -> String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
-page session id =
+page : Session.Session -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page session id focus=
     let
         model =
             { session = session
-            , page = init id
+            , page = Model id focus
             , view = view
             , toMsg = identity
 
@@ -70,8 +83,22 @@ update message (Page model) =
     case message of
         Msg.Study msg ->
             case msg of
-                Msg.StudyMsgNothing ->
-                    ( Page model, Cmd.none )
+                Msg.StudyNameEdit msg_ ->
+                    case msg_ of
+                        Msg.GetFocus ->
+                            let
+                                old_page = model.page
+                                new_page = {old_page | nameFocus = True}
+                            in
+                            
+                            ( Page {model| page = new_page}, Cmd.none )
+                        Msg.LooseFocus ->
+                            let
+                                old_page = model.page
+                                new_page = {old_page | nameFocus = False}
+                            in
+                            
+                            ( Page {model| page = new_page}, Cmd.none )
 
         _ ->
             ( Page model, Cmd.none )
@@ -89,6 +116,18 @@ view (Page.Page model) =
 
         mbInfos =
             relatedData model.page.id db
+
+        econf =
+            { active = model.page.nameFocus
+            , activator = Msg.Study <| Msg.StudyNameEdit Msg.GetFocus
+            , deactivator = \_ -> (Msg.Study <| Msg.StudyNameEdit Msg.LooseFocus)
+            , callback = \z -> Match.setField
+                                    { kind = Db.StudyType
+                                    , attribute = "name"
+                                    , setter = Updater.StringMsg
+                                    , id = model.page.id
+                                    , value = z
+                                }}
     in
     case mbInfos of
         Just infos ->
@@ -99,13 +138,15 @@ view (Page.Page model) =
                     [ layoutGrid [ Typography.typography ]
                         [ inner[]
                             [ cell []
-                                [ Html.h1 [ Typography.headline5 ] [ text "Study: ", text infos.title ]
+                                [ Html.h1 [ Typography.headline5 ] [ {-text "Study: ",-} EditableText.text 
+                                                                        econf
+                                                                        [] infos.title ]
                                 , p [] [ text <| "Description:" ++ infos.description ]
                                 , p [] [ text <| "Leader: " ++ viewLeader infos.leader model.session.user ]
                                 ]
                             , cell []
                                 [ Html.h1 [ Typography.headline5 ] [ text "Events" ]
-                                , viewList infos.events (Msg.Follow Db.EventType) .place
+                                , viewList infos.events (Msg.Follow Db.EventType) .name
                                 , unelevated
                                     (Button.config
                                         |> Button.setIcon (Just <| Button.icon "add")

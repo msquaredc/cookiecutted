@@ -571,7 +571,7 @@ updateSession model session =
             mapPageMsg model PageWithSubpage (PageWithSubpage.page session m.page.subpage)
 
         Study (Page.Page m) ->
-            Study.page session m.page.id
+            Study.page session m.page.id m.page.nameFocus
                 |> (\( x, y ) -> ( { model | page = Study x }, y ))
 
         Event (Page.Page m) ->
@@ -637,7 +637,7 @@ parser model session =
         , route (Parser.s paths.pageOne)
             (mapPageMsg model PageOne (PageOne.page session))
         , route (Parser.s paths.study </> Parser.string)
-            (\id -> mapPageMsg model Study (Study.page session id))
+            (\id -> mapPageMsg model Study (Study.page session id False))
         , route (Parser.s paths.event </> Parser.string)
             (\id -> mapPageMsg model Event (Event.page session id))
         , route (Parser.s paths.questionary </> Parser.string)

@@ -216,6 +216,7 @@ type alias Event =
     { place : String
     , day : Int
     , study : String
+    , name : String
     }
 
 
@@ -223,6 +224,7 @@ type alias EventView =
     { place : Place
     , day : Int
     , study : Study
+    , name : String
     }
 
 
@@ -232,6 +234,8 @@ event =
         |> reference "place" string .place .places Dict.get .value
         |> attribute "day" int .day
         |> reference "study" string .study .studies Dict.get .value
+        |> attribute "name" string .name
+        |> updateEmpty (\x -> { x | name = "Unnamed Event" })
 
 
 type alias Place =

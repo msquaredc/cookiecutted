@@ -113,29 +113,30 @@ update message (Page model) =
                             { oldmodel | focus = newfocus }
                     in
                     ( Page { model | page = newmodel }, Cmd.none )
+                Msg.QuestionNameEdit msg_ ->
+                    case msg_ of
+                        Msg.GetFocus ->
+                            let
+                                newfocus =
+                                    { oldfocus
+                                        | activeQuestion = Nothing
+                                        , titleFocused = True
+                                    }
 
-                Msg.FocusTitle ->
-                    let
-                        newfocus =
-                            { oldfocus
-                                | activeQuestion = Nothing
-                                , titleFocused = True
-                            }
+                                oldfocus =
+                                    oldmodel.focus
 
-                        oldfocus =
-                            oldmodel.focus
+                                newmodel =
+                                    { oldmodel | focus = newfocus }
+                            in
+                            ( Page { model | page = newmodel }, Cmd.none )
 
-                        newmodel =
-                            { oldmodel | focus = newfocus }
-                    in
-                    ( Page { model | page = newmodel }, Cmd.none )
-
-                Msg.LooseFocus ->
-                    let
-                        newmodel =
-                            { oldmodel | focus = defaultFokus }
-                    in
-                    ( Page { model | page = newmodel }, Cmd.none )
+                        Msg.LooseFocus ->
+                            let
+                                newmodel =
+                                    { oldmodel | focus = defaultFokus }
+                            in
+                            ( Page { model | page = newmodel }, Cmd.none )
 
         _ ->
             ( Page model, Cmd.none )
@@ -167,8 +168,8 @@ view (Page.Page model) =
                                     [ Html.h1 [ Typography.headline5 ]
                                         [ editableText
                                             model.page.focus.titleFocused
-                                            (Msg.Questionary Msg.FocusTitle)
-                                            (\x -> Msg.Questionary Msg.LooseFocus)
+                                            (Msg.Questionary <| Msg.QuestionNameEdit <| Msg.GetFocus)
+                                            (\x -> Msg.Questionary <| Msg.QuestionNameEdit <| Msg.LooseFocus)
                                             infos.name
                                           <|
                                             \x ->

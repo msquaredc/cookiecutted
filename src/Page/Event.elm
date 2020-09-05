@@ -18,6 +18,7 @@ import Material.List as MList exposing (list)
 import Material.List.Item as MLItem
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Viewer.EditableText as EditableText
 
 {-
    This is a page with subpages. You can change the behaviour depending on the subpage path!

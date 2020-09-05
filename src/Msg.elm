@@ -10,6 +10,7 @@ module Msg exposing
     , StudyMsg(..)
     , EventMsg(..)
     , QuestionaryMsg(..)
+    , EditableTextMsg(..)
     )
 
 import Browser
@@ -61,18 +62,19 @@ type TopMsg
     | ClearLocalStorage
    
 
-
+type EditableTextMsg
+    = GetFocus
+    | LooseFocus
 
 type StudyMsg
-    = StudyMsgNothing
+    = StudyNameEdit EditableTextMsg
 
 type EventMsg
     = EventMsgNothing
 
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
-    | FocusTitle
-    | LooseFocus
+    | QuestionNameEdit EditableTextMsg
     
 
 
