@@ -83,7 +83,7 @@ update msg model =
 -- VIEW
 
 
-toggleDrawer : Bool -> Msg.Msg
+toggleDrawer : Bool -> Msg.Msg a
 toggleDrawer drawerOpen =
     Msg.Viewer <|
         if drawerOpen then
@@ -93,7 +93,7 @@ toggleDrawer drawerOpen =
             Msg.OpenDrawer
 
 
-view : Session.Session -> (a -> Msg.Msg) -> Details Msg.Msg -> Header -> Maybe Posix -> Browser.Document Msg.Msg
+view : Session.Session -> (a -> Msg.Msg b) -> Details (Msg.Msg String) -> Header -> Maybe Posix -> Browser.Document (Msg.Msg String)
 view session msg details h time =
     { title = details.title ++ Utils.genericTitle
     , body =
@@ -203,7 +203,7 @@ view session msg details h time =
 -}
 
 
-viewDrawerContent : Int -> Html Msg.Msg
+viewDrawerContent : Int -> Html (Msg.Msg a)
 viewDrawerContent selectedIndex =
     let
         listItemConfig_ index =
@@ -480,7 +480,7 @@ wideTextForm label value callback =
             |> TextField.setFullwidth True)
 
 
-selectUser : List String -> List (Html Msg.Msg)
+selectUser : List String -> List (Html (Msg.Msg a))
 selectUser users =
     if List.length users > 0 then
         if List.length users == 1 then
@@ -517,7 +517,7 @@ selectUser users =
         ]
 
 
-userDialog : Bool -> List ( String, Db.User ) -> String -> Maybe Posix -> Html Msg.Msg
+userDialog : Bool -> List ( String, Db.User ) -> String -> Maybe Posix -> Html (Msg.Msg String)
 userDialog open users new_username time =
     let
         addUserWithName username =
