@@ -231,6 +231,7 @@ studyCard id study =
         { defaultCardConfig
             | id = id
             , primaryAction = Just <| Msg.Follow Db.StudyType id
+            , title = study.name
         }
 
 

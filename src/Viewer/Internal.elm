@@ -177,12 +177,14 @@ defaultCardConfig : CardConfig msg
 defaultCardConfig = 
     {
         id = "",
+        title= "",
         primaryAction = Nothing
     }
 
 type alias CardConfig msg =
     {
         id : String,
+        title: String,
         primaryAction : Maybe msg
     }
 
@@ -213,7 +215,7 @@ viewCard config =
                             [ Typography.headline6
                             , Html.Attributes.style "margin" "0"
                             ]
-                            [ text <| "Coding: "++ config.id ]
+                            [ text <| config.title ]
                         , Html.h3
                             [ Typography.subtitle2
                             , Theme.textSecondaryOnBackground

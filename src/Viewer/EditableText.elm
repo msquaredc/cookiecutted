@@ -29,7 +29,7 @@ text c attributes value =
                 |> TextField.setOnChange c.deactivator
                 |> TextField.setLabel Nothing
                 -- , fullwidth = True
-                |> TextField.setAttributes attributes
+                |> TextField.setAttributes ((onBlur <| c.deactivator "") :: attributes)
             )
         --     ]
         -- ]
