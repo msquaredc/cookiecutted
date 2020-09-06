@@ -5,6 +5,7 @@ import Material.TextField as TextField
 import Html exposing (div)
 import Html.Events exposing (onClick)
 import Msg exposing (EditableTextMsg)
+import Html.Events exposing (onBlur)
 
 type alias Config msg =
     { active : Bool
@@ -24,6 +25,7 @@ text c attributes value =
             (TextField.config
                 |> TextField.setValue (Just value)
                 |> TextField.setOnInput c.callback
+                
                 |> TextField.setOnChange c.deactivator
                 |> TextField.setLabel Nothing
                 -- , fullwidth = True
@@ -36,4 +38,4 @@ text c attributes value =
         -- list {listConfig | nonInteractive = True }
         --     [ listItem {listItemConfig | onClick = Just activator}
         --         [
-        div ((onClick <| c.activator) :: attributes) [ Html.text value ]
+        div ((onClick <| c.activator) :: (onBlur <| c.deactivator "") :: attributes) [ Html.text value ]
