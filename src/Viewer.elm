@@ -258,7 +258,7 @@ viewDrawerContent selectedIndex =
         ]
 
 
-viewHeader2 : Header -> Details Msg.Msg -> Html Msg.Msg
+viewHeader2 : Header -> Details (Msg.Msg a) -> Html (Msg.Msg a)
 viewHeader2 config details =
     regular (TopAppBar.config
                 |> TopAppBar.setFixed True) 

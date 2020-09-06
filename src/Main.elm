@@ -252,6 +252,17 @@ defaultUpdate message ( model, effect ) =
                                     _ ->
                                         updateDbSession model session newDb
                     Msg.SwapAttributes kind (first, second) attribute ->
+                        let
+                            newDb =  Match.swapFields 
+                                        { kind = kind
+                                        , attribute = attribute
+                                        , id = first}
+                                        {kind = kind
+                                        , attribute = attribute
+                                        , id = second}
+                        in
+                        
+                       
                         (model, Cmd.none)
             Msg.Form msg ->
                 case form2update msg of

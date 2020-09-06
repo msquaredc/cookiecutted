@@ -234,10 +234,10 @@ keys kind db =
             g db.users
 
 
-forms : String -> Type -> String -> Type.Database.Database -> (String -> (String -> Msg.Msg) -> Html Msg.Msg) -> Result Form.Error (Html.Html Msg.Msg)
+forms : String -> Type -> String -> Type.Database.Database -> (String -> (String -> Msg.Msg a) -> Html (Msg.Msg a)) -> Result Form.Error (Html.Html (Msg.Msg a))
 forms id kind acc db f =
     let
-        m : UpdateMsg -> Msg.Msg
+        m : UpdateMsg -> Msg.Msg a
         m =
             \x ->
                 Msg.Form <|
@@ -343,7 +343,7 @@ getField id fname kind db =
         |> Result.toMaybe
 
 
-getTimestampUpdaterMsg : Type -> String -> String -> Posix -> Msg.Msg
+getTimestampUpdaterMsg : Type -> String -> String -> Posix -> Msg.Msg a
 getTimestampUpdaterMsg kind id attribute time =
     Msg.CRUD <|
         Msg.Update <|
@@ -354,7 +354,7 @@ getTimestampUpdaterMsg kind id attribute time =
                             posixToMillis time
 
 
-setTimestamp : Type -> String -> String -> Cmd Msg.Msg
+setTimestamp : Type -> String -> String -> Cmd (Msg.Msg a)
 setTimestamp kind id attribute =
     getTimestampUpdaterMsg kind id attribute
         |> (\x -> perform x now)
@@ -369,7 +369,7 @@ type alias FieldConfig a =
         value : a
     }
 
-setField : FieldConfig a -> Msg.Msg
+setField : FieldConfig a -> Msg.Msg a
 setField {kind, attribute, setter, id, value} =
     Msg.CRUD <|
         Msg.Update <|
@@ -378,6 +378,14 @@ setField {kind, attribute, setter, id, value} =
                     Updater.AttributeMsg "value" <|
                         Updater.AttributeMsg attribute <|
                             setter value
+
+setFieldRaw : FieldConfig a -> Updater.Msg
+setFieldRaw {kind, attribute, setter, id, value} =
+    Updater.AttributeMsg (toStringPlural kind) <|
+        Updater.DictKeyMsg id <|
+            Updater.AttributeMsg "value" <|
+                Updater.AttributeMsg attribute <|
+                    setter value
 
 type alias FieldUpdateConfig a =
     {
@@ -395,10 +403,18 @@ updateField config updater =
                 Updater.AttributeMsg config.attribute <|
                     config.setter updater
 
--- swapFields : FieldUpdateConfig a -> FieldUpdateConfig a -> Database -> Database
--- swapFields first second db = 
---     let
---         firstMsg x = database.updater (updateField first x) db
---         secondMsg y = database.updater (updateField second y) db
---     in
---         Tuple.mapBoth (\x -> database.updater (firstMsg x) db) (\y -> database.updater (secondMsg y) db)
+swapFields : FieldConfig a -> FieldConfig a -> Database -> Database
+swapFields f s db = 
+    let
+        newf = {f|value = s.value}
+        news = {s|value = f.value}
+        oldf = getField f.id f.attribute f.kind db
+        olds = getField s.id s.attribute s.kind db
+    in
+        case (oldf, olds) of
+            (Just _, Just _) ->
+                database.updater (setFieldRaw newf) db
+                |> Result.andThen (database.updater (setFieldRaw news))
+                |> Result.withDefault db
+            _ -> db
+        --Tuple.mapBoth (\x -> database.updater (firstMsg x) db) (\y -> database.updater (secondMsg y) db)

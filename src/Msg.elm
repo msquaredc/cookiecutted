@@ -22,7 +22,7 @@ import Time exposing (Posix)
 import Url
 
 
-type Msg
+type Msg a
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | OnWindowResize Int Int
@@ -30,7 +30,7 @@ type Msg
     | Viewer ViewerMsg
     | Top TopMsg
     | User UserMsg
-    | Admin AdminMsg
+    | Admin (AdminMsg a)
       -- | NewPageMsg NewPage.Msg
     | PageOne PageOneMsg
     | Study StudyMsg
@@ -40,7 +40,7 @@ type Msg
     | Db Updater.Msg
     | OnDbChange Json.Encode.Value
     | Search String
-    | CRUD DbMsg
+    | CRUD (DbMsg a)
     | Form UpdateMsg
     | Follow Type String
     | SetUser String
@@ -78,11 +78,11 @@ type QuestionaryMsg
     
 
 
-type DbMsg
-    = Create Type String (List (String -> Msg))
-    | CreateRandom Type (List (String -> Msg))
+type DbMsg a
+    = Create Type String (List (String -> Msg a))
+    | CreateRandom Type (List (String -> Msg a))
     | Update Updater.Msg
-    | SwapAttributes Type (String, String) String
+    | SwapAttributes Type (String, String) String (a -> Updater.Msg)
 
 
 type PageOneMsg
@@ -97,7 +97,7 @@ type UserMsg
     = UserNothing
 
 
-type AdminMsg
+type AdminMsg a
     = AdminForm UpdateMsg
-    | AdminDb DbMsg
+    | AdminDb (DbMsg a)
     | ValueChanged String

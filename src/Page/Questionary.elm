@@ -337,7 +337,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                         , icons =
                             (case previous of
                                 Just prev ->
-                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( prev, id ) "index"))
+                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( prev, id ) "index" .index))
                                         (IconButton.icon "arrow_upward")
                                     ]
 
@@ -346,7 +346,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             )
                                 ++ (case next of
                                         Just post ->
-                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( post, id ) "index"))
+                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( post, id ) "index" .index))
                                                 (IconButton.icon "arrow_downward")
                                             ]
 
