@@ -10,6 +10,7 @@ module Msg exposing
     , StudyMsg(..)
     , EventMsg(..)
     , QuestionaryMsg(..)
+    , QuestionMsg(..)
     , EditableTextMsg(..)
     )
 
@@ -36,6 +37,7 @@ type Msg
     | Study StudyMsg
     | Event EventMsg
     | Questionary QuestionaryMsg
+    | Question QuestionMsg
     | PageWithSubpage PageWithSubpageMsg
     | Db Updater.Msg
     | OnDbChange Json.Encode.Value
@@ -75,6 +77,9 @@ type EventMsg
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
     | QuestionNameEdit EditableTextMsg
+
+type QuestionMsg
+    = QuestionMsgNothing
     
 
 

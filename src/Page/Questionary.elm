@@ -4,13 +4,14 @@ module Page.Questionary exposing (Model, defaultFokus, init, page, update, view)
 
 import Dict
 import Html exposing (Html, div, p, text)
-import Html.Attributes
+import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 import Identicon exposing (identicon)
 import List.Extra
 import Material.Button as Button
 import Material.Card as Card exposing (actions, block, primaryAction)
 import Material.Checkbox as Checkbox
+import Material.Fab as Fab
 import Material.IconButton as IconButton
 import Material.LayoutGrid as LG exposing (cell, inner, layoutGrid)
 import Material.List as MList exposing (list)
@@ -113,6 +114,7 @@ update message (Page model) =
                             { oldmodel | focus = newfocus }
                     in
                     ( Page { model | page = newmodel }, Cmd.none )
+
                 Msg.QuestionNameEdit msg_ ->
                     case msg_ of
                         Msg.GetFocus ->
@@ -157,6 +159,28 @@ view (Page.Page model) =
     in
     case mbInfos of
         Just infos ->
+            let
+                newMsg =
+                    Msg.CRUD <|
+                        Msg.CreateRandom Db.QuestionType
+                            [ \x ->
+                                Match.setField
+                                    { kind = Db.QuestionType
+                                    , attribute = "questionary"
+                                    , setter = Updater.StringMsg
+                                    , id = x
+                                    , value = infos.id
+                                    }
+                            , \x ->
+                                Match.setField
+                                    { kind = Db.QuestionType
+                                    , attribute = "index"
+                                    , setter = Updater.IntMsg
+                                    , id = x
+                                    , value = Maybe.withDefault 0 <| Maybe.map ((+) 1) infos.max_index
+                                    }
+                            ]
+            in
             { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
@@ -164,7 +188,7 @@ view (Page.Page model) =
                     \_ ->
                         [ layoutGrid [ Typography.typography ]
                             [ inner [] <|
-                                [ cell [ LG.span12 ]
+                                [ cell [{- LG.span12 -}]
                                     [ Html.h1 [ Typography.headline5 ]
                                         [ editableText
                                             model.page.focus.titleFocused
@@ -186,48 +210,62 @@ view (Page.Page model) =
                                     , p [] [ text <| "Study: " ++ viewStudy infos.study model.session.user ]
                                     ]
                                 ]
-                                    ++ List.map (\x -> cell [] [ viewQuestionCard db model.page.focus.activeQuestion x ]) infos.questions
+                                    --++ List.map (\x -> cell [LG.span10Desktop, LG.span8Tablet] [ viewQuestionCard db model.page.focus.activeQuestion x ]) infos.questions
                                     ++ [ cell []
-                                            [ list MList.config
-                                                (listItem
-                                                    (MLItem.config
-                                                        |> MLItem.setOnClick
-                                                            (Msg.CRUD <|
-                                                                Msg.CreateRandom Db.QuestionType
-                                                                    [ \x ->
-                                                                        Match.setField
-                                                                            { kind = Db.QuestionType
-                                                                            , attribute = "questionary"
-                                                                            , setter = Updater.StringMsg
-                                                                            , id = x
-                                                                            , value = infos.id
-                                                                            }
-                                                                    , \x ->
-                                                                        Match.setField
-                                                                            { kind = Db.QuestionType
-                                                                            , attribute = "index"
-                                                                            , setter = Updater.IntMsg
-                                                                            , id = x
-                                                                            , value = Maybe.withDefault 0 <| Maybe.map ((+) 1) infos.max_index
-                                                                            }
-                                                                    ]
-                                                            )
-                                                    )
-                                                    [ Html.h3 [ Typography.headline3, Html.Attributes.style "justify-content" "center" ] [ text "+" ] ]
-                                                )
-                                                []
+                                            [ viewQuestionList db infos infos.questions
                                             ]
-
-                                       -- , layoutGridCell [][
-                                       --     Html.h1 [ Typography.headline5 ] [ text "Questionnaries" ]
-                                       --     , viewList infos.questionnaries (Msg.Follow Db.QuestionaryType)
-                                       --     , unelevatedButton
-                                       --         {buttonConfig| icon = Just "add"
-                                       --                      , onClick =  }
-                                       --         "Add"
-                                       -- ]
                                        ]
+
+                            -- ++ [ cell []
+                            --         [ list MList.config
+                            --             (listItem
+                            --                 (MLItem.config
+                            --                     |> MLItem.setOnClick
+                            --                         (Msg.CRUD <|
+                            --                             Msg.CreateRandom Db.QuestionType
+                            --                                 [ \x ->
+                            --                                     Match.setField
+                            --                                         { kind = Db.QuestionType
+                            --                                         , attribute = "questionary"
+                            --                                         , setter = Updater.StringMsg
+                            --                                         , id = x
+                            --                                         , value = infos.id
+                            --                                         }
+                            --                                 , \x ->
+                            --                                     Match.setField
+                            --                                         { kind = Db.QuestionType
+                            --                                         , attribute = "index"
+                            --                                         , setter = Updater.IntMsg
+                            --                                         , id = x
+                            --                                         , value = Maybe.withDefault 0 <| Maybe.map ((+) 1) infos.max_index
+                            --                                         }
+                            --                                 ]
+                            --                         )
+                            --                 )
+                            --                 [ Html.h3 [ Typography.headline3, Html.Attributes.style "justify-content" "center" ] [ text "+" ] ]
+                            --             )
+                            --             []
+                            -- ]
+                            -- , layoutGridCell [][
+                            --     Html.h1 [ Typography.headline5 ] [ text "Questionnaries" ]
+                            --     , viewList infos.questionnaries (Msg.Follow Db.QuestionaryType)
+                            --     , unelevatedButton
+                            --         {buttonConfig| icon = Just "add"
+                            --                      , onClick =  }
+                            --         "Add"
+                            -- ]
+                            --    ]
                             ]
+                        , Fab.fab
+                            (Fab.config
+                                |> Fab.setOnClick newMsg
+                                |> Fab.setAttributes
+                                    [ style "position" "fixed"
+                                    , style "bottom" "2rem"
+                                    , style "right" "2rem"
+                                    ]
+                            )
+                            (Fab.icon "playlist_add")
                         ]
             }
 
@@ -278,6 +316,84 @@ editableText active activator deactivator value callback =
 -- ]
 
 
+viewQuestionList : Db.Database -> RelatedData -> List (OrderAware Db.Question) -> Html Msg.Msg
+viewQuestionList db infos questions =
+    case questions of
+        first :: rest ->
+            list
+                (MList.config
+                    |> MList.setTwoLine True
+                )
+                (viewQuestionListItem db first)
+            <|
+                List.map (viewQuestionListItem db) rest
+
+        _ ->
+            text "NoItem"
+
+
+viewQuestionListItem : Db.Database -> OrderAware Db.Question -> MLItem.ListItem Msg.Msg
+viewQuestionListItem db { id, value, previous, next } =
+    let
+        x =
+            1
+
+        --upMsg = Match.swapFields Db.QuestionType "index" Updater.IntMsg ( prev.id, id ) ( prev.value.index, value.index )
+        --downMsg = Match.swapFields Db.QuestionType "index" Updater.IntMsg ( post.id, id ) ( post.value.index, value.index )
+    in
+    listItem
+        (MLItem.config |> MLItem.setOnClick (Msg.Follow Db.QuestionType id))
+    <|
+        [ MLItem.text []
+            { primary = [ Html.text value.text ]
+            , secondary = [ Html.text value.text ]
+            }
+        ]
+            ++ (case ( previous, next ) of
+                    ( Just prev, Just post ) ->
+                        [ MLItem.meta []
+                            [ IconButton.iconButton
+                                (IconButton.config
+                                    |> IconButton.setOnClick
+                                        (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( prev.id, id ) ( prev.value.index, value.index ))
+                                )
+                                (IconButton.icon "arrow_upward")
+                            , IconButton.iconButton
+                                (IconButton.config
+                                    |> IconButton.setOnClick
+                                        (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( post.id, id ) ( post.value.index, value.index ))
+                                )
+                                (IconButton.icon "arrow_downward")
+                            ]
+                        ]
+
+                    ( Just prev, Nothing ) ->
+                        [ MLItem.meta []
+                            [ IconButton.iconButton
+                                (IconButton.config
+                                    |> IconButton.setOnClick
+                                        (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( prev.id, id ) ( prev.value.index, value.index ))
+                                )
+                                (IconButton.icon "arrow_upward")
+                            ]
+                        ]
+
+                    ( Nothing, Just post ) ->
+                        [ MLItem.meta []
+                            [ IconButton.iconButton
+                                (IconButton.config
+                                    |> IconButton.setOnClick
+                                        (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( post.id, id ) ( post.value.index, value.index ))
+                                )
+                                (IconButton.icon "arrow_downward")
+                            ]
+                        ]
+
+                    _ ->
+                        []
+               )
+
+
 viewQuestionCard : Db.Database -> Maybe String -> OrderAware Db.Question -> Html Msg.Msg
 viewQuestionCard db mbCur { id, value, previous, next } =
     let
@@ -302,27 +418,29 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                 , block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ] <|
                         let
-                            mlist = List.map
-                                (\x ->
-                                    SelectItem.selectItem
-                                        (SelectItem.config { value = IT.toString x })
-                                        [ text <| IT.toString x ]
-                                )
-                                IT.inputTypes
+                            mlist =
+                                List.map
+                                    (\x ->
+                                        SelectItem.selectItem
+                                            (SelectItem.config { value = IT.toString x })
+                                            [ text <| IT.toString x ]
+                                    )
+                                    IT.inputTypes
                         in
-                            case mlist of
-                                f :: r ->
-                                    [ Select.outlined
-                                        (Select.config
-                                            |> Select.setLabel (Just "Question Type")
-                                            |> Select.setSelected (Just (IT.toString question.input_type))
-                                            |> Select.setOnChange ((\x -> setMsg x Nothing))
-                                        )
+                        case mlist of
+                            f :: r ->
+                                [ Select.outlined
+                                    (Select.config
+                                        |> Select.setLabel (Just "Question Type")
+                                        |> Select.setSelected (Just (IT.toString question.input_type))
+                                        |> Select.setOnChange (\x -> setMsg x Nothing)
+                                    )
                                     f
                                     r
-                                    ]
-                                _ ->
-                                    []
+                                ]
+
+                            _ ->
+                                []
                 , block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ]
                         [ viewInputTypeActive question.input_type <| setMsg (IT.toString question.input_type) ]
@@ -337,7 +455,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                         , icons =
                             (case previous of
                                 Just prev ->
-                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( prev.id, id ) (prev.value.index, value.index)))
+                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( prev.id, id ) ( prev.value.index, value.index )))
                                         (IconButton.icon "arrow_upward")
                                     ]
 
@@ -346,7 +464,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             )
                                 ++ (case next of
                                         Just post ->
-                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( post.id, id )(post.value.index, value.index)))
+                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( post.id, id ) ( post.value.index, value.index )))
                                                 (IconButton.icon "arrow_downward")
                                             ]
 
@@ -378,7 +496,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                         , icons =
                             (case previous of
                                 Just prev ->
-                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( prev.id, id ) (prev.value.index, value.index)))
+                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( prev.id, id ) ( prev.value.index, value.index )))
                                         (IconButton.icon "arrow_upward")
                                     ]
 
@@ -387,7 +505,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             )
                                 ++ (case next of
                                         Just post ->
-                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( post.id, id )(post.value.index, value.index)))
+                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" Updater.IntMsg ( post.id, id ) ( post.value.index, value.index )))
                                                 (IconButton.icon "arrow_downward")
                                             ]
 
@@ -410,35 +528,35 @@ viewInputTypeActive kind callback =
 
         IT.List config ->
             let
-                mlist = List.indexedMap
-                    (\index x ->
-                        listItem MLItem.config
-                            [ viewSingleInputType config.singleInput
-                            , TextField.outlined
-                                (TextField.config
-                                    |> TextField.setValue (Just x)
-                                    |> TextField.setOnInput
-                                        (
-                                            \y ->
+                mlist =
+                    List.indexedMap
+                        (\index x ->
+                            listItem MLItem.config
+                                [ viewSingleInputType config.singleInput
+                                , TextField.outlined
+                                    (TextField.config
+                                        |> TextField.setValue (Just x)
+                                        |> TextField.setOnInput
+                                            (\y ->
                                                 callback <|
                                                     Just
                                                         (Updater.AttributeMsg "choices" <|
                                                             Updater.ListMixedUpdate index <|
                                                                 Updater.StringMsg y
                                                         )
-                                        )
-                                    |> TextField.setPlaceholder (Just "Add a question")
-                                )
-                            ]
-                    )
-                    (config.choices ++ [ "" ])
+                                            )
+                                        |> TextField.setPlaceholder (Just "Add a question")
+                                    )
+                                ]
+                        )
+                        (config.choices ++ [ "" ])
             in
-                case mlist of
-                    f :: r ->
-                        list (MList.config |> MList.setNonInteractive True) f r
-                    _ ->
-                        Html.text "No entry"
-                
+            case mlist of
+                f :: r ->
+                    list (MList.config |> MList.setNonInteractive True) f r
+
+                _ ->
+                    Html.text "No entry"
 
 
 
@@ -544,8 +662,8 @@ relatedData id db =
 
 type alias OrderAware a =
     { value : a
-    , previous : Maybe {id : String, value: a}
-    , next : Maybe {id: String, value : a}
+    , previous : Maybe { id : String, value : a }
+    , next : Maybe { id : String, value : a }
     , id : String
     }
 
@@ -569,7 +687,7 @@ orderAwareList old =
         mapToValue a =
             case a of
                 Just ( id, val ) ->
-                    Just {id = id, value = val}
+                    Just { id = id, value = val }
 
                 Nothing ->
                     Nothing

@@ -31,7 +31,7 @@ viewLandscape config =
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
             , title = Maybe.withDefault "Landscape Handset" config.title
             , search = Nothing
-            , user = Nothing
+            , user = config.user
             }
         ]
     , div [TopAppBar.denseFixedAdjust][config.body]
@@ -59,7 +59,7 @@ viewPortrait config =
             , navButton = Just {icon = "arrow_back", message = config.closeDrawer}
             , title = config.drawerTitle
             , search = Nothing
-            , user = Nothing
+            , user = config.user
             }
 
         , div [TopAppBar.denseFixedAdjust][
@@ -81,7 +81,7 @@ viewPortrait config =
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
             , title = Maybe.withDefault "Portrait Handset" config.title
             , search = Nothing
-            , user = Nothing
+            , user = config.user
             }
 
         , div [TopAppBar.denseFixedAdjust][config.body]

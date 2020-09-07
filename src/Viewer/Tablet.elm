@@ -78,7 +78,7 @@ viewPortrait config =
             , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
             , title = Maybe.withDefault "Portrait Tablet" config.title
             , search = Nothing
-            , user = Nothing
+            , user = config.user
             }
         ]
     , div [TopAppBar.fixedAdjust] [config.body]

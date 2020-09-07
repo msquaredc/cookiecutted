@@ -16,6 +16,7 @@ import Page.Event as Event
 import Page.PageOne as PageOne
 import Page.PageWithSubpage as PageWithSubpage
 import Page.Questionary as Questionary
+import Page.Question as Question
 import Page.Study as Study
 import Page.Top as Top
 import Page.User as User
@@ -54,6 +55,7 @@ type Page
     | Study (Page.Page Study.Model Msg.Msg)
     | Event (Page.Page Event.Model Msg.Msg)
     | Questionary (Page.Page Questionary.Model Msg.Msg)
+    | Question (Page.Page Question.Model Msg.Msg)
 
 
 
@@ -409,6 +411,10 @@ update message model =
         Questionary m ->
             mapPageMsg model Questionary (Page.update message m)
                 |> defaultUpdate message
+        
+        Question m ->
+            mapPageMsg model Question (Page.update message m)
+                |> defaultUpdate message
 
         NotFound _ ->
             defaultUpdate message ( model, Cmd.none )
@@ -453,6 +459,9 @@ view model =
             Page.view m model.header model.time
 
         Questionary m ->
+            Page.view m model.header model.time
+        
+        Question m ->
             Page.view m model.header model.time
 
 
@@ -548,6 +557,9 @@ extractSession model =
 
         Questionary m ->
             getSession m
+        
+        Question m ->
+            getSession m
 
 
 
@@ -592,6 +604,10 @@ updateSession model session =
         Questionary (Page.Page m) ->
             Questionary.page session m.page.id m.page.focus
                 |> (\( x, y ) -> ( { model | page = Questionary x }, y ))
+        
+        Question (Page.Page m) ->
+            Question.page session m.page.id
+                |> (\( x, y ) -> ( { model | page = Question x }, y ))
 
 
 updateDb : Db.Database -> ( Model, Cmd Msg.Msg ) -> ( Model, Cmd Msg.Msg )
@@ -653,6 +669,8 @@ parser model session =
             (\id -> mapPageMsg model Event (Event.page session id))
         , route (Parser.s paths.questionary </> Parser.string)
             (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus))
+        , route (Parser.s paths.question </> Parser.string)
+            (\id -> mapPageMsg model Question (Question.page session id))
         , route (Parser.s paths.admin </> Admin.parser)
             (\presult -> mapPageMsg model Admin (Admin.page session presult))
 
@@ -676,6 +694,7 @@ paths =
     , study = "study"
     , event = "event"
     , questionary = "questionary"
+    , question = "question"
 
     --, newPage = "newpage"
     }

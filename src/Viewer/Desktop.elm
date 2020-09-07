@@ -45,7 +45,7 @@ viewPortrait config =
         , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
         , title = Maybe.withDefault "Portrait Desktop" config.title
         , search = Nothing
-        , user = Nothing
+        , user = config.user
         }
     , div [TopAppBar.prominentFixedAdjust]
         [I.viewDrawer

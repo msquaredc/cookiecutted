@@ -102,7 +102,12 @@ view session msg details h time =
                 Device.fromPixel session.windowSize.width session.windowSize.height
         in
         case session.user of
-            Just _ ->
+            Just userid ->
+                let
+                    username = Dict.get userid session.db.users
+                                |> Maybe.map .value
+                                |> Maybe.andThen .name
+                in
                 (case ( device.device, device.orientation ) of
                     ( Device.Desktop, Device.Portrait ) ->
                         Desktop.viewPortrait
@@ -125,11 +130,11 @@ view session msg details h time =
                     { title = Nothing --Just details.title
                     , body = div [] <| details.body time
                     , openDrawer = Msg.Viewer OpenDrawer
-                    , user = Maybe.map Html.text session.user
+                    , user = Maybe.map (identicon "100%") session.user
                     , closeDrawer = Msg.Viewer CloseDrawer
                     , drawerOpen = h.drawerOpen
-                    , drawerTitle = "User"
-                    , drawerSubtitle = Html.text <| "ID: " ++ Maybe.withDefault "" session.user
+                    , drawerTitle = Maybe.withDefault "User" username
+                    , drawerSubtitle = Html.text <| "ID: " ++ userid
                     , drawerContent = viewDrawerContent 0
                     , navButtonIcon =
                         if details.top then
