@@ -82,7 +82,8 @@ type DbMsg
     = Create Type String (List (String -> Msg))
     | CreateRandom Type (List (String -> Msg))
     | Update Updater.Msg
-    | SwapAttributes Type (String, String) String
+    | UpdateAll (List Updater.Msg)
+    --| SwapAttributes Type (String, String) String
 
 
 type PageOneMsg

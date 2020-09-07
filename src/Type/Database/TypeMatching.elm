@@ -379,6 +379,15 @@ setField {kind, attribute, setter, id, value} =
                         Updater.AttributeMsg attribute <|
                             setter value
 
+setFieldRaw : FieldConfig a -> Updater.Msg
+setFieldRaw {kind, attribute, setter, id, value} =
+
+            Updater.AttributeMsg (toStringPlural kind) <|
+                Updater.DictKeyMsg id <|
+                    Updater.AttributeMsg "value" <|
+                        Updater.AttributeMsg attribute <|
+                            setter value
+
 type alias FieldUpdateConfig a =
     {
         kind : Type,
@@ -394,6 +403,19 @@ updateField config updater =
             Updater.AttributeMsg "value" <|
                 Updater.AttributeMsg config.attribute <|
                     config.setter updater
+
+-- go down and get value via update
+
+swapFields : Type -> String -> (a -> Updater.Msg) -> (String, String) -> (a, a) -> Msg.Msg
+swapFields kind attribute setter (f_id,s_id) (f_val, s_val) =
+    Msg.CRUD <|
+        Msg.UpdateAll
+            [
+                setFieldRaw
+                    {kind = kind, attribute = attribute, setter = setter, id = f_id, value = s_val}
+                , setFieldRaw
+                    {kind = kind, attribute = attribute, setter = setter, id = s_id, value = f_val}
+            ]
 
 -- swapFields : FieldUpdateConfig a -> FieldUpdateConfig a -> Database -> Database
 -- swapFields first second db = 

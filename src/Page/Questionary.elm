@@ -337,7 +337,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                         , icons =
                             (case previous of
                                 Just prev ->
-                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( prev, id ) "index"))
+                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( prev.id, id ) (prev.value.index, value.index)))
                                         (IconButton.icon "arrow_upward")
                                     ]
 
@@ -346,7 +346,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             )
                                 ++ (case next of
                                         Just post ->
-                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Msg.CRUD <| Msg.SwapAttributes Db.QuestionType ( post, id ) "index"))
+                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( post.id, id )(post.value.index, value.index)))
                                                 (IconButton.icon "arrow_downward")
                                             ]
 
@@ -378,7 +378,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                         , icons =
                             (case previous of
                                 Just prev ->
-                                    [ Card.icon IconButton.config
+                                    [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( prev.id, id ) (prev.value.index, value.index)))
                                         (IconButton.icon "arrow_upward")
                                     ]
 
@@ -387,7 +387,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             )
                                 ++ (case next of
                                         Just post ->
-                                            [ Card.icon IconButton.config
+                                            [ Card.icon (IconButton.config |> IconButton.setOnClick (Match.swapFields Db.QuestionType "index" (Updater.IntMsg) ( post.id, id )(post.value.index, value.index)))
                                                 (IconButton.icon "arrow_downward")
                                             ]
 
@@ -544,8 +544,8 @@ relatedData id db =
 
 type alias OrderAware a =
     { value : a
-    , previous : Maybe String
-    , next : Maybe String
+    , previous : Maybe {id : String, value: a}
+    , next : Maybe {id: String, value : a}
     , id : String
     }
 
@@ -569,7 +569,7 @@ orderAwareList old =
         mapToValue a =
             case a of
                 Just ( id, val ) ->
-                    Just id
+                    Just {id = id, value = val}
 
                 Nothing ->
                     Nothing

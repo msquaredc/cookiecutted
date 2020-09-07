@@ -251,8 +251,19 @@ defaultUpdate message ( model, effect ) =
 
                                     _ ->
                                         updateDbSession model session newDb
-                    Msg.SwapAttributes kind (first, second) attribute ->
-                        (model, Cmd.none)
+                    Msg.UpdateAll updates ->
+                        case List.foldl (Result.andThen << Db.database.updater) (Ok db) updates of
+                            Err _ ->
+                                (model, Cmd.none)
+                            Ok newDb ->
+                                updateDbSession model session newDb
+
+                    -- Msg.SwapAttributes kind (first, second) attribute ->
+                    --     let
+                    --         fvalue = db
+                    --     in
+                       
+                    --     (model, Cmd.none)
             Msg.Form msg ->
                 case form2update msg of
                     Just dbmsg ->
