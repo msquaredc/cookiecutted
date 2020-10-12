@@ -11,6 +11,8 @@ import Type.IO.ToString as ToString exposing (ToString)
 import Type.IO.Setter as Updater exposing (Updater)
 
 
+
+
 type InputType
     = ShortAnswer ShortAnswerConfig
     | LongAnswer LongAnswerConfig
@@ -337,8 +339,7 @@ inputTypeUpdater msg val =
         _ ->
             Err Updater.InvalidValue
             
-    
-    
+
         
 
 

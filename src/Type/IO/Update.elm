@@ -28,6 +28,7 @@ type Msg
     | BoolMsg (Bool -> Bool)
     | AttributeMsg String Msg
     | MaybeMsg Msg
+    | MaybeSetMsg (Maybe Msg)
     | ListMsg Int Msg
     | DictValueMsg String Msg
     | ResultErrMsg Msg
@@ -96,8 +97,14 @@ maybe old msg val =
         MaybeMsg msg_ ->
             case val of
                 Just v ->
-                    Just (old msg v)
+                    Just (old msg_ v)
             
+                Nothing ->
+                    Nothing
+        MaybeSetMsg msg_ ->
+            case msg_ of
+                Just msg__ ->
+                    maybe old (MaybeMsg (msg__)) val
                 Nothing ->
                     Nothing
         _ ->

@@ -347,7 +347,7 @@ viewQuestionListItem db { id, value, previous, next } =
     <|
         [ MLItem.text []
             { primary = [ Html.text value.text ]
-            , secondary = [ Html.text <| IT.toString value.input_type ]
+            , secondary = [ Html.text <| value.input_type ]
             }
         , MLItem.meta []
             [
@@ -441,7 +441,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                                 [ Select.outlined
                                     (Select.config
                                         |> Select.setLabel (Just "Question Type")
-                                        |> Select.setSelected (Just (IT.toString question.input_type))
+                                        |> Select.setSelected (Just (question.input_type))
                                         |> Select.setOnChange (\x -> setMsg x Nothing)
                                     )
                                     f
@@ -452,7 +452,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                                 []
                 , block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ]
-                        [ viewInputTypeActive question.input_type <| setMsg (IT.toString question.input_type) ]
+                        [ {-viewInputTypeActive question.input_type <| setMsg (IT.toString question.input_type) -}]
                 ]
             , actions =
                 Just <|
@@ -493,7 +493,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                             [ text question.text ]
                     , block <|
                         Html.div [ Html.Attributes.style "padding" "1rem" ]
-                            [ viewInputTypePassive question.input_type ]
+                            [ {-viewInputTypePassive question.input_type-} ]
                     ]
             , actions =
                 Just <|

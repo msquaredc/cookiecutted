@@ -258,7 +258,7 @@ type alias Question =
     { questionary : String
     , index : Int
     , text : String
-    , input_type : IT.InputType
+    , input_type : String
     }
 
 
@@ -276,7 +276,7 @@ question =
         |> reference "questionary" string .questionary .questionnaries Dict.get .value
         |> attribute "index" int .index
         |> attribute "text" string .text
-        |> attribute "input_type" IT.input_type .input_type
+        |> reference "input_type" string .input_type .input_types Dict.get .value
         |> updateEmpty (\x -> { x | text = "Unnamed Question" })
 
 
@@ -412,6 +412,7 @@ type Type
     | StudyType
     | UserType
     | EventType
+    | InputTypeType
 
 
 updateEmpty : (a -> a) -> IO a b c msg -> IO a b c msg

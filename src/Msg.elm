@@ -12,6 +12,9 @@ module Msg exposing
     , QuestionaryMsg(..)
     , QuestionMsg(..)
     , EditableTextMsg(..)
+    , ShortMsg(..)
+    , LongMsg(..)
+    , ListMsg(..)
     )
 
 import Browser
@@ -80,7 +83,20 @@ type QuestionaryMsg
     | QuestionNameEdit EditableTextMsg
 
 type QuestionMsg
-    = SetInputType IT.InputType
+    = SetInputType String
+    | Short ShortMsg
+    | Long LongMsg
+    | List ListMsg
+
+type ShortMsg 
+    = ShortLabel String
+    | ShortPlaceholder String
+
+type LongMsg 
+    = LongLabel String
+
+type ListMsg 
+    = SingleInput IT.SingleInputType
     
 
 
@@ -89,6 +105,7 @@ type DbMsg
     | CreateRandom Type (List (String -> Msg))
     | Update Updater.Msg
     | UpdateAll (List Updater.Msg)
+    | Delete Type String
     --| SwapAttributes Type (String, String) String
 
 

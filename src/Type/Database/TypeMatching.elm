@@ -8,6 +8,8 @@ import Time exposing (Posix, now, posixToMillis)
 import Type.Database exposing (..)
 import Type.IO.Form as Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
+import Type.Database.InputType exposing (InputType)
+import Type.Database.InputType exposing (input_type)
 
 
 types : List Type
@@ -24,6 +26,7 @@ types =
     , QuestionaryType
     , StudyType
     , UserType
+    , InputTypeType
     ]
 
 
@@ -108,6 +111,9 @@ toString kind =
 
         UserType ->
             "user"
+        
+        InputTypeType ->
+            "input_type"
 
 
 toStringPlural : Type -> String
@@ -148,6 +154,9 @@ toStringPlural kind =
 
         UserType ->
             "users"
+        
+        InputTypeType ->
+            "input_types"
 
 
 fields : Type -> List String
@@ -188,6 +197,9 @@ fields kind =
 
         UserType ->
             user.fields
+        
+        InputTypeType ->
+            input_type.fields
 
 
 keys : Type -> Database -> List String
@@ -232,6 +244,9 @@ keys kind db =
 
         UserType ->
             g db.users
+        
+        InputTypeType ->
+            g db.input_types
 
 
 forms : String -> Type -> String -> Type.Database.Database -> (String -> (String -> Msg.Msg) -> Html Msg.Msg) -> Result Form.Error (Html.Html Msg.Msg)
@@ -286,6 +301,9 @@ forms id kind acc db f =
 
         UserType ->
             g user db.users
+        
+        InputTypeType ->
+            g input_type db.input_types
 
 
 new : String -> Type -> String -> Database -> Database
@@ -336,6 +354,9 @@ new id kind u db =
         UserType ->
             g db.users user (\t x -> { t | users = x })
 
+        InputTypeType ->
+            g db.input_types input_type (\t x -> {t | input_types = x})
+
 
 getField : String -> String -> Type -> Database -> Maybe String
 getField id fname kind db =
@@ -378,6 +399,7 @@ setField {kind, attribute, setter, id, value} =
                     Updater.AttributeMsg "value" <|
                         Updater.AttributeMsg attribute <|
                             setter value
+
 
 setFieldRaw : FieldConfig a -> Updater.Msg
 setFieldRaw {kind, attribute, setter, id, value} =
