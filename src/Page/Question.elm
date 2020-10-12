@@ -25,25 +25,18 @@ import Html exposing (u)
 type alias Model =
     {
         id : String,
-        short : String,
-        long : String,
-        list : String,
-        drop : Maybe ITDrop
+        short : Maybe String,
+        long : Maybe String,
+        list : Maybe String
     }
 
-type ITDrop =
-    SA
-    | LA
-    | L
-
-init : Db.Database -> String -> Model
+init : Db.Database -> String -> Model 
 init db id =
     let
         emptymodel = Model 
                         id
-                        ""
-                        ""
-                        ""
+                        Nothing
+                        Nothing
                         Nothing
         q = Dict.get id db.questions
              |> Maybe.map .value
@@ -54,12 +47,12 @@ init db id =
 
     in 
     case (it, it_id) of 
-        (Just (IT.ShortAnswer _), Just a )->
-            {emptymodel | short = a, drop = Just SA}
-        (Just (IT.LongAnswer _), Just a) ->
-            {emptymodel | long = a, drop = Just LA}
-        (Just (IT.List _ ), Just a) -> 
-            {emptymodel | list = a, drop = Just L}
+        (Just (IT.ShortAnswer _), a)->
+            {emptymodel | short = a}
+        (Just (IT.LongAnswer _), a) ->
+            {emptymodel | long = a}
+        (Just (IT.List _ ), a) -> 
+            {emptymodel | list = a}
         _ ->
             emptymodel
 
@@ -119,7 +112,8 @@ update message (Page model) =
     in
     case message of 
         Msg.Question msg ->
-            case msg of
+            (Page model, Cmd.none)
+            {- case msg of
                 Msg.SetInputType it ->
                     let
                         newsession = setInputTypeDb it
@@ -169,7 +163,7 @@ update message (Page model) =
                                 (Page {model |session = setInputTypeDb <| IT.List newlist, page = {oldmodel | list = newlist}}, Cmd.none)
                                 --(Page {model|page = {oldmodel | list = newlist}}, Cmd.none)
                         _->
-                            (Page model, Cmd.none)
+                            (Page model, Cmd.none) -}
         _ ->
             (Page model, Cmd.none)
 
@@ -180,12 +174,21 @@ view (Page.Page model) =
             model.session.db
         mbInfos =
             relatedData model.page.id db
+        moreInfos : String 
+        moreInfos =
+            Dict.get model.page.id db.questions
+            |> Maybe.map .value
+            |> Maybe.andThen (Result.toMaybe << Db.question.toString "*")
+            |> Maybe.withDefault "Nothing Found" 
+        
+
     in
         { detailsConfig
                 | title = toTitle model.page
                 , user = model.session.user
                 , body =
                     \_ -> [
+                        text moreInfos,
                         case mbInfos of 
                             Just infos ->
                                 layoutGrid [ Typography.typography ]
@@ -214,7 +217,7 @@ view (Page.Page model) =
                                                 )
                                             
                                             ] ++ viewInputTypeSelection model.page infos.input_type
-                                        , cell [] <| viewSettings model.session.db model.page.id model.page
+                                        , cell [] <| viewSettings model.session.db model.page.id model.page infos.input_type
                                             
                                         ]
                                     ]
@@ -234,7 +237,7 @@ toTitle _ =
 type alias RelatedData =
     { id : String
     , text : String
-    , input_type : Maybe IT.InputType
+    , input_type : ( String, Maybe IT.InputType)
     --, question : ( String, Maybe Db.Question)
     --, coding_questions : List (OrderAware Db.CodingQuestion)
     , created : Posix
@@ -261,7 +264,7 @@ relatedData id db =
             Just
                 { id = id
                 , text = question.text
-                , input_type = Db.question.viewer db question |> Maybe.map .input_type
+                , input_type = (question.input_type, Db.question.viewer db question |> Maybe.map .input_type)
                 --, question = ( questionary.study, Maybe.map .value <| Dict.get questionary.study db.studie)
                 --, max_index = List.maximum <| List.map (\( _, x ) -> x.index) coding_questions
                 --, coding_questions = orderAwareList coding_questions
@@ -295,33 +298,63 @@ viewInputTypeSelection2 model input_type =
             [ Html.text "Long Answer" ]
         ] -}
 
-viewInputTypeSelection : Model -> Maybe IT.InputType -> List (Html Msg.Msg)
-viewInputTypeSelection model mbit =
+viewInputTypeSelection : Model -> (String, Maybe IT.InputType) -> List (Html Msg.Msg)
+viewInputTypeSelection model (id, mbit) =
     List.map (\x -> Html.p [] [x])
     [
     FormField.formField
         (FormField.config
             |> FormField.setLabel (Just "Short Answer")
             |> FormField.setFor (Just "1")
-            |> FormField.setOnClick ( Match.setField
-                                            { kind = Db.QuestionType
-                                            , attribute = "input_type"
-                                            , setter = Updater.StringMsg
-                                            , id = model.id
-                                            , value = model.short
-                                            })
+            |> FormField.setOnClick ( 
+                case model.short of
+                    Just short -> 
+                        Match.setField
+                        { kind = Db.QuestionType
+                        , attribute = "input_type"
+                        , setter = Updater.StringMsg
+                        , id = model.id
+                        , value = short
+                        }
+                    Nothing ->
+                        Msg.CRUD <|
+                            Msg.CreateRandom (Db.InputTypeType Db.ShortKind)
+                                [ \x ->
+                                    Match.setField
+                                        { kind = Db.QuestionType
+                                        , attribute = "input_type"
+                                        , setter = Updater.StringMsg
+                                        , id = model.id
+                                        , value = x
+                                        }
+                                ]
+            )
 --            |> FormField.setAttributes [ style "margin" "0 10px" ]
         )
         [ Radio.radio
             (Radio.config
-                |> Radio.setChecked (model.drop == Just SA)
-               |> Radio.setOnChange (Match.setField
-                                            { kind = Db.QuestionType
-                                            , attribute = "input_type"
-                                            , setter = Updater.StringMsg
-                                            , id = model.id
-                                            , value = model.short
-                                            })
+                |> Radio.setChecked (model.short == Just id )
+                |> Radio.setOnChange (
+                    case model.short of
+                        Just short -> Match.setField
+                            { kind = Db.QuestionType
+                            , attribute = "input_type"
+                            , setter = Updater.StringMsg
+                            , id = model.id
+                            , value = short
+                            }
+                        Nothing ->
+                            Msg.CRUD <|
+                            Msg.CreateRandom (Db.InputTypeType Db.ShortKind)
+                                [ \x ->
+                                    Match.setField
+                                        { kind = Db.QuestionType
+                                        , attribute = "input_type"
+                                        , setter = Updater.StringMsg
+                                        , id = model.id
+                                        , value = x
+                                        }
+                                ])
             )
         
         ]
@@ -329,25 +362,55 @@ viewInputTypeSelection model mbit =
         (FormField.config
             |> FormField.setLabel (Just "Long Answer")
             |> FormField.setFor (Just "2")
-            |> FormField.setOnClick (Match.setField
-                                            { kind = Db.QuestionType
-                                            , attribute = "input_type"
-                                            , setter = Updater.StringMsg
-                                            , id = model.id
-                                            , value = model.long
-                                            })
+            |> FormField.setOnClick (
+                case model.long of
+                    Just long ->
+                        Match.setField
+                            { kind = Db.QuestionType
+                            , attribute = "input_type"
+                            , setter = Updater.StringMsg
+                            , id = model.id
+                            , value = long
+                            }
+                    Nothing ->
+                         Msg.CRUD <|
+                            Msg.CreateRandom (Db.InputTypeType Db.LongKind)
+                                [ \x ->
+                                    Match.setField
+                                        { kind = Db.QuestionType
+                                        , attribute = "input_type"
+                                        , setter = Updater.StringMsg
+                                        , id = model.id
+                                        , value = x
+                                        }
+                                ])
 --            |> FormField.setAttributes [ style "margin" "0 10px" ]
         )
         [ Radio.radio
             (Radio.config
-                |> Radio.setChecked (model.drop == Just LA)
-                |> Radio.setOnChange (Match.setField
-                                            { kind = Db.QuestionType
-                                            , attribute = "input_type"
-                                            , setter = Updater.StringMsg
-                                            , id = model.id
-                                            , value = model.long
-                                            })
+                |> Radio.setChecked (model.long == Just id)
+                |> Radio.setOnChange (
+                    case model.long of
+                        Just long ->
+                            Match.setField
+                                { kind = Db.QuestionType
+                                , attribute = "input_type"
+                                , setter = Updater.StringMsg
+                                , id = model.id
+                                , value = long
+                                }
+                        Nothing -> 
+                            Msg.CRUD <|
+                            Msg.CreateRandom (Db.InputTypeType Db.LongKind)
+                                [ \x ->
+                                    Match.setField
+                                        { kind = Db.QuestionType
+                                        , attribute = "input_type"
+                                        , setter = Updater.StringMsg
+                                        , id = model.id
+                                        , value = x
+                                        }
+                                ])
             )
         
         ]
@@ -355,32 +418,62 @@ viewInputTypeSelection model mbit =
         (FormField.config
             |> FormField.setLabel (Just "Multiple Choice")
             |> FormField.setFor (Just "3")
-            |> FormField.setOnClick (Match.setField
-                                            { kind = Db.QuestionType
-                                            , attribute = "input_type"
-                                            , setter = Updater.StringMsg
-                                            , id = model.id
-                                            , value = model.list
-                                            })
+            |> FormField.setOnClick (
+                case model.list of 
+                    Just list ->
+                        Match.setField
+                            { kind = Db.QuestionType
+                            , attribute = "input_type"
+                            , setter = Updater.StringMsg
+                            , id = model.id
+                            , value = list
+                            }
+                    Nothing ->
+                         Msg.CRUD <|
+                            Msg.CreateRandom (Db.InputTypeType Db.ListKind)
+                                [ \x ->
+                                    Match.setField
+                                        { kind = Db.QuestionType
+                                        , attribute = "input_type"
+                                        , setter = Updater.StringMsg
+                                        , id = model.id
+                                        , value = x
+                                        }
+                                ])
 --            |> FormField.setAttributes [ style "margin" "0 10px" ]
         )
         [ Radio.radio
             (Radio.config
-                |> Radio.setChecked (model.drop == Just L)
-                |> Radio.setOnChange (Match.setField
-                                            { kind = Db.QuestionType
-                                            , attribute = "input_type"
-                                            , setter = Updater.StringMsg
-                                            , id = model.id
-                                            , value = model.short
-                                            })
+                |> Radio.setChecked (model.list == Just id)
+                |> Radio.setOnChange (
+                case model.list of 
+                    Just list ->
+                        Match.setField
+                            { kind = Db.QuestionType
+                            , attribute = "input_type"
+                            , setter = Updater.StringMsg
+                            , id = model.id
+                            , value = list
+                            }
+                    Nothing ->
+                         Msg.CRUD <|
+                            Msg.CreateRandom (Db.InputTypeType Db.ListKind)
+                                [ \x ->
+                                    Match.setField
+                                        { kind = Db.QuestionType
+                                        , attribute = "input_type"
+                                        , setter = Updater.StringMsg
+                                        , id = model.id
+                                        , value = x
+                                        }
+                                ])
             )
         
         ]
     ]
 
-viewSettings : Db.Database -> String -> Model -> List (Html Msg.Msg)
-viewSettings db id model =
+viewSettings : Db.Database -> String -> Model -> (String, Maybe IT.InputType) -> List (Html Msg.Msg)
+viewSettings db id model (itid,mbit)=
     let
         umessage attribute setter value= 
             Msg.CRUD <|
@@ -391,40 +484,44 @@ viewSettings db id model =
                                 Updater.AttributeMsg "input_type" <|
                                     Updater.AttributeMsg attribute <|
                                         setter value
+        moreInfo : String
+        moreInfo = Maybe.map (IT.input_type.toString "*") mbit
+                   |> Maybe.andThen (Result.toMaybe)
+                   |> Maybe.withDefault ""
     in
-    case model.drop of 
-        Just SA ->
-            case Maybe.map .value (Dict.get model.short db.input_types) of
+    if model.short == Just itid then
+            case Maybe.map .value <| Maybe.andThen (\x ->Dict.get x db.input_types) model.short of
                 Just (IT.ShortAnswer short) ->
                     [
+                        text moreInfo,
                         TextField.filled
                             (TextField.config
                                 |> TextField.setLabel (Just "Set the label")
                                 |> TextField.setValue (short.label)
-                                |> TextField.setOnInput (\x -> Match.setField
-                                                            { kind = Db.InputTypeType
-                                                            , attribute = "label"
-                                                            , setter = Updater.StringMsg
-                                                            , id = model.short
-                                                            , value = x
-                                                            })
+                                |> TextField.setOnInput (\x -> 
+                                     Match.setField
+                                        { kind = Db.InputTypeType Db.ShortKind
+                                        , attribute = "label"
+                                        , setter = Updater.MaybeSetMsg << Just << Updater.StringMsg
+                                        , id = itid
+                                        , value = x
+                                        })
                             )
                         , TextField.filled
                             (TextField.config
                                 |> TextField.setLabel (Just "Set the placeholder")
                                 |> TextField.setValue (short.placeholder)
-                                |> TextField.setOnInput (\x -> Match.setField
-                                                            { kind = Db.InputTypeType
+                                |> TextField.setOnInput (\x -> 
+                                    Match.setField
+                                                            { kind = Db.InputTypeType Db.ShortKind
                                                             , attribute = "placeholder"
                                                             , setter = Updater.StringMsg
-                                                            , id = model.short
+                                                            , id = itid
                                                             , value = x
                                                             })
                             )
                     ]
-        Just LA ->
-            [text "Long Answer settings"]
-        Just L -> 
-            [text "List Answer settings"]
-        Nothing ->
-            [text "You have not selected an Input type yet."]
+                _ ->
+                    [text moreInfo, text "No Config found"]
+        else
+            [text moreInfo, text "You have not selected an Input type yet."]

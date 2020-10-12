@@ -2,6 +2,7 @@ module Type.IO.ToString exposing (..)
 
 import Dict exposing (Dict)
 import List.Extra
+import Result.Extra
 import Array exposing (Array)
 
 type Error =
@@ -52,22 +53,31 @@ maybe old name value =
         -- Maybe.andThen (old name)
 
 
+l2s : List String -> String
+l2s l = 
+    "[ "++ String.join ", " l ++ " ]"
+
 list : ToString a -> ToString (List a)
 list old name l =
     let
         ( head, rest ) =
             parseHeadTail name
     in
-    case String.toInt head of
-        Just index ->
-            case List.Extra.getAt index l of
-                Just value ->
-                    old rest value
-                Nothing ->
-                    Err (IndexOutOfBounds index)
-    
-        Nothing ->
-            Err (NotAnInt head)
+    if name == "*" then
+        List.map (old "*") l
+        |> Result.Extra.combine
+        |> Result.map l2s
+    else
+        case String.toInt head of
+            Just index ->
+                case List.Extra.getAt index l of
+                    Just value ->
+                        old rest value
+                    Nothing ->
+                        Err (IndexOutOfBounds index)
+        
+            Nothing ->
+                Err (NotAnInt head)
     
     
         -- |> Maybe.andThen (\x -> List.Extra.getAt x l)
@@ -126,11 +136,20 @@ attribute name def getter parent =
             ( head, tail ) =
                 parseHeadTail acc
         in
-        if name == head then
+        if name == head  then
             def tail (getter value)
 
         else
-            parent acc value
+            if acc == "*" then
+                def "*" (getter value)
+                |> Result.map (\x -> name ++ ":" ++ x ++ "\n")
+                |> Result.map (\x -> case parent acc value of
+                                        Ok s ->
+                                            x ++ s
+                                        Err _ ->
+                                            x)
+            else
+                parent acc value
 
 
 reference : String -> (c -> comparable) -> ToString comparable -> ToString c -> ToString c
@@ -144,7 +163,16 @@ reference name getter def parent =
             def acc (getter value)
 
         else
-            parent acc value
+            if acc == "*" then
+                def "*" (getter value)
+                |> Result.map (\x -> name ++ ":" ++ x ++ "\n")
+                |> Result.map (\x -> case parent acc value of
+                                        Ok s ->
+                                            x ++ s
+                                        Err _ ->
+                                            x)
+            else
+                parent acc value
 
 references : String -> (c -> List comparable) -> ToString comparable -> ToString c -> ToString c
 references name getter def parent =
@@ -153,7 +181,7 @@ references name getter def parent =
             ( head, tail ) =
                 parseHeadTail acc
         in
-        if name == head then
+        if name == head || name == "*" then
             (list def) tail (getter value)
 
         else
@@ -165,7 +193,7 @@ substruct name struct getter old = \acc value ->
                 ( head, tail ) =
                     parseHeadTail acc
             in
-            if name == head then
+            if name == head || name == "*" then
                 struct tail (getter value)
 
             else
@@ -215,7 +243,10 @@ parseHeadTail accessor =
                 |> Maybe.map (String.join ".")
                 |> Maybe.withDefault ""
     in
-    ( index, rest )
+        if accessor == "*" then
+            ("*","*")
+        else
+            ( index, rest )
 
 
 map_dict_toString : (String -> Maybe comparable) -> (String -> value -> Maybe String) -> String -> Dict comparable value -> Maybe String

@@ -260,6 +260,11 @@ defaultUpdate message ( model, effect ) =
                             Ok newDb ->
                                 updateDbSession model session newDb
 
+                    Msg.Delete kind id ->
+                        let
+                            newDb = Match.delete id kind db
+                        in
+                            updateDbSession model session newDb
                     -- Msg.SwapAttributes kind (first, second) attribute ->
                     --     let
                     --         fvalue = db

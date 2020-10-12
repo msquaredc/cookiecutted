@@ -9,7 +9,7 @@ import Type.Database exposing (..)
 import Type.IO.Form as Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
 import Type.Database.InputType exposing (InputType)
-import Type.Database.InputType exposing (input_type)
+import Type.Database.InputType as IT exposing (input_type)
 
 
 types : List Type
@@ -26,7 +26,9 @@ types =
     , QuestionaryType
     , StudyType
     , UserType
-    , InputTypeType
+    , InputTypeType ShortKind
+    , InputTypeType ListKind
+    , InputTypeType LongKind
     ]
 
 
@@ -112,7 +114,7 @@ toString kind =
         UserType ->
             "user"
         
-        InputTypeType ->
+        InputTypeType _ ->
             "input_type"
 
 
@@ -155,7 +157,7 @@ toStringPlural kind =
         UserType ->
             "users"
         
-        InputTypeType ->
+        InputTypeType _ ->
             "input_types"
 
 
@@ -198,7 +200,7 @@ fields kind =
         UserType ->
             user.fields
         
-        InputTypeType ->
+        InputTypeType _ ->
             input_type.fields
 
 
@@ -245,7 +247,7 @@ keys kind db =
         UserType ->
             g db.users
         
-        InputTypeType ->
+        InputTypeType _ ->
             g db.input_types
 
 
@@ -302,20 +304,35 @@ forms id kind acc db f =
         UserType ->
             g user db.users
         
-        InputTypeType ->
+        InputTypeType _ ->
             g input_type db.input_types
 
+type DispatchType = 
+    New String
+    | Delete
 
 new : String -> Type -> String -> Database -> Database
-new id kind u db =
+new id kind u db=
+    dispatchDb (New u) id kind db
+
+delete : String -> Type -> Database -> Database
+delete =
+    dispatchDb Delete
+
+dispatchDb : DispatchType -> String -> Type -> Database -> Database
+dispatchDb dt id kind db =
     let
         g table def update =
             let
                 config =
                     (timestamp def).empty
             in
-            Dict.insert id { config | creator = u } table
-                |> update db
+                update db <|
+                case dt of
+                    New u ->
+                        Dict.insert id { config | creator = u } table
+                    Delete ->
+                        Dict.remove id table
     in
     case kind of
         AnswerType ->
@@ -354,9 +371,14 @@ new id kind u db =
         UserType ->
             g db.users user (\t x -> { t | users = x })
 
-        InputTypeType ->
-            g db.input_types input_type (\t x -> {t | input_types = x})
-
+        InputTypeType it ->
+            case it of
+                ShortKind ->
+                    g db.input_types input_type (\t x -> {t | input_types = x})
+                LongKind ->
+                    g db.input_types {input_type|empty = IT.LongAnswer IT.longAnswerConfig.empty} (\t x -> {t | input_types = x})
+                ListKind ->
+                    g db.input_types {input_type|empty = IT.List IT.listConfig.empty} (\t x -> {t | input_types = x})
 
 getField : String -> String -> Type -> Database -> Maybe String
 getField id fname kind db =

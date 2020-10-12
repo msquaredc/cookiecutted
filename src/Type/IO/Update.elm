@@ -104,7 +104,8 @@ maybe old msg val =
         MaybeSetMsg msg_ ->
             case msg_ of
                 Just msg__ ->
-                    maybe old (MaybeMsg (msg__)) val
+                    Just (old msg__ val)
+                    
                 Nothing ->
                     Nothing
         _ ->

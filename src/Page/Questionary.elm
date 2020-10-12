@@ -157,6 +157,7 @@ view (Page.Page model) =
 
         mbInfos =
             relatedData model.page.id db
+        
     in
     case mbInfos of
         Just infos ->

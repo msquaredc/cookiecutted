@@ -412,7 +412,12 @@ type Type
     | StudyType
     | UserType
     | EventType
-    | InputTypeType
+    | InputTypeType InputTypeKind
+
+type InputTypeKind = 
+    ShortKind
+    | LongKind
+    | ListKind
 
 
 updateEmpty : (a -> a) -> IO a b c msg -> IO a b c msg
