@@ -19,6 +19,7 @@ import Json.Encode
 import Type.Database exposing (Type)
 import Type.IO.Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
+import Type.Database.InputType as IT
 import Time exposing (Posix)
 import Url
 
@@ -79,7 +80,7 @@ type QuestionaryMsg
     | QuestionNameEdit EditableTextMsg
 
 type QuestionMsg
-    = QuestionMsgNothing
+    = SetInputType IT.InputType
     
 
 

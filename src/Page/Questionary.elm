@@ -33,6 +33,7 @@ import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
 import Type.IO.Setter as Updater
 import Viewer exposing (detailsConfig)
+import Viewer.OrderAwareList exposing (OrderAware, orderAwareList)
 
 
 
@@ -342,12 +343,20 @@ viewQuestionListItem db { id, value, previous, next } =
         --downMsg = Match.swapFields Db.QuestionType "index" Updater.IntMsg ( post.id, id ) ( post.value.index, value.index )
     in
     listItem
-        (MLItem.config |> MLItem.setOnClick (Msg.Follow Db.QuestionType id))
+        (MLItem.config {- |> MLItem.setOnClick ()-})
     <|
         [ MLItem.text []
             { primary = [ Html.text value.text ]
-            , secondary = [ Html.text value.text ]
+            , secondary = [ Html.text <| IT.toString value.input_type ]
             }
+        , MLItem.meta []
+            [
+                IconButton.iconButton
+                    (IconButton.config
+                        |> IconButton.setOnClick
+                            (Msg.Follow Db.QuestionType id))
+                    (IconButton.icon "edit")
+            ]
         ]
             ++ (case ( previous, next ) of
                     ( Just prev, Just post ) ->
@@ -660,40 +669,6 @@ relatedData id db =
             Nothing
 
 
-type alias OrderAware a =
-    { value : a
-    , previous : Maybe { id : String, value : a }
-    , next : Maybe { id : String, value : a }
-    , id : String
-    }
-
-
-prePost : Maybe a -> List a -> List ( Maybe a, a, Maybe a )
-prePost prev xs =
-    case xs of
-        [] ->
-            []
-
-        a :: [] ->
-            [ ( prev, a, Nothing ) ]
-
-        a :: b :: c ->
-            ( prev, a, Just b ) :: prePost (Just a) (b :: c)
-
-
-orderAwareList : List ( String, a ) -> List (OrderAware a)
-orderAwareList old =
-    let
-        mapToValue a =
-            case a of
-                Just ( id, val ) ->
-                    Just { id = id, value = val }
-
-                Nothing ->
-                    Nothing
-    in
-    prePost Nothing old
-        |> List.map (\( x, ( id, value ), y ) -> { value = value, id = id, previous = mapToValue x, next = mapToValue y })
 
 
 viewStudy : ( String, Maybe Db.Study ) -> Maybe String -> String
@@ -706,7 +681,7 @@ viewList : List ( String, a ) -> (String -> msg) -> Html msg
 viewList elements onClick =
     let
         mlist =
-            List.map (\( x, _ ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick x)) [ MLItem.graphic [] [ identicon "100%" x ], text x ]) elements
+            List.map (\( x, _ ) -> listItem (MLItem.config {- |> MLItem.setOnClick (onClick x)-}) [ MLItem.graphic [] [ identicon "100%" x ], text x ]) elements
     in
     case mlist of
         f :: r ->

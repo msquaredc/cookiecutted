@@ -43,7 +43,6 @@ shortAnswerConfig =
         |> attribute "maxLength" (maybe int) .maxLength
         |> attribute "pattern" (maybe string) .pattern
 
-
 type alias LongAnswerConfig =
     { label : Maybe String
     , placeholder : Maybe String
