@@ -70,6 +70,12 @@ fromString name =
 
         "user" ->
             Just UserType
+        
+        "input_type" ->
+            Just (InputTypeType ShortKind)
+        
+        "test_subject" ->
+            Just TestSubjectType
 
         _ ->
             Nothing
@@ -114,6 +120,9 @@ toString kind =
         UserType ->
             "user"
         
+        TestSubjectType ->
+            "test_subject"
+        
         InputTypeType _ ->
             "input_type"
 
@@ -157,6 +166,9 @@ toStringPlural kind =
         UserType ->
             "users"
         
+        TestSubjectType ->
+            "test_subjects"
+        
         InputTypeType _ ->
             "input_types"
 
@@ -199,6 +211,9 @@ fields kind =
 
         UserType ->
             user.fields
+        
+        TestSubjectType ->
+            test_subject.fields
         
         InputTypeType _ ->
             input_type.fields
@@ -247,6 +262,9 @@ keys kind db =
         UserType ->
             g db.users
         
+        TestSubjectType ->
+            g db.test_subjects
+
         InputTypeType _ ->
             g db.input_types
 
@@ -303,6 +321,9 @@ forms id kind acc db f =
 
         UserType ->
             g user db.users
+
+        TestSubjectType ->
+            g test_subject db.test_subjects
         
         InputTypeType _ ->
             g input_type db.input_types
@@ -370,6 +391,9 @@ dispatchDb dt id kind db =
 
         UserType ->
             g db.users user (\t x -> { t | users = x })
+
+        TestSubjectType ->
+            g db.test_subjects test_subject (\t x -> {t | test_subjects = x})
 
         InputTypeType it ->
             case it of

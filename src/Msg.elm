@@ -78,7 +78,7 @@ type StudyMsg
     = StudyNameEdit EditableTextMsg
 
 type EventMsg
-    = EventMsgNothing
+    = EventNameEdit EditableTextMsg
 
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)

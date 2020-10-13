@@ -5,10 +5,9 @@ import Html exposing (Html, p, text)
 import Material.FormField as FormField
 import Material.LayoutGrid exposing (cell, inner, layoutGrid)
 import Material.Radio as Radio
+import Material.Slider as Slider
 import Material.TextField as TextField
 import Material.Typography as Typography exposing (typography)
-import Material.Slider as Slider
-import Material.FormField as FormField
 import Msg
 import Page exposing (Page(..))
 import Session
@@ -575,34 +574,41 @@ viewSettings db id model ( itid, mbit ) =
                                     }
                             )
                     )
-                , p [] [text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt short.minLength), Slider.slider
-                    (Slider.config
-                        |> Slider.setValue (Maybe.map toFloat short.minLength)
---                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
-                        |> Slider.setOnInput (\x ->
-                                                Match.setField
-                                                    { kind = Db.InputTypeType Db.ShortKind
-                                                    , attribute = "minLength"
-                                                    , setter = \p -> Updater.MaybeSetMsg (Just (Updater.IntMsg <| round p))
-                                                    , id = itid
-                                                    , value = x
-                                                    }
-                                            )
-                    )]
-                ,  p [] [text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt short.maxLength), Slider.slider
-                    (Slider.config
-                        |> Slider.setValue (Maybe.map toFloat short.maxLength)
---                        |> Slider.setMin (Maybe.map toFloat short.minLength)
-                        |> Slider.setOnInput (\x ->
-                                                Match.setField
-                                                    { kind = Db.InputTypeType Db.ShortKind
-                                                    , attribute = "maxLength"
-                                                    , setter = \p -> Updater.MaybeSetMsg (Just (Updater.IntMsg <| round p))
-                                                    , id = itid
-                                                    , value = x
-                                                    }
-                                            )
-                    )
+                , p []
+                    [ text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt short.minLength)
+                    , Slider.slider
+                        (Slider.config
+                            |> Slider.setValue (Maybe.map toFloat short.minLength)
+                            --                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
+                            |> Slider.setOnInput
+                                (\x ->
+                                    Match.setField
+                                        { kind = Db.InputTypeType Db.ShortKind
+                                        , attribute = "minLength"
+                                        , setter = \p -> Updater.MaybeSetMsg (Just (Updater.IntMsg <| round p))
+                                        , id = itid
+                                        , value = x
+                                        }
+                                )
+                        )
+                    ]
+                , p []
+                    [ text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt short.maxLength)
+                    , Slider.slider
+                        (Slider.config
+                            |> Slider.setValue (Maybe.map toFloat short.maxLength)
+                            --                        |> Slider.setMin (Maybe.map toFloat short.minLength)
+                            |> Slider.setOnInput
+                                (\x ->
+                                    Match.setField
+                                        { kind = Db.InputTypeType Db.ShortKind
+                                        , attribute = "maxLength"
+                                        , setter = \p -> Updater.MaybeSetMsg (Just (Updater.IntMsg <| round p))
+                                        , id = itid
+                                        , value = x
+                                        }
+                                )
+                        )
                     ]
                 ]
 

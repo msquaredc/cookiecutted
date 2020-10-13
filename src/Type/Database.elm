@@ -57,7 +57,7 @@ type alias DatabaseView =
     , questions : TableView QuestionView
     , questionnaries : TableView QuestionaryView
     , studies : TableView StudyView
-    , test_subjects : TableView TestSubject
+    , test_subjects : TableView TestSubjectView
     , users : TableView User
     }
 
@@ -214,7 +214,7 @@ coding_questionary =
 
 type alias Event =
     { place : String
-    , day : Int
+    , date : String
     , study : String
     , name : String
     }
@@ -222,7 +222,7 @@ type alias Event =
 
 type alias EventView =
     { place : Place
-    , day : Int
+    , date : String
     , study : Study
     , name : String
     }
@@ -232,7 +232,7 @@ event : IO Event Database EventView msg
 event =
     entity Event EventView
         |> reference "place" string .place .places Dict.get .value
-        |> attribute "day" int .day
+        |> attribute "date" string .date
         |> reference "study" string .study .studies Dict.get .value
         |> attribute "name" string .name
         |> updateEmpty (\x -> { x | name = "Unnamed Event" })
@@ -324,13 +324,23 @@ study =
 
 
 type alias TestSubject =
-    { infos : Dict String String
+    { id : String
+    , event : String
+    , infos : Dict String String
+    }
+
+type alias TestSubjectView =
+    { id : String
+    , event : Event
+    , infos : Dict String String
     }
 
 
-test_subject : IO TestSubject Database TestSubject msg
+test_subject : IO TestSubject Database TestSubjectView msg
 test_subject =
-    entity TestSubject TestSubject
+    entity TestSubject TestSubjectView
+        |> attribute "id" string .id
+        |> reference "event" string .event .events Dict.get .value
         |> attribute "infos" (dict string string) .infos
 
 
@@ -412,6 +422,7 @@ type Type
     | StudyType
     | UserType
     | EventType
+    | TestSubjectType
     | InputTypeType InputTypeKind
 
 type InputTypeKind = 

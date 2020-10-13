@@ -621,7 +621,7 @@ updateSession model session =
                 |> (\( x, y ) -> ( { model | page = Study x }, y ))
 
         Event (Page.Page m) ->
-            Event.page session m.page.id
+            Event.page session m.page.id m.page.nameFocus
                 |> (\( x, y ) -> ( { model | page = Event x }, y ))
 
         Questionary (Page.Page m) ->
@@ -689,7 +689,7 @@ parser model session =
         , route (Parser.s paths.study </> Parser.string)
             (\id -> mapPageMsg model Study (Study.page session id False))
         , route (Parser.s paths.event </> Parser.string)
-            (\id -> mapPageMsg model Event (Event.page session id))
+            (\id -> mapPageMsg model Event (Event.page session id False))
         , route (Parser.s paths.questionary </> Parser.string)
             (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus))
         , route (Parser.s paths.question </> Parser.string)
@@ -732,7 +732,7 @@ toHashUrl url =
     { url | fragment = Just url.path, path = "" }
 
 
-reportError : String -> Model -> Model
+reportError : String -> Model -> Model 
 reportError msg model =
     let
         oldheader = model.header
