@@ -20,6 +20,7 @@ import Page.Question as Question
 import Page.Study as Study
 import Page.Top as Top
 import Page.User as User
+import Page.Answer as Answer
 import Ports
 import Random exposing (generate)
 import Random.Char exposing (latin)
@@ -37,7 +38,7 @@ import Url
 import Url.Builder
 import Url.Parser as Parser exposing ((</>))
 import Viewer
-
+ 
 
 
 -- TYPES
@@ -57,6 +58,7 @@ type Page
     | Event (Page.Page Event.Model Msg.Msg)
     | Questionary (Page.Page Questionary.Model Msg.Msg)
     | Question (Page.Page Question.Model Msg.Msg)
+    | Answer (Page.Page Answer.Model Msg.Msg)
 
 
 
@@ -424,12 +426,21 @@ update message model =
                     defaultUpdate message ( newmodel, effect )
 
         Study m ->
+            
             mapPageMsg model Study (Page.update message m)
                 |> defaultUpdate message
 
         Event m ->
-            mapPageMsg model Event (Page.update message m)
-                |> defaultUpdate message
+            case message of 
+                    Msg.Event (Msg.AnswerQuestions newmodel) ->
+                        let
+                            session = extractSession model
+                            (newpage, effect) = Answer.page session newmodel
+                        in
+                            ({model| page = Answer <| newpage}, effect)
+                    _ ->
+                        mapPageMsg model Event (Page.update message m)
+                            |> defaultUpdate message
 
         Questionary m ->
             mapPageMsg model Questionary (Page.update message m)
@@ -437,6 +448,10 @@ update message model =
         
         Question m ->
             mapPageMsg model Question (Page.update message m)
+                |> defaultUpdate message
+
+        Answer m ->
+            mapPageMsg model Answer (Page.update message m)
                 |> defaultUpdate message
 
         NotFound _ ->
@@ -485,6 +500,9 @@ view model =
             Page.view m model.header model.time
         
         Question m ->
+            Page.view m model.header model.time
+        
+        Answer m ->
             Page.view m model.header model.time
 
 
@@ -584,6 +602,8 @@ extractSession model =
         Question m ->
             getSession m
 
+        Answer m ->
+            getSession m
 
 
 -- Update the session of the active page (This could be changed to send a OnSessionChange Msg rather than using init)
@@ -631,6 +651,10 @@ updateSession model session =
         Question (Page.Page m) ->
             Question.page session m.page.id
                 |> (\( x, y ) -> ( { model | page = Question x }, y ))
+        
+        Answer (Page.Page m) ->
+            Answer.page session m.page
+                |> (\( x, y ) -> ( { model | page = Answer x }, y ))
 
 
 updateDb : Db.Database -> ( Model, Cmd Msg.Msg ) -> ( Model, Cmd Msg.Msg )

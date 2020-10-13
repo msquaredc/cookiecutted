@@ -13,6 +13,7 @@ import Viewer exposing (detailsConfig)
 import Material.LayoutGrid as LG exposing (layoutGrid, cell, inner)
 import Material.Typography as Typography
 import Material.Button as Button exposing (unelevated)
+import Material.DataTable as DataTable
 import Type.Database as Db
 import Material.List as MList exposing (list)
 import Material.List.Item as MLItem exposing (listItem, graphic)
@@ -82,7 +83,8 @@ update message (Page model) =
                             in
                             
                             ( Page {model| page = new_page}, Cmd.none )
-                
+                Msg.AnswerQuestions {questionary, test_subject, event} ->
+                    (Page model, Cmd.none)
 
         _ ->
             ( Page model, Cmd.none )
@@ -128,7 +130,7 @@ view (Page.Page model) =
                                     --, p [][ text <| "Leader: " ++ viewLeader infos.leader model.session.user]   
                                 , cell []
                                     [ Html.h1 [ Typography.headline5 ] [ text "Test Subjects" ]
-                                    , viewList infos.subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 x)
+                                    , viewList infos.test_subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 x)
                                     , unelevated
                                         (Button.config
                                             |> Button.setIcon (Just <| Button.icon "add")
@@ -172,7 +174,8 @@ view (Page.Page model) =
                                                             ]
                                             )
                                             )
-                                        "Add"]                
+                                        "Add"]
+                                , cell [][viewTable db infos.questionnaries infos.test_subjects infos.id]                
                                 ]
                                 -- , layoutGridCell [][
                                 --     Html.h1 [ Typography.headline5 ] [ text "Events" ]
@@ -234,7 +237,7 @@ type alias RelatedData =
         updated : Posix,
         study : (String, Maybe Db.Study),
         questionnaries : List (String, Db.Questionary),
-        subjects : List (String, Db.TestSubject)
+        test_subjects : List (String, Db.TestSubject)
     }
 
 relatedData : String -> Db.Database -> Maybe RelatedData
@@ -253,7 +256,7 @@ relatedData id db =
                         creator = (timestampedEvent.creator, Maybe.map .value <| Dict.get timestampedEvent.creator db.users),
                         updated = Time.millisToPosix timestampedEvent.modified,
                         questionnaries = Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.study == event.study) db.questionnaries,
-                        subjects = Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.event == id) db.test_subjects
+                        test_subjects = Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.event == id) db.test_subjects
                     }
     
         Nothing ->
@@ -298,6 +301,38 @@ viewList elements onClick nameGetter =
 
                     (listItem MLItem.config [ text "Nothing here, create one?" ])
                     []
+
+viewTable : Db.Database -> List (String, Db.Questionary) -> List (String, Db.TestSubject) -> String ->  Html Msg.Msg
+viewTable db questionnaries test_subjects event_id =
+    DataTable.dataTable DataTable.config
+        { thead =
+            [ DataTable.row [] <|
+                DataTable.cell [] [ text "Subject"] :: List.map (\(x,y) -> DataTable.cell [] [text y.name]) questionnaries
+                --[ DataTable.cell [] [ text "Desert" ] ]
+            ]
+        , tbody =
+            List.map (\(test_subject_id,test_subject_value) ->
+
+                    DataTable.row [] <|
+                        DataTable.cell [] [text <| String.toUpper <| String.left 4 test_subject_id]::List.map (\(questionary_id, questionary_value) ->
+                            DataTable.cell [] [ 
+                                let
+                                    answers = Dict.filter (\answer_id answer_table -> List.member answer_table.value.question q_ids ) db.answers
+                                              |> Dict.filter (\answer_id answer_table -> answer_table.value.test_subject == test_subject_id)
+                                              |> Dict.toList
+                                    questions = Dict.filter (\question_id question_table -> question_table.value.questionary == questionary_id) db.questions
+                                                |> Dict.toList
+                                    q_ids = List.map (\(qid,_)-> qid) questions
+                                in
+                                    Button.text
+                                        (Button.config |> Button.setOnClick (Msg.Event <| Msg.AnswerQuestions {event = event_id, questionary = questionary_id, test_subject = test_subject_id}) ) <| (String.fromInt <| List.length answers) ++ "/" ++ (String.fromInt <| List.length questions)
+                            ]
+                        )
+                        questionnaries
+            ) test_subjects
+        }
+    
+
 
 toTitle : Model -> String
 toTitle _ =

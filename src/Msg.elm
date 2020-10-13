@@ -79,6 +79,7 @@ type StudyMsg
 
 type EventMsg
     = EventNameEdit EditableTextMsg
+    | AnswerQuestions {questionary: String, test_subject: String, event: String}
 
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
