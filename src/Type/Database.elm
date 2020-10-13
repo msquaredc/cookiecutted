@@ -102,7 +102,7 @@ answer : IO Answer Database AnswerView msg
 answer =
     entity Answer AnswerView
         |> reference "question" string .question .questions Dict.get .value
-        |> reference "user" string .test_subject .test_subjects Dict.get .value
+        |> reference "test_subject" string .test_subject .test_subjects Dict.get .value
         |> attribute "value" string .value
         |> reference "event" string .event .events Dict.get .value
 

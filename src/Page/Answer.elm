@@ -13,7 +13,8 @@ import Type.Database.InputType as IT exposing (InputType(..))
 import Task
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
-import Svg.Attributes exposing (x)
+import Material.TextField as TextField
+import Material.TextArea as TextArea
 
 type alias Model =
     { questionary : String
@@ -105,7 +106,7 @@ view (Page.Page model) =
                     Just qid ->
                         case Dict.get qid <| Dict.fromList infos.questions of
                             Just question ->
-                                viewQuestion db question infos.currentAnswer
+                                viewQuestion db qid question infos.currentAnswer model.page
                             Nothing ->
                                 [text "Question not found"]
                     Nothing ->
@@ -116,21 +117,80 @@ view (Page.Page model) =
                         ]
     }
 
-viewQuestion : Db.Database -> Db.Question -> Maybe (String, Db.Answer) -> List (Html.Html Msg.Msg)
-viewQuestion db question mbAnswer =
+viewQuestion : Db.Database -> String ->Db.Question -> Maybe (String, Db.Answer) -> Model -> List (Html.Html Msg.Msg)
+viewQuestion db qid question mbAnswer model =
     let
         mbit = Dict.get question.input_type db.input_types
                 |> Maybe.map (\x -> x.value)
+        mbvalue = Maybe.map (\(id, val) -> val.value) mbAnswer
+        mbid = Maybe.map (\(id, val) -> id) mbAnswer
     in
+        text question.text ::
         case mbit of
             Nothing ->
                 [text "Undefined input type"]
             Just (ShortAnswer s)->
                 [text "Short Answer"]
             Just (LongAnswer l) ->
-                [text "Long Answer"]
+                [TextArea.filled
+                    (TextArea.config
+                        |> TextArea.setLabel (l.label)
+                        |> TextArea.setValue (mbvalue)
+                        |> TextArea.setOnInput (
+                            case mbid of
+                                Just answer_id ->
+                                    \x -> Match.setField
+                                        { kind = Db.AnswerType
+                                        , attribute = "value"
+                                        , setter = Updater.StringMsg
+                                        , id = answer_id
+                                        , value = x
+                                        }
+                                Nothing ->
+                                    \x -> Msg.CRUD
+                                        (Msg.CreateRandom Db.AnswerType
+                                            [ \answerid ->
+                                                Match.setField
+                                                    { kind = Db.AnswerType
+                                                    , attribute = "question"
+                                                    , setter = Updater.StringMsg
+                                                    , id = answerid
+                                                    , value = qid
+                                                    }
+                                            , \answerid ->
+                                                Match.setField
+                                                    { kind = Db.AnswerType
+                                                    , attribute = "event"
+                                                    , setter = Updater.StringMsg
+                                                    , id = answerid
+                                                    , value = model.event
+                                                    }
+                                            , \answerid ->
+                                                Match.setField
+                                                    { kind = Db.AnswerType
+                                                    , attribute = "test_subject"
+                                                    , setter = Updater.StringMsg
+                                                    , id = answerid
+                                                    , value = model.test_subject
+                                                    }
+                                            , \answerid ->
+                                                Match.setField
+                                                    { kind = Db.AnswerType
+                                                    , attribute = "value"
+                                                    , setter = Updater.StringMsg
+                                                    , id = answerid
+                                                    , value = x
+                                                    }
+                                            ]
+                                        )
+
+                        )
+                        |> TextArea.setRows (l.rows)
+                        |> TextArea.setCols (l.cols)
+                    )]
             Just (List l) ->
                 [text "List Answer"]
+
 
 
 type alias RelatedData =
@@ -160,7 +220,7 @@ relatedData db model =
                   |> List.map (List.sortBy (\(id, val) -> val.modified))
                   |> List.filterMap (List.Extra.last)
                   |> List.sortBy (\(id, val) -> val.created)
-                  
+        
         qids_present = List.map (\(id, val) -> val.value.question) answers
         qids_missing = List.filter (\id -> not <| List.member id qids_present) qids
         currentQuestion = case List.head qids_missing of

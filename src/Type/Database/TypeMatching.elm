@@ -406,7 +406,7 @@ dispatchDb dt id kind db =
 
 getField : String -> String -> Type -> Database -> Maybe String
 getField id fname kind db =
-    database.toString (toString kind ++ "." ++ id ++ ".value." ++ fname) db
+    database.toString (toStringPlural kind ++ "." ++ id ++ ".value." ++ fname) db
         |> Result.toMaybe
 
 
