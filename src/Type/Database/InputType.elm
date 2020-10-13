@@ -301,23 +301,31 @@ inputTypeUpdater : Updater InputType
 inputTypeUpdater msg val =
     case msg of
         Updater.Custom kind mbMsg ->
-            case (kind, val, mbMsg) of 
-                ("Short Answer", ShortAnswer v, Just msg_) ->
-                    Result.map ShortAnswer <| shortAnswerConfig.updater msg_ v
-                ("Short Answer", ShortAnswer _, Nothing) ->
-                    Ok val
-                ("Short Answer", _, Just msg_) ->
-                    Result.map ShortAnswer <| shortAnswerConfig.updater msg_ shortAnswerConfig.empty
-                ("Short Answer", _, Nothing) ->
-                    Ok <| ShortAnswer shortAnswerConfig.empty
-                ("Long Answer", LongAnswer v, Just msg_) ->
-                    Result.map LongAnswer <| longAnswerConfig.updater msg_ v
-                ("Long Answer", LongAnswer _, Nothing) ->
-                    Ok val
-                ("Long Answer", _, Just msg_) ->
-                    Result.map LongAnswer <| longAnswerConfig.updater msg_ longAnswerConfig.empty
-                ("Long Answer", _, Nothing) ->
-                    Ok <| LongAnswer longAnswerConfig.empty
+            case kind of
+                "Short Answer" ->
+                    case (val, mbMsg) of
+                        (ShortAnswer v, Just msg_) ->
+                            Result.map ShortAnswer <| shortAnswerConfig.updater msg_ v
+                        (ShortAnswer _, Nothing) ->
+                            Ok val
+                        (_, Just msg_) ->
+                            Result.map ShortAnswer <| shortAnswerConfig.updater msg_ shortAnswerConfig.empty
+                        (_, Nothing) ->
+                            Ok <| ShortAnswer shortAnswerConfig.empty
+                "Long Answer" ->
+                    case (val, mbMsg) of
+                        (LongAnswer v, Just msg_) ->
+                            Result.map LongAnswer <| longAnswerConfig.updater msg_ v
+                        (LongAnswer _, Nothing) ->
+                            Ok val
+                        (_, Just msg_) ->
+                            Result.map LongAnswer <| longAnswerConfig.updater msg_ longAnswerConfig.empty
+                        (_, Nothing) ->
+                            Ok <| LongAnswer longAnswerConfig.empty
+                s ->
+                    Err <| Updater.CustomError <| "Incorrect string: " ++ s
+
+            {- case (kind, val, mbMsg) of 
                 ("Multiple Choice", List v, Just msg_) ->
                     Result.map List <| listConfig.updater msg_ {v | singleInput = Radio}
                 ("Multiple Choice", List v, Nothing) ->
@@ -335,9 +343,19 @@ inputTypeUpdater msg val =
                 ("Boxes", _, Nothing) ->
                     Ok <| List <| ListConfig Box ["Unnamed Choice"]
                 _ ->
-                    Err Updater.InvalidValue
+                    Err Updater.InvalidValue -}
+        Updater.AttributeMsg name msg_ ->
+            case val of
+                ShortAnswer v ->
+                    Result.map ShortAnswer <| shortAnswerConfig.updater msg v
+                LongAnswer v ->
+                    Result.map LongAnswer <| longAnswerConfig.updater msg v
+                List v ->
+                    Result.map List <| listConfig.updater msg v
+                
+
         _ ->
-            Err Updater.InvalidValue
+            Err <| Updater.CustomError <| "Tried to update an InputType without using Custom"
             
 
         

@@ -27,6 +27,7 @@ import Random.String exposing (string)
 import Session
 import Task exposing (perform)
 import Time exposing (now, Posix)
+import Material.Snackbar as Snackbar
 import Type.Database as Db exposing (database)
 import Type.Database.TypeMatching as Match
 import Type.Flags
@@ -95,8 +96,11 @@ init flags url key =
             ( model, newCmds )
 
         Err _ ->
+            let
+                newmodel = reportError "Could not load localstorage!" model
+            in
             -- If localstorage decoder failed, clear localstorage
-            ( model, Cmd.batch [ newCmds, Ports.clearLocalStorage () ] )
+            ( newmodel, Cmd.batch [ newCmds, Ports.clearLocalStorage () ] )
 
 
 
@@ -227,8 +231,11 @@ defaultUpdate message ( model, effect ) =
 
                     Msg.Update msg_ ->
                         case Db.database.updater msg_ db of
-                            Err _ ->
-                                ( model, Cmd.none )
+                            Err e ->
+                                let
+                                    newmodel = reportError (Updater.errToString e) model
+                                in
+                                    ( newmodel, Cmd.none )
 
                             Ok newDb ->
                                 case msg_ of
@@ -255,8 +262,11 @@ defaultUpdate message ( model, effect ) =
                                         updateDbSession model session newDb
                     Msg.UpdateAll updates ->
                         case List.foldl (Result.andThen << Db.database.updater) (Ok db) updates of
-                            Err _ ->
-                                (model, Cmd.none)
+                            Err e ->
+                                let
+                                    newmodel = reportError (Updater.errToString e) model
+                                in
+                                    ( newmodel, Cmd.none )
                             Ok newDb ->
                                 updateDbSession model session newDb
 
@@ -307,6 +317,14 @@ defaultUpdate message ( model, effect ) =
 
             Msg.Tick time ->
                 ({model | time = Just time}, Cmd.none)
+            
+            Msg.SnackbarClosed messageId ->
+                let
+                    oldheader = model.header
+                    newheader = {oldheader | queue = Snackbar.close messageId oldheader.queue}
+                in
+                
+                ({model | header = newheader}, Cmd.none)
             _ ->
                 ( model, Cmd.none )
 
@@ -712,3 +730,15 @@ paths =
 toHashUrl : Url.Url -> Url.Url
 toHashUrl url =
     { url | fragment = Just url.path, path = "" }
+
+
+reportError : String -> Model -> Model
+reportError msg model =
+    let
+        oldheader = model.header
+        message = Snackbar.message msg
+                    |> Snackbar.setStacked True
+        newQueue = Snackbar.addMessage message oldheader.queue
+        newheader = {oldheader | queue = newQueue}
+    in
+        {model|header = newheader}

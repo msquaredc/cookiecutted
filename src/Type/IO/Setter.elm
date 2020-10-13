@@ -50,12 +50,13 @@ type Error =
     | KeyError
     | InvalidValue
     | KeyAlreadyPresent
+    | CustomError String
 
 errToString : Error -> String
 errToString err =
     case err of
         Mismatch got expect ->
-            "The change message didn't match up the structure."
+            "The change message didn't match up the structure: Got \"" ++ toString got ++ "\" but expected " ++ toString expect ++ "!"
     
         IndexOutOfBounds ->
             "The index was out of the bounds!"
@@ -68,6 +69,9 @@ errToString err =
 
         KeyAlreadyPresent ->
             "Cannot create new value here. There is already a value on this key"
+
+        CustomError s -> 
+            s
         
             
     
@@ -299,3 +303,30 @@ car2 = carUpdater2 (AttributeMsg "brand" (MaybeUpdateMsg (Just (StringMsg "Hello
 -- -- Car = (String -> String -> Int -> Car)
 
 -- attribute : (car -> string) -> (string -> other) -> 
+
+toString : Msg -> String
+toString msg =
+    case msg of
+        IntMsg v -> 
+            "(int) " ++ String.fromInt v
+        IntUpdate _ ->
+            "(int) updating"
+        StringMsg s ->
+            "(string) " ++ s
+        FloatMsg f ->
+            "(float) " ++ String.fromFloat f
+        AttributeMsg a msg_ ->
+            a ++ "->" ++ toString msg_
+        MaybeUpdateMsg (Just msg_) ->
+            "Just (update) ->" ++ toString msg_
+        MaybeUpdateMsg Nothing ->
+            "Nothing (update)"
+        MaybeSetMsg (Just msg_) ->
+            "Just (set) ->" ++ toString msg_
+        MaybeSetMsg (Nothing) ->
+            "Nothing (set)"
+        Custom name (Just msg_) ->
+            name ++ " (custom) ->" ++ toString msg_
+        Custom name Nothing ->
+            name ++ " (custom)"
+        _ -> "Yet undeclared!"

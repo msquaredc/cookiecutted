@@ -23,6 +23,7 @@ import Type.Database exposing (Type)
 import Type.IO.Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
 import Type.Database.InputType as IT
+import Material.Snackbar as Snackbar
 import Time exposing (Posix)
 import Url
 
@@ -52,6 +53,7 @@ type Msg
     | SetUser String
     | Back
     | Tick Posix
+    | SnackbarClosed Snackbar.MessageId
     
 
 

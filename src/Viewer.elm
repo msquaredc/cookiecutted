@@ -3,26 +3,26 @@ module Viewer exposing (Details, Header, detailsConfig, header, notFound, textFo
 --import Url.Builder
 
 import Browser
+import DateFormat.Relative exposing (relativeTime)
 import Device
 import Dict
 import Html exposing (Html, a, div, h1, h3, p, text)
 import Html.Attributes exposing (class, href, style)
-import Html.Events
-import DateFormat.Relative exposing (relativeTime)
 import Identicon exposing (identicon)
 import Material.Button as Button exposing (text, unelevated)
-import Material.Dialog as Dialog exposing (dialog, config)
-import Material.Drawer.Dismissible as Drawer exposing (config, content, header)
+import Material.Dialog as Dialog exposing (config, dialog)
+import Material.Drawer.Dismissible exposing (config, header)
 import Material.Icon as Icon exposing (icon)
-import Material.IconButton as IconButton exposing (customIcon, iconButton, config)
+import Material.IconButton as IconButton exposing (config, customIcon, iconButton)
 import Material.LayoutGrid as LayoutGrid exposing (cell)
-import Material.List as MList exposing (list, config, group, subheader)
-import Material.List.Item as MLItem exposing (listItem, text, config,  graphic)
-import Material.List.Divider as MLDivider exposing (listItem, config)
+import Material.List as MList exposing (config, list)
+import Material.List.Divider as MLDivider exposing (config, listItem)
+import Material.List.Item as MLItem exposing (config, graphic, listItem, text)
+import Material.Snackbar as Snackbar
 import Material.TextField as TextField exposing (config)
 import Material.TextField.Icon as TextFieldIcon
 import Material.Theme as Theme
-import Material.TopAppBar as TopAppBar exposing (regular, config)
+import Material.TopAppBar as TopAppBar exposing (config, regular)
 import Material.Typography as Typography
 import Msg exposing (ViewerMsg(..))
 import Session
@@ -35,7 +35,6 @@ import Utils
 import Viewer.Desktop as Desktop
 import Viewer.Handset as Handset
 import Viewer.Tablet as Tablet
-
 
 
 
@@ -57,6 +56,7 @@ type alias Details msg =
 type alias Header =
     { drawerOpen : Bool
     , new_username : String
+    , queue : Snackbar.Queue Msg.Msg
     }
 
 
@@ -93,75 +93,87 @@ toggleDrawer drawerOpen =
             Msg.OpenDrawer
 
 
+viewSnackbar : Header -> Html Msg.Msg
+viewSnackbar h =
+    Snackbar.snackbar
+        (Snackbar.config { onClosed = Msg.SnackbarClosed }
+        |> Snackbar.setCloseOnEscape True)
+        h.queue
+
+
 view : Session.Session -> (a -> Msg.Msg) -> Details Msg.Msg -> Header -> Maybe Posix -> Browser.Document Msg.Msg
 view session msg details h time =
     { title = details.title ++ Utils.genericTitle
     , body =
-        let
-            device =
-                Device.fromPixel session.windowSize.width session.windowSize.height
-        in
-        case session.user of
-            Just userid ->
-                let
-                    username = Dict.get userid session.db.users
-                                |> Maybe.map .value
-                                |> Maybe.andThen .name
+        viewSnackbar h
+            :: (let
+                    device =
+                        Device.fromPixel session.windowSize.width session.windowSize.height
                 in
-                (case ( device.device, device.orientation ) of
-                    ( Device.Desktop, Device.Portrait ) ->
-                        Desktop.viewPortrait
+                case session.user of
+                    Just userid ->
+                        let
+                            username =
+                                Dict.get userid session.db.users
+                                    |> Maybe.map .value
+                                    |> Maybe.andThen .name
+                        in
+                        (case ( device.device, device.orientation ) of
+                            ( Device.Desktop, Device.Portrait ) ->
+                                Desktop.viewPortrait
 
-                    ( Device.Desktop, Device.Landscape ) ->
-                        Desktop.viewLandscape
+                            ( Device.Desktop, Device.Landscape ) ->
+                                Desktop.viewLandscape
 
-                    ( Device.Handset, Device.Portrait ) ->
-                        Handset.viewPortrait
+                            ( Device.Handset, Device.Portrait ) ->
+                                Handset.viewPortrait
 
-                    ( Device.Handset, Device.Landscape ) ->
-                        Handset.viewLandscape
+                            ( Device.Handset, Device.Landscape ) ->
+                                Handset.viewLandscape
 
-                    ( Device.Tablet, Device.Portrait ) ->
-                        Tablet.viewPortrait
+                            ( Device.Tablet, Device.Portrait ) ->
+                                Tablet.viewPortrait
 
-                    ( Device.Tablet, Device.Landscape ) ->
-                        Tablet.viewLandscape
-                )
-                    { title = Nothing --Just details.title
-                    , body = div [] <| details.body time
-                    , openDrawer = Msg.Viewer OpenDrawer
-                    , user = Maybe.map (identicon "100%") session.user
-                    , closeDrawer = Msg.Viewer CloseDrawer
-                    , drawerOpen = h.drawerOpen
-                    , drawerTitle = Maybe.withDefault "User" username
-                    , drawerSubtitle = Html.text <| "ID: " ++ userid
-                    , drawerContent = viewDrawerContent 0
-                    , navButtonIcon =
-                        if details.top then
-                            "menu"
-                        else
-                            "arrow_back"
-                    , navButtonCallback =
-                            if details.top then
-                                toggleDrawer h.drawerOpen
+                            ( Device.Tablet, Device.Landscape ) ->
+                                Tablet.viewLandscape
+                        )
+                            { title = Nothing --Just details.title
+                            , body = div [] <| details.body time
+                            , openDrawer = Msg.Viewer OpenDrawer
+                            , user = Maybe.map (identicon "100%") session.user
+                            , closeDrawer = Msg.Viewer CloseDrawer
+                            , drawerOpen = h.drawerOpen
+                            , drawerTitle = Maybe.withDefault "User" username
+                            , drawerSubtitle = Html.text <| "ID: " ++ userid
+                            , drawerContent = viewDrawerContent 0
+                            , navButtonIcon =
+                                if details.top then
+                                    "menu"
 
-                            else
-                                Msg.Back
-                    }
+                                else
+                                    "arrow_back"
+                            , navButtonCallback =
+                                if details.top then
+                                    toggleDrawer h.drawerOpen
 
-            Nothing ->
-                [ userDialog
-                    True
-                    (Dict.toList session.db.users
-                        |> List.map (\( x, y ) -> ( x, y.value ))
-                    )
-                    h.new_username
-                    time
+                                else
+                                    Msg.Back
+                            }
 
-                --    layoutGrid [] <|
-                --     selectUser <|
-                --         Match.keys Db.UserType session.db
-                ]
+                    Nothing ->
+                        [ userDialog
+                            True
+                            (Dict.toList session.db.users
+                                |> List.map (\( x, y ) -> ( x, y.value ))
+                            )
+                            h.new_username
+                            time
+
+                        --    layoutGrid [] <|
+                        --     selectUser <|
+                        --         Match.keys Db.UserType session.db
+                        ]
+               )
 
     {- [
            if session.windowSize.height > session.windowSize.width then
@@ -213,17 +225,22 @@ viewDrawerContent selectedIndex =
     let
         listItemConfig_ index =
             MLItem.config
-                |> MLItem.setSelected (
-                    if index == selectedIndex then
+                |> MLItem.setSelected
+                    (if index == selectedIndex then
                         Just MLItem.selected
-                    else
-                        Nothing) -- selected == activated
+
+                     else
+                        Nothing
+                    )
+
+        -- selected == activated
     in
     list MList.config
-        ( MLItem.listItem (listItemConfig_ 0)
+        (MLItem.listItem (listItemConfig_ 0)
             [ MLItem.graphic [] [ Icon.icon [] "home" ]
             , Html.text "Home"
-            ])
+            ]
+        )
         [ MLItem.listItem (listItemConfig_ 1)
             [ MLItem.graphic [] [ Icon.icon [] "local_library" ]
             , Html.text "Research"
@@ -238,6 +255,7 @@ viewDrawerContent selectedIndex =
         --     , text "Drafts"
         --     ]
         , MLDivider.listItem MLDivider.config
+
         --, MList.group [] [ Html.text "Favorites" ] TODO: Uncomment
         , MLItem.listItem (listItemConfig_ 4)
             [ MLItem.graphic [] [ icon [] "bookmark" ]
@@ -265,15 +283,19 @@ viewDrawerContent selectedIndex =
 
 viewHeader2 : Header -> Details Msg.Msg -> Html Msg.Msg
 viewHeader2 config details =
-    regular (TopAppBar.config
-                |> TopAppBar.setFixed True) 
+    regular
+        (TopAppBar.config
+            |> TopAppBar.setFixed True
+        )
         [ TopAppBar.row []
             [ TopAppBar.section [ TopAppBar.alignStart ]
                 [ iconButton
                     (IconButton.config
-                        |> IconButton.setAttributes [ TopAppBar.navigationIcon ] 
-                        |> IconButton.setOnClick (toggleDrawer config.drawerOpen))
-                    <| IconButton.icon "menu"
+                        |> IconButton.setAttributes [ TopAppBar.navigationIcon ]
+                        |> IconButton.setOnClick (toggleDrawer config.drawerOpen)
+                    )
+                  <|
+                    IconButton.icon "menu"
                 , Html.span
                     [ TopAppBar.title
 
@@ -290,10 +312,10 @@ viewHeader2 config details =
 
                     Just s ->
                         TextField.filled
-                            ( TextField.config
+                            (TextField.config
                                 |> TextField.setTrailingIcon (Just <| TextFieldIcon.icon "search")
                                 |> TextField.setValue (Just s)
-                                |> TextField.setAttributes [Theme.surface]
+                                |> TextField.setAttributes [ Theme.surface ]
                                 |> TextField.setOnInput Msg.Search
                             )
                 , case details.user of
@@ -302,9 +324,10 @@ viewHeader2 config details =
 
                     Just s ->
                         IconButton.iconButton
-                        
-                            (IconButton.config |> IconButton.setAttributes [TopAppBar.actionItem ])
-                            <| IconButton.customIcon Html.i []
+                            (IconButton.config |> IconButton.setAttributes [ TopAppBar.actionItem ])
+                        <|
+                            IconButton.customIcon Html.i
+                                []
                                 [ identicon "100%" s ]
                 ]
             ]
@@ -332,17 +355,18 @@ notFound : Details msg
 notFound =
     { detailsConfig
         | title = "Page Not Found"
-        , body = \_ -> 
-            [ div [ class "not-found" ]
-                [ div [ style "font-size" "12em" ] [ Html.text "404" ]
-                , h1 [ style "font-size" "3.5em" ] [ Html.text "Page Not Found" ]
-                , h3 [ style "font-size" "1.5em" ]
-                    [ Html.text "Oops - Looks like you got lost or clicked a bad link! "
-                    , a [ href "/" ] [ Html.text "Click here " ]
-                    , Html.text "to go back to the home page."
+        , body =
+            \_ ->
+                [ div [ class "not-found" ]
+                    [ div [ style "font-size" "12em" ] [ Html.text "404" ]
+                    , h1 [ style "font-size" "3.5em" ] [ Html.text "Page Not Found" ]
+                    , h3 [ style "font-size" "1.5em" ]
+                        [ Html.text "Oops - Looks like you got lost or clicked a bad link! "
+                        , a [ href "/" ] [ Html.text "Click here " ]
+                        , Html.text "to go back to the home page."
+                        ]
                     ]
                 ]
-            ]
     }
 
 
@@ -360,9 +384,11 @@ header : Header
 header =
     { drawerOpen = False
     , new_username = ""
+    , queue = Snackbar.initialQueue
 
     --, search = Nothing
     }
+
 
 
 -- viewDrawer : Header -> Details Msg.Msg -> Html.Html Msg.Msg
@@ -385,9 +411,6 @@ header =
 --         , div [ Drawer.appContent, Typography.typography ]
 --             detail.body
 --         ]
-
-
-
 -- LOGO
 -- viewLogo : Html msg
 -- viewLogo =
@@ -467,22 +490,24 @@ demoTitle =
 textForm : Maybe String -> Form.FormFunctor msg
 textForm label value callback =
     TextField.filled
-        (TextField.config 
+        (TextField.config
             |> TextField.setValue (Just value)
             |> TextField.setOnInput callback
             |> TextField.setLabel label
-            --|> TextField.outlined True TODO: Uncomment
+         --|> TextField.outlined True TODO: Uncomment
         )
+
 
 wideTextForm : Maybe String -> Form.FormFunctor msg
 wideTextForm label value callback =
     TextField.filled
-        (TextField.config 
+        (TextField.config
             |> TextField.setValue (Just value)
             |> TextField.setOnInput callback
             |> TextField.setLabel label
             --|> TextField.outlined True TODO: Uncomment
-            |> TextField.setFullwidth True)
+            |> TextField.setFullwidth True
+        )
 
 
 selectUser : List String -> List (Html Msg.Msg)
@@ -498,16 +523,18 @@ selectUser users =
             [ Html.h2 [ Typography.headline6 ] [ Html.text "Please choose your account:" ]
             , LayoutGrid.cell [] <|
                 let
-                    sList = List.map (\user -> MLItem.listItem (MLItem.config |> MLItem.setOnClick (Msg.SetUser user)) [ MLItem.graphic [] [ identicon "100%" user ], Html.text user ]) users
-                in 
-                    case sList of
-                        fir :: res ->
-                            [ MList.list MList.config 
-                                fir
-                                res
-                            ]
-                        _ ->
-                            []
+                    sList =
+                        List.map (\user -> MLItem.listItem (MLItem.config |> MLItem.setOnClick (Msg.SetUser user)) [ MLItem.graphic [] [ identicon "100%" user ], Html.text user ]) users
+                in
+                case sList of
+                    fir :: res ->
+                        [ MList.list MList.config
+                            fir
+                            res
+                        ]
+
+                    _ ->
+                        []
             ]
 
     else
@@ -538,39 +565,41 @@ userDialog open users new_username time =
                             }
                     ]
                 )
-        uList = List.indexedMap
-                        (\index ( id, user ) ->
-                            MLItem.listItem
-                                (MLItem.config 
-                                    |> MLItem.setOnClick (Msg.SetUser id)
-                                    --|> MLItem.activated (index == 0) TODO: Uncomment
-                                    --|> MLItem.selected False TODO: Uncomment
-                                    |> MLItem.setAttributes [Html.Attributes.tabindex 0])
 
-                                [ MLItem.graphic
-                                    (userIdenticonIcon id).attributes
-                                    (userIdenticonIcon id).elements
-                                , MLItem.text []
-                                    { primary = [Html.text <| Maybe.withDefault id user.name]
-                                    , secondary = [Html.text <| "Last login " ++ ( Maybe.withDefault "" <| Maybe.map (\x -> relativeTime x (Time.millisToPosix user.last_login)) time)]}
-                                ]
+        uList =
+            List.indexedMap
+                (\index ( id, user ) ->
+                    MLItem.listItem
+                        (MLItem.config
+                            |> MLItem.setOnClick (Msg.SetUser id)
+                            --|> MLItem.activated (index == 0) TODO: Uncomment
+                            --|> MLItem.selected False TODO: Uncomment
+                            |> MLItem.setAttributes [ Html.Attributes.tabindex 0 ]
                         )
-                    <|
-                        List.reverse <|
-                            List.sortBy (\( _, b ) -> b.last_login) users
-
+                        [ MLItem.graphic
+                            (userIdenticonIcon id).attributes
+                            (userIdenticonIcon id).elements
+                        , MLItem.text []
+                            { primary = [ Html.text <| Maybe.withDefault id user.name ]
+                            , secondary = [ Html.text <| "Last login " ++ (Maybe.withDefault "" <| Maybe.map (\x -> relativeTime x (Time.millisToPosix user.last_login)) time) ]
+                            }
+                        ]
+                )
+            <|
+                List.reverse <|
+                    List.sortBy (\( _, b ) -> b.last_login) users
     in
     Dialog.dialog
         (Dialog.config
             |> Dialog.setOpen open
-            )
+        )
         { title = Just "Select an account"
         , content =
             case uList of
                 f :: rest ->
-                    [ list (MList.config |> MList.setAvatarList True) 
+                    [ list (MList.config |> MList.setAvatarList True)
                         f
-                        rest   
+                        rest
                     ]
 
                 _ ->
@@ -578,25 +607,26 @@ userDialog open users new_username time =
         , actions =
             [ list
                 (MList.config |> MList.setNonInteractive True)
-                ( MLItem.listItem
+                (MLItem.listItem
                     (MLItem.config
-                        |> MLItem.setAttributes [ Html.Attributes.tabindex 0
+                        |> MLItem.setAttributes
+                            [ Html.Attributes.tabindex 0
 
                             --    , Html.Events.onClick Close
-                            ])
-                    
-                    [ 
-                        TextField.filled
-                            (TextField.config 
-                                |> TextField.setOnInput (Msg.Viewer << NewUsername)
-                                |> TextField.setLabel (Just "Add new User")
-                                |> TextField.setOnChange addUserWithName
-                                |> TextField.setValue (Just new_username)
-                            )
+                            ]
+                    )
+                    [ TextField.filled
+                        (TextField.config
+                            |> TextField.setOnInput (Msg.Viewer << NewUsername)
+                            |> TextField.setLabel (Just "Add new User")
+                            |> TextField.setOnChange addUserWithName
+                            |> TextField.setValue (Just new_username)
+                        )
                     , Button.unelevated
-                        (Button.config 
-                            |> Button.setAttributes [ Html.Attributes.style "margin-left" "16px"]
-                            |> Button.setIcon (Just <| Button.icon "add"))
+                        (Button.config
+                            |> Button.setAttributes [ Html.Attributes.style "margin-left" "16px" ]
+                            |> Button.setIcon (Just <| Button.icon "add")
+                        )
                         "add"
                     ]
                 )
@@ -619,4 +649,3 @@ userIdenticonIcon id =
         ]
     , elements = [ identicon "66%" id ]
     }
-
