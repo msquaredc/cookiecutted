@@ -114,7 +114,7 @@ view (Page.Page model) =
     case mbInfos of
         Just infos ->
             { detailsConfig
-                | title = toTitle model.page
+                | title = infos.name
                 , user = model.session.user
             
                 , body =\_ -> 
@@ -125,10 +125,11 @@ view (Page.Page model) =
                                     Html.h1 [ Typography.headline5 ] [
                                                 EditableText.text 
                                                     econf
-                                                    [] (Maybe.withDefault "" <| Maybe.map (\x -> x.value.name) <| Dict.get model.page.id db.events)]
-                                    , p [][ text <| "Location:" ++ infos.location]
+                                                    [] 
+                                                    (Maybe.withDefault "" <| Maybe.map (\x -> x.value.name) <| Dict.get model.page.id db.events)]
+                                    , p [][ text <| "Location:" ++ infos.location]]
                                     --, p [][ text <| "Leader: " ++ viewLeader infos.leader model.session.user]   
-                                , cell []
+                                , cell [LG.span8Desktop]
                                     [ Html.h1 [ Typography.headline5 ] [ text "Test Subjects" ]
                                     , viewList infos.test_subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 x)
                                     , unelevated
@@ -203,7 +204,7 @@ view (Page.Page model) =
                                 -- ]
                             ]
                         ]
-                    ]
+                    
             }
     
         Nothing ->
@@ -231,6 +232,7 @@ view (Page.Page model) =
 type alias RelatedData =
     {
         id : String,
+        name : String,
         location : String,
         created : Posix,
         creator : (String, Maybe Db.User),
@@ -250,6 +252,7 @@ relatedData id db =
                 Just 
                     {
                         id = id,
+                        name = event.name,
                         location = event.place,
                         study = (event.study, Maybe.map .value <| Dict.get event.study db.studies),
                         created = Time.millisToPosix timestampedEvent.created,
@@ -335,5 +338,5 @@ viewTable db questionnaries test_subjects event_id =
 
 
 toTitle : Model -> String
-toTitle _ =
+toTitle model =
     "Home ⧽ Event"

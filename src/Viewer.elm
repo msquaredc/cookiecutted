@@ -137,7 +137,7 @@ view session msg details h time =
                             ( Device.Tablet, Device.Landscape ) ->
                                 Tablet.viewLandscape
                         )
-                            { title = Nothing --Just details.title
+                            { title = Just details.title --Nothing
                             , body = div [] <| details.body time
                             , openDrawer = Msg.Viewer OpenDrawer
                             , user = Maybe.map (identicon "100%") session.user
