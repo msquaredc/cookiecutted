@@ -99,7 +99,7 @@ init flags url key =
 
         Err _ ->
             let
-                newmodel = reportError "Could not load localstorage!" model
+                newmodel = {-reportError "Could not load localstorage!"-} model
             in
             -- If localstorage decoder failed, clear localstorage
             ( newmodel, Cmd.batch [ newCmds, Ports.clearLocalStorage () ] )

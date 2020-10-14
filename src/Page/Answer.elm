@@ -1,8 +1,13 @@
 module Page.Answer exposing (..)
 
 import Dict
+import Element exposing (fill, height, width, px, padding )
+import Element.Font as Font
+import Element.Background as Background
 import Html exposing (text)
 import Html.Attributes exposing (style)
+--import Html.Keyed as Keyed
+import Element.Keyed as Keyed
 import List.Extra
 import Material.Button as Button exposing (config)
 import Material.TextArea as TextArea
@@ -103,50 +108,59 @@ view (Page.Page model) =
 
         db =
             model.session.db
-    in
+        viewportHeight = model.session.windowSize.height
+                        
+    in  
     { detailsConfig
         | title = toTitle model.page
         , user = model.session.user
         , body =
-            \_ ->
+            \_ -> [
                 case infos.currentQuestionId of
                     Just qid ->
                         case Dict.get qid <| Dict.fromList infos.questions of
                             Just question ->
-                                viewQuestion db qid question infos.currentAnswer model.page
-                                    ++ (case infos.previous of
-                                            Just prev ->
-                                                [ Button.text
-                                                    (Button.config |> Button.setOnClick prev)
-                                                    "Previous"
-                                                ]
+                                
+                                Element.layout [ height <| px <| viewportHeight - 48, padding 24] <|
+                                    Element.column [height fill, width fill]
+                                        [ Element.el [ height fill, width fill ] <| viewQuestion db qid question infos.currentAnswer model.page
+                                        , Element.row [ Element.alignBottom, width fill]
+                                            [ Element.el [Element.alignLeft] <| Element.html
+                                                (case infos.previous of
+                                                    Just prev ->
+                                                        Button.raised
+                                                            (Button.config |> Button.setOnClick prev)
+                                                            "Previous"
 
-                                            Nothing ->
-                                                []
-                                       )
-                                    ++ (case infos.next of
-                                            Just next ->
-                                                [ Button.text
-                                                    (Button.config |> Button.setOnClick next)
-                                                    "Next"
-                                                ]
+                                                    Nothing ->
+                                                        text ""
+                                                )
+                                            , Element.el [ Element.centerX, width fill ] (Element.text "")
+                                            , Element.el [ Element.alignRight] <| Element.html
+                                                (case infos.next of
+                                                    Just next ->
+                                                        Button.raised
+                                                            (Button.config |> Button.setOnClick next)
+                                                            "Next"
 
-                                            Nothing ->
-                                                []
-                                       )
+                                                    Nothing ->
+                                                        text ""
+                                                )
+                                            ]
+                                        ]
 
                             Nothing ->
-                                [ text "Question not found" ]
+                                 text "Question not found" 
 
                     Nothing ->
-                        [ Html.div demoContent
+                        Html.div demoContent
                             [ text "Nothing to do!"
                             ]
-                        ]
+            ]
     }
 
 
-viewQuestion : Db.Database -> String -> Db.Question -> Maybe ( String, Db.Answer ) -> Model -> List (Html.Html Msg.Msg)
+viewQuestion : Db.Database -> String -> Db.Question -> Maybe ( String, Db.Answer ) -> Model -> Element.Element Msg.Msg
 viewQuestion db qid question mbAnswer model =
     let
         mbit =
@@ -210,37 +224,41 @@ viewQuestion db qid question mbAnswer model =
                                 ]
                             )
     in
-    text question.text
-        :: (case mbit of
-                Nothing ->
-                    [ text "Undefined input type" ]
+    Keyed.column [width fill, height fill] [
+        ( "title", Element.el [ width fill, height fill] <| Element.el [Element.centerX, Element.centerY {-Background.color (Element.rgb 0.8 0.8 0.8)-},padding 32] <| Element.paragraph [Font.size 32] [Element.text question.text] )
+            ,("edit", Keyed.row [width fill, height fill] [
+            ("padleft", Element.el [width fill] <| Element.none)
+            , (qid, Element.el [ width fill, height fill] <| Element.el [Element.centerY, width fill] <| (case mbit of
+                    Nothing ->
+                        Element.html <| text "Undefined input type" 
+                    Just (ShortAnswer s) ->
+                        Element.html <| TextField.filled
+                                (TextField.config
+                                    |> TextField.setLabel s.label
+                                    |> TextField.setValue mbvalue
+                                    |> TextField.setPlaceholder s.placeholder
+                                    |> TextField.setOnInput tonInput
+                                 --|> TextField.setMaxLength s.maxLength
+                                 --|> TextField.setMinLength s.minLength
+                                )
+                          
+                        
 
-                Just (ShortAnswer s) ->
-                    [ TextField.filled
-                        (TextField.config
-                            |> TextField.setLabel s.label
-                            |> TextField.setValue mbvalue
-                            |> TextField.setPlaceholder s.placeholder
-                            |> TextField.setOnInput tonInput
-                            --|> TextField.setMaxLength s.maxLength
-                            --|> TextField.setMinLength s.minLength
-                        )
-                    ]
+                    Just (LongAnswer l) ->
+                        Element.html <| TextArea.filled
+                                (TextArea.config
+                                    |> TextArea.setLabel l.label
+                                    |> TextArea.setValue mbvalue
+                                    |> TextArea.setOnInput tonInput
+                                    |> TextArea.setRows l.rows
+                                    |> TextArea.setCols l.cols
+                                )
+                         
 
-                Just (LongAnswer l) ->
-                    [ TextArea.filled
-                        (TextArea.config
-                            |> TextArea.setLabel l.label
-                            |> TextArea.setValue mbvalue
-                            |> TextArea.setOnInput tonInput
-                            |> TextArea.setRows l.rows
-                            |> TextArea.setCols l.cols
-                        )
-                    ]
-
-                Just (List _) ->
-                    [ text "List Answer" ]
-           )
+                    Just (List _) ->
+                        Element.text "List Answer" 
+               ))
+            , ("padright", Element.el [width fill] <| Element.none)])]
 
 
 type alias RelatedData =
