@@ -273,7 +273,7 @@ defaultUpdate message ( model, effect ) =
                                         updateDbSession model session newDb
                     
                     Msg.Access kind id ->
-                        ( model, Cmd.map (Msg.CRUD << Msg.Update) <|
+                        ( model, Cmd.batch [ Cmd.map (Msg.CRUD << Msg.Update) <|
                                         perform
                                             (\z ->
                                                 Updater.AttributeMsg (Match.toStringPlural kind) <|
@@ -281,7 +281,8 @@ defaultUpdate message ( model, effect ) =
                                                         Updater.AttributeMsg "accessed" <|
                                                             Updater.IntMsg (Time.posixToMillis z)
                                             )
-                                            now)
+                                            now
+                                            ])
 
 
                     Msg.UpdateAll updates ->
