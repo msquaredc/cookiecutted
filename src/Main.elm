@@ -36,8 +36,11 @@ import Type.IO exposing (form2update)
 import Type.IO.Setter as Updater
 import Url
 import Url.Builder
-import Url.Parser as Parser exposing ((</>))
+import Url.Parser as Parser exposing ((</>),(<?>))
+import Url.Parser.Query as Query
 import Viewer
+import Url.Parser exposing (query)
+
  
 
 
@@ -133,7 +136,17 @@ defaultUpdate message ( model, effect ) =
 
             -- When the URL changes. This could from something like clicking a link or the browser back/forward buttons
             Msg.UrlChanged url ->
-                routeUrl url model
+                let
+                    mbnewUrl = url
+                            |> Url.toString 
+                            |> String.replace "/#/" "/"
+                            |> Url.fromString
+                in
+                    case mbnewUrl of
+                        Just newUrl ->
+                            routeUrl newUrl model
+                        Nothing ->
+                            routeUrl url model
 
             -- Handle this however you'd like for responsive web design! The view in Main.elm and each respective page can change depending on the window size
             Msg.OnWindowResize width height ->
@@ -316,6 +329,9 @@ defaultUpdate message ( model, effect ) =
 
             Msg.Follow kind id ->
                 ( model, Browser.Navigation.pushUrl model.key <| "#" ++ Url.Builder.absolute [ Match.toString kind, id ] [] )
+            
+            Msg.FollowSubpage kind id subpages qparam -> 
+                ( model, Browser.Navigation.pushUrl model.key <| "#" ++ Url.Builder.absolute ([ Match.toString kind, id] ++ subpages)  qparam )
 
             Msg.SetUser id ->
                     let
@@ -664,7 +680,7 @@ updateSession model session =
                 |> (\( x, y ) -> ( { model | page = Study x }, y ))
 
         Event (Page.Page m) ->
-            Event.page session m.page.id m.page.nameFocus
+            Event.page session m.page.page m.page.id m.page.nameFocus
                 |> (\( x, y ) -> ( { model | page = Event x }, y ))
 
         Questionary (Page.Page m) ->
@@ -694,7 +710,17 @@ updateDbSession model session db =
 
 -- ROUTING
 -- The following functions create the client-side router. Update "parser" and "paths" for each page you add/remove
-
+testMethod =
+    case Url.fromString "http://localhost:3000/event/oLFlGAGBkkaZDCTsnmOA/answer?tsid=a" of 
+        Nothing ->
+            Nothing
+        Just oldUrl ->
+            let
+                hashUrl = { oldUrl | path = Maybe.withDefault "" oldUrl.fragment, fragment = Nothing }
+                func x y = "yes"
+            in
+                Parser.parse (Parser.map func (Parser.s paths.event </> Parser.string </> Parser.s "answer" <?> Query.custom "tsid" identity)) oldUrl
+    --Parser.parse (Parser.s paths.event </> Parser.string </> Answer.parser )
 
 routeUrl : Url.Url -> Model -> ( Model, Cmd Msg.Msg )
 routeUrl url model =
@@ -707,8 +733,9 @@ routeUrl url model =
             { url | path = Maybe.withDefault "" url.fragment, fragment = Nothing }
     in
     -- If you'd like to use hash-based routing:
-    case Parser.parse (parser model session) hashUrl of
-        -- case Parser.parse (parser model session) url of
+    
+    --case Parser.parse (parser model session) hashUrl of
+     case Parser.parse (parser model session) url of
         Just success ->
             success
 
@@ -735,8 +762,46 @@ parser model session =
             (mapPageMsg model PageOne (PageOne.page session))
         , route (Parser.s paths.study </> Parser.string)
             (\id -> mapPageMsg model Study (Study.page session id False))
+        --
+        , route (Parser.s paths.event </> Parser.string </> Answer.parser )
+            (\eid answer_result -> 
+                case answer_result eid of
+                    Just amodel ->
+                        mapPageMsg model Answer (Answer.page
+                            session 
+                            amodel)
+                    Nothing ->
+                        mapPageMsg model Event (
+                        Event.page
+                            session 
+                            Msg.EventSettings
+                            eid 
+                            False)
+
+            )
+                  
+        , route (Parser.s paths.event </> Parser.string </> Parser.s "people")
+            (\id -> mapPageMsg model Event (
+                Event.page
+                    session 
+                    Msg.EventPeople
+                    id 
+                    False))
+        , route (Parser.s paths.event </> Parser.string </> Parser.s "settings")
+            (\id -> mapPageMsg model Event (
+                Event.page
+                    session 
+                    Msg.EventSettings
+                    id 
+                    False))
+            
         , route (Parser.s paths.event </> Parser.string)
-            (\id -> mapPageMsg model Event (Event.page session id False))
+            (\id -> mapPageMsg model Event (
+                Event.page
+                    session 
+                    Msg.EventOverview
+                    id 
+                    False))
         , route (Parser.s paths.questionary </> Parser.string)
             (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus))
         , route (Parser.s paths.question </> Parser.string)

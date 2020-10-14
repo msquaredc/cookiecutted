@@ -9,6 +9,7 @@ import Material.List as MList exposing (config)
 import Material.List.Item as MLItem exposing (config)
 import Html.Attributes exposing (style)
 
+
 viewLandscape : I.ViewerConfig msg -> List (Html msg)
 viewLandscape config =
     [
@@ -32,6 +33,7 @@ viewLandscape config =
             , title = Maybe.withDefault "Landscape Handset" config.title
             , search = Nothing
             , user = config.user
+            , actions = config.actions
             }
         ]
     , div [TopAppBar.denseFixedAdjust][config.body]
@@ -60,6 +62,7 @@ viewPortrait config =
             , title = config.drawerTitle
             , search = Nothing
             , user = config.user
+            , actions = config.actions
             }
 
         , div [TopAppBar.denseFixedAdjust][
@@ -82,6 +85,7 @@ viewPortrait config =
             , title = Maybe.withDefault "Portrait Handset" config.title
             , search = Nothing
             , user = config.user
+            , actions = config.actions
             }
 
         , div [TopAppBar.denseFixedAdjust][config.body]

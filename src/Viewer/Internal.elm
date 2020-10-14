@@ -33,6 +33,7 @@ type alias ViewerConfig msg =
         , drawerContent : Html msg
         , navButtonIcon : String
         , navButtonCallback :  msg
+        , actions : List (String, msg)
     }
 
 --
@@ -44,6 +45,7 @@ type alias TopAppBarConfig msg =
         , navButton : Maybe (NavButtonConfig msg)
         , title : String
         , search : Maybe (SearchConfig msg)
+        , actions : List (String, msg)
         , user : Maybe (Html Never)
     }
 
@@ -77,7 +79,7 @@ viewTopAppBar config =
                         ]
                         [ text config.title ]
                     ]
-            , TopAppBar.section [ TopAppBar.alignEnd ]
+            , TopAppBar.section [ TopAppBar.alignEnd ] <|
                 [ case config.search of
                     Nothing ->
                         div [] []
@@ -99,7 +101,17 @@ viewTopAppBar config =
                             --     , onInput = Just s.callback
                             -- }
                             )
-                , case config.user of
+                ]
+                ++ List.map (\(iconName, callback) ->
+                                IconButton.iconButton
+                                    (IconButton.config
+                                        |> IconButton.setAttributes
+                                            [ TopAppBar.actionItem ]
+                                        |> IconButton.setOnClick callback
+                                    )
+                                    (IconButton.icon iconName)
+                            ) config.actions ++
+                [ case config.user of
                     Nothing ->
                         div [] []
 

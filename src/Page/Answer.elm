@@ -20,12 +20,14 @@ import Type.Database.InputType exposing (InputType(..))
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
 import Viewer exposing (detailsConfig)
+import Url.Parser as Parser exposing ((</>))
+import Url.Parser.Query as Query
 
 
 type alias Model =
     { questionary : String
-    , event : String
     , test_subject : String
+    , event : String
     }
 
 
@@ -93,6 +95,27 @@ page session init =
                            |> toCmd)
     -}
     ( Page model, Cmd.none )
+
+parser : Parser.Parser ((String -> Maybe Model) -> a) a
+parser =
+    Parser.s "answer" </> (Parser.query <|
+        Query.map2 
+            (\qid tsid -> (\eid -> Maybe.map2 Model qid tsid
+                                   |> Maybe.map (\x -> x eid)))
+            (Query.string "qid")
+            (Query.string "tsid"))
+    {- let
+        page2parser : Db.Type -> Parser.Parser (SubPage -> b) b
+        page2parser subpage =
+            Parser.map (Query subpage) (Parser.s (Match.toString subpage) <?> Query.string "q")
+
+        page2edit : Db.Type -> Parser.Parser (SubPage -> b) b
+        page2edit subpage =
+            Parser.map (Edit subpage) (Parser.s (Match.toString subpage) </> Parser.string)
+    in
+    Parser.oneOf
+        (Parser.map Home Parser.top :: List.map page2parser Match.types ++ List.map page2edit Match.types) -}
+
 
 
 update : Msg.Msg -> Page.Page Model Msg.Msg -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )

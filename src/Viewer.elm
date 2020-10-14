@@ -50,6 +50,7 @@ type alias Details msg =
     , search : Maybe String
     , user : Maybe String
     , top : Bool
+    , actions : List (String, msg)
     }
 
 
@@ -158,6 +159,7 @@ view session msg details h time =
 
                                 else
                                     Msg.Back
+                            , actions = details.actions
                             }
 
                     Nothing ->
@@ -377,6 +379,7 @@ detailsConfig =
     , search = Nothing
     , user = Nothing
     , top = False
+    , actions = []
     }
 
 

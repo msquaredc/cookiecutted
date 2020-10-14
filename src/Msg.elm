@@ -15,6 +15,7 @@ module Msg exposing
     , ShortMsg(..)
     , LongMsg(..)
     , ListMsg(..)
+    , EventSubPage(..)
     )
 
 import Browser
@@ -26,6 +27,7 @@ import Type.Database.InputType as IT
 import Material.Snackbar as Snackbar
 import Time exposing (Posix)
 import Url
+import Url.Builder
 
 
 type Msg
@@ -50,6 +52,7 @@ type Msg
     | CRUD DbMsg
     | Form UpdateMsg
     | Follow Type String
+    | FollowSubpage Type String (List String) (List Url.Builder.QueryParameter)
     | SetUser String
     | Back
     | Tick Posix
@@ -77,9 +80,16 @@ type EditableTextMsg
 type StudyMsg
     = StudyNameEdit EditableTextMsg
 
+
 type EventMsg
     = EventNameEdit EditableTextMsg
     | AnswerQuestions {questionary: String, test_subject: String, event: String}
+    | EventSwitchTo EventSubPage
+
+type EventSubPage
+    = EventSettings
+    | EventOverview
+    | EventPeople
 
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)

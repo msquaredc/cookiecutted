@@ -19,6 +19,7 @@ viewLandscape config =
             , title = Maybe.withDefault "Landscape Tablet" config.title
             , search = Nothing
             , user = config.user
+            , actions = config.actions
             },
         div [TopAppBar.denseFixedAdjust][
             I.viewDrawer
@@ -79,6 +80,7 @@ viewPortrait config =
             , title = Maybe.withDefault "Portrait Tablet" config.title
             , search = Nothing
             , user = config.user
+            , actions = config.actions
             }
         ]
     , div [TopAppBar.fixedAdjust] [config.body]

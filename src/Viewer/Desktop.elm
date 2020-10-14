@@ -19,6 +19,7 @@ viewLandscape config =
         , title = Maybe.withDefault "Landscape Desktop" config.title
         , search = Nothing
         , user = config.user
+        , actions = config.actions
         }
     , div [TopAppBar.prominentFixedAdjust] 
         [I.viewDrawer
@@ -46,6 +47,7 @@ viewPortrait config =
         , title = Maybe.withDefault "Portrait Desktop" config.title
         , search = Nothing
         , user = config.user
+        , actions = config.actions
         }
     , div [TopAppBar.prominentFixedAdjust]
         [I.viewDrawer

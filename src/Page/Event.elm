@@ -14,12 +14,18 @@ import Material.LayoutGrid as LG exposing (layoutGrid, cell, inner)
 import Material.Typography as Typography
 import Material.Button as Button exposing (unelevated)
 import Material.DataTable as DataTable
+import Material.TabBar as TabBar
+import Material.Tab as Tab
+import Material.Icon as Icon
 import Type.Database as Db
 import Material.List as MList exposing (list)
 import Material.List.Item as MLItem exposing (listItem, graphic)
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
 import Viewer.EditableText as EditableText
+import Url.Builder
+import Url.Parser as Parser exposing ((</>))
+import Url.Parser.Query as Query
 
 {-
    This is a page with subpages. You can change the behaviour depending on the subpage path!
@@ -28,24 +34,25 @@ import Viewer.EditableText as EditableText
 
 
 type alias Model =
-    { id : String
+    { page : Msg.EventSubPage
+    , id : String
     , nameFocus : Bool
     }
 
 -- INIT
 
 
-init : String -> Bool -> Model
+init : Msg.EventSubPage -> String -> Bool -> Model
 init =
     Model 
 
 
-page : Session.Session -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
-page session id focus =
+page : Session.Session -> Msg.EventSubPage -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page session subpage id focus =
     let
         model =
             { session = session
-            , page = init id focus
+            , page = init subpage id focus
             , view = view
             , toMsg = identity
 
@@ -58,6 +65,14 @@ page session id focus =
     ( Page model, Cmd.none )
 
 
+-- parser : Parser.Parser ((String -> Maybe Model) -> a) a
+-- parser =
+--     Parser.s "answer" </> (Parser.query <|
+--         Query.map2 
+--             (\qid tsid -> (\eid -> Maybe.map2 Model qid tsid
+--                                    |> Maybe.map (\x -> x eid)))
+--             (Query.string "qid")
+--             (Query.string "tsid"))
 
 -- UPDATE
 
@@ -84,6 +99,9 @@ update message (Page model) =
                             
                             ( Page {model| page = new_page}, Cmd.none )
                 Msg.AnswerQuestions {questionary, test_subject, event} ->
+                    (Page model, Cmd.none)
+                
+                Msg.EventSwitchTo _ ->
                     (Page model, Cmd.none)
 
         _ ->
@@ -116,20 +134,37 @@ view (Page.Page model) =
             { detailsConfig
                 | title = infos.name
                 , user = model.session.user
-            
+                , actions = [("settings", Msg.FollowSubpage Db.EventType infos.id ["settings"] [])]
                 , body =\_ -> 
                     [
-                        layoutGrid [Typography.typography] [
-                            inner [][
-                                cell [][
-                                    Html.h1 [ Typography.headline5 ] [
-                                                EditableText.text 
-                                                    econf
-                                                    [] 
-                                                    (Maybe.withDefault "" <| Maybe.map (\x -> x.value.name) <| Dict.get model.page.id db.events)]
-                                    , p [][ text <| "Location:" ++ infos.location]]
-                                    --, p [][ text <| "Leader: " ++ viewLeader infos.leader model.session.user]   
-                                , cell [LG.span8Desktop]
+                        {- TabBar.tabBar TabBar.config
+                            [ Tab.tab
+                                (Tab.config
+                                    |> Tab.setActive (model.page.page == Msg.EventOverview)
+                                    --|> Tab.setOnClick (TabClicked 0)
+                                )
+                                { label = "Overview", icon = Just <| Tab.icon "poll"}
+                            , Tab.tab
+                                (Tab.config 
+                                    |> Tab.setActive (model.page.page == Msg.EventPeople)
+                                    |> Tab.setOnClick (Msg.Event <| Msg.EventSwitchTo <| Msg.EventPeople)
+                                )
+                                { label = "Participants", icon = Just <| Tab.icon "people" }
+                            , Tab.tab
+                                (Tab.config 
+                                    |> Tab.setActive (model.page.page == Msg.EventSettings)
+                                    --|> Tab.setOnClick (TabClicked 1)
+                                )
+                                { label = "Settings", icon = Just <| Tab.icon "settings" }
+                            ]
+                         -}
+                        case model.page.page of
+                            Msg.EventSettings ->
+                                text "Settings:"
+                            Msg.EventPeople -> 
+                                layoutGrid [Typography.typography] [
+                                inner [][
+                                cell [LG.span8Desktop]
                                     [ Html.h1 [ Typography.headline5 ] [ text "Test Subjects" ]
                                     , viewList infos.test_subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 x)
                                     , unelevated
@@ -151,6 +186,19 @@ view (Page.Page model) =
                                             ))
                                         "Add"
                                     ]
+                                ]]
+                            _ ->
+                                layoutGrid [Typography.typography] [
+                                inner [][
+                                    cell [][
+                                    Html.h1 [ Typography.headline5 ] [
+                                                EditableText.text 
+                                                    econf
+                                                    [] 
+                                                    (Maybe.withDefault "" <| Maybe.map (\x -> x.value.name) <| Dict.get model.page.id db.events)]
+                                    , p [][ text <| "Location:" ++ infos.location]]
+                                    --, p [][ text <| "Leader: " ++ viewLeader infos.leader model.session.user]   
+                                
                                 , cell []
                                     [ Html.h1 [ Typography.headline5 ] [ text "Questionnaries" ]
                                     , viewList 
@@ -177,7 +225,7 @@ view (Page.Page model) =
                                             )
                                         "Add"]
                                 , cell [][viewTable db infos.questionnaries infos.test_subjects infos.id]                
-                                ]
+                                ]]
                                 -- , layoutGridCell [][
                                 --     Html.h1 [ Typography.headline5 ] [ text "Events" ]
                                 --     , viewList infos.events (Msg.Follow Db.EventType)
@@ -203,7 +251,7 @@ view (Page.Page model) =
                                 --         "Add"
                                 -- ]
                             ]
-                        ]
+                        
                     
             }
     
@@ -216,7 +264,7 @@ view (Page.Page model) =
                         layoutGrid [] [
                             inner [][
                                 cell [][
-                                    Html.h1 [ Typography.headline5 ] [ text <| "Event not Found" ]
+                                    Html.h1 [ Typography.headline5 ] [ text <| "Event not Found: " ++ model.page.id ]
                                 ]
                             ]
                         ]
@@ -327,8 +375,8 @@ viewTable db questionnaries test_subjects event_id =
                                                 |> Dict.toList
                                     q_ids = List.map (\(qid,_)-> qid) questions
                                 in
-                                    Button.text
-                                        (Button.config |> Button.setOnClick (Msg.Event <| Msg.AnswerQuestions {event = event_id, questionary = questionary_id, test_subject = test_subject_id}) ) <| (String.fromInt <| List.length answers) ++ "/" ++ (String.fromInt <| List.length questions)
+                                    Button.unelevated
+                                        (Button.config |> Button.setOnClick (Msg.FollowSubpage Db.EventType event_id ["answer"] [Url.Builder.string "qid" questionary_id, Url.Builder.string "tsid" test_subject_id]) ) <| (String.fromInt <| List.length answers) ++ "/" ++ (String.fromInt <| List.length questions)
                             ]
                         )
                         questionnaries
