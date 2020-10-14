@@ -109,6 +109,7 @@ type DbMsg
     | Update Updater.Msg
     | UpdateAll (List Updater.Msg)
     | Delete Type String
+    | Access Type String
     --| SwapAttributes Type (String, String) String
 
 

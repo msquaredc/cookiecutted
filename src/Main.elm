@@ -256,12 +256,34 @@ defaultUpdate message ( model, effect ) =
                                                                                 Updater.IntMsg (Time.posixToMillis z)
                                                                 )
                                                                 now
+                                                        , Cmd.map (Msg.CRUD << Msg.Update) <|
+                                                            perform
+                                                                (\z ->
+                                                                    Updater.AttributeMsg table <|
+                                                                        Updater.DictKeyMsg id <|
+                                                                            Updater.AttributeMsg "accessed" <|
+                                                                                Updater.IntMsg (Time.posixToMillis z)
+                                                                )
+                                                                now
                                                         ]
                                                     )
                                                )
 
                                     _ ->
                                         updateDbSession model session newDb
+                    
+                    Msg.Access kind id ->
+                        ( model, Cmd.map (Msg.CRUD << Msg.Update) <|
+                                        perform
+                                            (\z ->
+                                                Updater.AttributeMsg (Match.toStringPlural kind) <|
+                                                    Updater.DictKeyMsg id <|
+                                                        Updater.AttributeMsg "accessed" <|
+                                                            Updater.IntMsg (Time.posixToMillis z)
+                                            )
+                                            now)
+
+
                     Msg.UpdateAll updates ->
                         case List.foldl (Result.andThen << Db.database.updater) (Ok db) updates of
                             Err e ->
