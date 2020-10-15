@@ -28,6 +28,7 @@ import Material.Snackbar as Snackbar
 import Time exposing (Posix)
 import Url
 import Url.Builder
+import DnDList
 
 
 type Msg
@@ -94,6 +95,7 @@ type EventSubPage
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
     | QuestionNameEdit EditableTextMsg
+    | OnQuestionDrag DnDList.Msg
 
 type QuestionMsg
     = SetInputType String

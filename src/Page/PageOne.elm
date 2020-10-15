@@ -30,6 +30,7 @@ page session =
             page = init,
             view = view,
             toMsg = Msg.PageOne,
+            subscriptions = Sub.none,
             -- header = Viewer.header,
             update = Page.liftupdate update }
     in

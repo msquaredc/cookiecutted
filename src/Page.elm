@@ -15,6 +15,7 @@ type Page a msg=
         page : a,
         view : (Page a msg -> Viewer.Details Msg.Msg),
         toMsg : (msg -> Msg.Msg),
+        subscriptions : Sub msg,
         -- header : Viewer.Header,
         update : (msg -> Page a msg -> (Page a msg, Cmd msg))
     }

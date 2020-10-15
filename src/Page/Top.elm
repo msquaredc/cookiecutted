@@ -62,6 +62,7 @@ page session =
             , view = view
             , toMsg = identity
             , -- header = Viewer.header,
+            subscriptions = Sub.none,
               update = update
             }
     in

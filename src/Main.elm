@@ -92,7 +92,7 @@ init flags url key =
             Json.Decode.decodeValue Db.database.decoder flags.db
 
         ( model, cmds ) =
-            routeUrl url <| Model key (NotFound <| Session.init flags) Viewer.header Nothing
+            routeUrl (urlAdaptHash url) <| Model key (NotFound <| Session.init flags) Viewer.header Nothing
         newCmds = Cmd.batch [cmds, perform Msg.Tick now]
     in
     --  On loading the application, we read form local storage. If the object is incorrectly formatted, clear localStorage
@@ -136,17 +136,7 @@ defaultUpdate message ( model, effect ) =
 
             -- When the URL changes. This could from something like clicking a link or the browser back/forward buttons
             Msg.UrlChanged url ->
-                let
-                    mbnewUrl = url
-                            |> Url.toString 
-                            |> String.replace "/#/" "/"
-                            |> Url.fromString
-                in
-                    case mbnewUrl of
-                        Just newUrl ->
-                            routeUrl newUrl model
-                        Nothing ->
-                            routeUrl url model
+                routeUrl (urlAdaptHash url) model
 
             -- Handle this however you'd like for responsive web design! The view in Main.elm and each respective page can change depending on the window size
             Msg.OnWindowResize width height ->
@@ -551,13 +541,36 @@ view model =
 
 
 subscriptions : Model -> Sub Msg.Msg
-subscriptions _ =
-    Sub.batch
-        [ Browser.Events.onResize Msg.OnWindowResize
+subscriptions model =
+    Sub.batch <|
+        [case model.page of
+            NotFound _ ->
+                Sub.none
+            Top (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            User (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            PageOne (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            PageWithSubpage (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            Admin (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            Study (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            Event (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            Questionary (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            Question (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+            Answer (Page.Page m) ->
+                Sub.map m.toMsg m.subscriptions
+        , Browser.Events.onResize Msg.OnWindowResize
         , Ports.onLocalStorageChange Msg.OnLocalStorageChange
         , Ports.onDbChange Msg.OnDbChange
         , Time.every 1000 Msg.Tick
-        ]
+        ] 
 
 
 
@@ -854,3 +867,13 @@ reportError msg model =
         newheader = {oldheader | queue = newQueue}
     in
         {model|header = newheader}
+
+urlAdaptHash : Url.Url -> Url.Url
+urlAdaptHash url =
+    let
+        mbnewUrl = url
+                |> Url.toString 
+                |> String.replace "/#/" "/"
+                |> Url.fromString
+    in
+        Maybe.withDefault url mbnewUrl

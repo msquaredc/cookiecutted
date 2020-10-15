@@ -37,6 +37,7 @@ page session subpage =
             page = init subpage,
             view =  view,
             toMsg = Msg.PageWithSubpage,
+            subscriptions = Sub.none,
             -- header = Viewer.header,
             update = Page.liftupdate update}
     in

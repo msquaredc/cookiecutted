@@ -36,6 +36,7 @@ page session user_id =
             page = init user_id,
             view = view,
             toMsg = Msg.User,
+            subscriptions = Sub.none,
             -- header = Viewer.header,
             update = Page.liftupdate update}
     in

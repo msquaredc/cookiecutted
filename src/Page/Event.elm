@@ -55,7 +55,7 @@ page session subpage id focus =
             , page = init subpage id focus
             , view = view
             , toMsg = identity
-
+            , subscriptions = Sub.none
             -- , header = Viewer.header
             , update = update
 

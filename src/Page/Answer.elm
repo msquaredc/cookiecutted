@@ -43,7 +43,7 @@ page session init =
             , page = init
             , view = view
             , toMsg = identity
-
+            , subscriptions = Sub.none
             -- , header = Viewer.header
             , update = update
 

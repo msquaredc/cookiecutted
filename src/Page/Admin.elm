@@ -67,7 +67,7 @@ page session table =
             , page = init table
             , view = view
             , toMsg = identity
-
+            , subscriptions = Sub.none
             -- , header = Viewer.header
             , update = update
 

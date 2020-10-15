@@ -71,7 +71,7 @@ page session id =
             , page = init session.db id
             , view = view
             , toMsg = identity
-
+            , subscriptions = Sub.none
             -- , header = Viewer.header
             , update = update
 

@@ -64,7 +64,7 @@ page session id focus=
             , page = Model id focus
             , view = view
             , toMsg = identity
-
+            , subscriptions = Sub.none
             -- , header = Viewer.header
             , update = update
 

@@ -446,6 +446,11 @@ setField {kind, attribute, setter, id, value} =
                         Updater.AttributeMsg attribute <|
                             setter value
 
+setManyFields : List (FieldConfig a) -> Msg.Msg
+setManyFields f =
+    List.map setFieldRaw f
+    |> Msg.UpdateAll
+    |> Msg.CRUD
 
 setFieldRaw : FieldConfig a -> Updater.Msg
 setFieldRaw {kind, attribute, setter, id, value} =
