@@ -348,7 +348,7 @@ viewQuestionListItem db { id, value, previous, next } =
     <|
         [ MLItem.text []
             { primary = [ Html.text value.text ]
-            , secondary = [ Html.text <| value.input_type ]
+            , secondary = [ Html.text <| Maybe.withDefault value.input_type <| Maybe.map (\it -> IT.toString it.value) <|Dict.get value.input_type db.input_types ]
             }
         , MLItem.meta []
             [
