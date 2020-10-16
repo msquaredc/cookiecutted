@@ -387,7 +387,7 @@ system : DnDList.System a Msg.Msg
 system =
     DnDList.create 
         { beforeUpdate = \_ _ list -> list
-        , movement = DnDList.Free
+        , movement = DnDList.Vertical
         , listen = DnDList.OnDrag
         , operation = DnDList.Rotate
         } 

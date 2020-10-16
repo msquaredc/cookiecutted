@@ -86,7 +86,7 @@ page session id focus mbquestions dndmodel =
             , page = init id focus dndmodel questions
             , view = view
             , toMsg = identity
-            , subscriptions = Viewer.system.subscriptions dndmodel
+            , subscriptions = system.subscriptions dndmodel
             -- , header = Viewer.header
             , update = update
 
@@ -167,7 +167,7 @@ update message (Page model) =
                                     { oldmodel | focus = defaultFokus }
                             in
                             ( Page { model | page = newmodel }, Cmd.none )
-                Msg.OnQuestionDrag msg_ ->
+                {- Msg.OnQuestionDrag msg_ ->
                     let
                         ( dnd, items ) =
                             system.update msg_ oldmodel.dnd oldmodel.questions
@@ -177,7 +177,7 @@ update message (Page model) =
                     , Cmd.batch [system.commands dnd {-,changeIndices oldmodel.questions items-}]
                     )
                 Msg.Tock _ ->
-                    (Page model, Cmd.none)
+                    (Page model, Cmd.none) -}
         Msg.DnDEvent msg_ ->
             let
                 ( dnd, items ) =
@@ -185,7 +185,7 @@ update message (Page model) =
                 newmodel = { oldmodel | dnd = dnd, questions = items }
             in
             ( Page { model | page = newmodel }
-            , Cmd.batch [system.commands dnd {-,changeIndices oldmodel.questions items-}]
+            , system.commands dnd 
             )
         _ ->
             ( Page model, Cmd.none )

@@ -96,8 +96,8 @@ type EventSubPage
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
     | QuestionNameEdit EditableTextMsg
-    | OnQuestionDrag DnDList.Msg
-    | Tock Posix
+{-     | OnQuestionDrag DnDList.Msg
+    | Tock Posix -}
 
 type QuestionMsg
     = SetInputType String

@@ -121,7 +121,7 @@ defaultUpdate message ( model, effect ) =
         db =
             session.db
     in
-    (\( x, y ) -> ( x, Cmd.batch [ y, effect ] )) <|
+    (\( x, y ) -> ( x, Cmd.batch [ effect, y ] )) <|
         case message of
             -- When a link is clicked anywhere on our page. There are two types of links, external and internal
             Msg.LinkClicked urlRequest ->
@@ -475,7 +475,7 @@ update message model =
 
         Questionary m ->
             mapPageMsg model Questionary (Page.update message m)
-                |> defaultUpdate message
+            |> defaultUpdate message
         
         Question m ->
             mapPageMsg model Question (Page.update message m)
@@ -546,28 +546,10 @@ subscriptions : Model -> Sub Msg.Msg
 subscriptions {page} =
     Sub.batch <|
         [case page of
-            NotFound _ ->
-                Sub.none
-            Top (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
-            User (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
-            PageOne (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
-            PageWithSubpage (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
-            Admin (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
-            Study (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
-            Event (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
             Questionary (Page.Page m) ->
                 Sub.map m.toMsg m.subscriptions
-            Question (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
-            Answer (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions 
+            _ ->
+                Sub.none
         , Browser.Events.onResize Msg.OnWindowResize
         , Ports.onLocalStorageChange Msg.OnLocalStorageChange
         , Ports.onDbChange Msg.OnDbChange
