@@ -1,4 +1,4 @@
-module Viewer exposing (Details, Header, detailsConfig, header, notFound, textForm, update, view, wideTextForm)
+module Viewer exposing (Details, Header, detailsConfig, header, notFound, textForm, update, view, wideTextForm, system)
 
 --import Url.Builder
 
@@ -383,6 +383,15 @@ detailsConfig =
     , actions = []
     }
 
+system : DnDList.System a Msg.Msg
+system =
+    DnDList.create 
+        { beforeUpdate = \_ _ list -> list
+        , movement = DnDList.Free
+        , listen = DnDList.OnDrag
+        , operation = DnDList.Rotate
+        } 
+        Msg.DnDEvent
 
 header : Header
 header =

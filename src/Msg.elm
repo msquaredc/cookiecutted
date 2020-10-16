@@ -58,6 +58,7 @@ type Msg
     | Back
     | Tick Posix
     | SnackbarClosed Snackbar.MessageId
+    | DnDEvent DnDList.Msg
     
 
 
@@ -96,6 +97,7 @@ type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
     | QuestionNameEdit EditableTextMsg
     | OnQuestionDrag DnDList.Msg
+    | Tock Posix
 
 type QuestionMsg
     = SetInputType String

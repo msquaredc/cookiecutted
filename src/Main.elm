@@ -356,6 +356,8 @@ defaultUpdate message ( model, effect ) =
                 in
                 
                 ({model | header = newheader}, Cmd.none)
+            
+
             _ ->
                 ( model, Cmd.none )
 
@@ -541,9 +543,9 @@ view model =
 
 
 subscriptions : Model -> Sub Msg.Msg
-subscriptions model =
+subscriptions {page} =
     Sub.batch <|
-        [case model.page of
+        [case page of
             NotFound _ ->
                 Sub.none
             Top (Page.Page m) ->
@@ -565,7 +567,7 @@ subscriptions model =
             Question (Page.Page m) ->
                 Sub.map m.toMsg m.subscriptions
             Answer (Page.Page m) ->
-                Sub.map m.toMsg m.subscriptions
+                Sub.map m.toMsg m.subscriptions 
         , Browser.Events.onResize Msg.OnWindowResize
         , Ports.onLocalStorageChange Msg.OnLocalStorageChange
         , Ports.onDbChange Msg.OnDbChange
@@ -697,7 +699,7 @@ updateSession model session =
                 |> (\( x, y ) -> ( { model | page = Event x }, y ))
 
         Questionary (Page.Page m) ->
-            Questionary.page session m.page.id m.page.focus
+            Questionary.page session m.page.id m.page.focus (Just m.page.questions) m.page.dnd
                 |> (\( x, y ) -> ( { model | page = Questionary x }, y ))
         
         Question (Page.Page m) ->
@@ -816,7 +818,7 @@ parser model session =
                     id 
                     False))
         , route (Parser.s paths.questionary </> Parser.string)
-            (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus))
+            (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus Nothing Viewer.system.model))
         , route (Parser.s paths.question </> Parser.string)
             (\id -> mapPageMsg model Question (Question.page session id))
         , route (Parser.s paths.admin </> Admin.parser)

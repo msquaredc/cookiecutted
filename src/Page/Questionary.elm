@@ -33,7 +33,7 @@ import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
 import Type.IO.Setter as Updater
-import Viewer exposing (detailsConfig)
+import Viewer exposing (detailsConfig, system)
 import Viewer.OrderAwareList exposing (OrderAware, orderAwareList)
 import DnDList
 import Task
@@ -74,36 +74,34 @@ defaultFokus =
 -- INIT
 
 
-init : String -> Fokus -> DnDList.Model -> List (String, Db.Timestamp Db.Question) -> Model
+init : String -> Fokus -> DnDList.Model -> List Item -> Model
 init id focus dnd questions=
-    let
-        q = (List.map (\(a, b)-> Item a b) questions)
+    Model id focus dnd questions
 
-    in
-    
-    Model id focus dnd q 
-
-page : Session.Session -> String -> Fokus -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
-page session id focus =
+page : Session.Session -> String -> Fokus -> Maybe (List Item) -> DnDList.Model -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page session id focus mbquestions dndmodel =
     let
         model =
             { session = session
-            , page = init id focus dndSystem.model questions
+            , page = init id focus dndmodel questions
             , view = view
             , toMsg = identity
-            , subscriptions = dndSystem.subscriptions dndSystem.model
+            , subscriptions = Viewer.system.subscriptions dndmodel
             -- , header = Viewer.header
             , update = update
 
             --            , update = Page.liftupdate update
             }
-        questions = Dict.filter (\qid question -> question.value.questionary == id) session.db.questions
+        dbquestions = Dict.filter (\qid question -> question.value.questionary == id) session.db.questions
                     |> Dict.toList
                     |> List.sortBy (\(_, question) -> question.value.index)
+                    |> (List.map (\(a, b)-> Item a b))
+        questions = Maybe.withDefault dbquestions mbquestions
     in
     ( Page model, Cmd.none )
 
 
+{- dndSystem : DnDList.System Item Msg.Msg
 dndSystem = 
     let
         config = { beforeUpdate = \_ _ list -> list
@@ -111,9 +109,9 @@ dndSystem =
                 , listen = DnDList.OnDrag
                 , operation = DnDList.Rotate
                 }
-        system = DnDList.create config (Msg.Questionary << Msg.OnQuestionDrag)
+        system = DnDList.create config (Msg.DnDEvent)
     in
-        system
+        system -}
 -- UPDATE
 
 
@@ -172,12 +170,23 @@ update message (Page model) =
                 Msg.OnQuestionDrag msg_ ->
                     let
                         ( dnd, items ) =
-                            dndSystem.update msg_ oldmodel.dnd oldmodel.questions
+                            system.update msg_ oldmodel.dnd oldmodel.questions
                         newmodel = { oldmodel | dnd = dnd, questions = items }
                     in
                     ( Page { model | page = newmodel }
-                    , Cmd.batch [dndSystem.commands dnd {-,changeIndices oldmodel.questions items-}]
+                    , Cmd.batch [system.commands dnd {-,changeIndices oldmodel.questions items-}]
                     )
+                Msg.Tock _ ->
+                    (Page model, Cmd.none)
+        Msg.DnDEvent msg_ ->
+            let
+                ( dnd, items ) =
+                    system.update msg_ oldmodel.dnd oldmodel.questions
+                newmodel = { oldmodel | dnd = dnd, questions = items }
+            in
+            ( Page { model | page = newmodel }
+            , Cmd.batch [system.commands dnd {-,changeIndices oldmodel.questions items-}]
+            )
         _ ->
             ( Page model, Cmd.none )
 
@@ -390,28 +399,63 @@ editableText active activator deactivator value callback =
 -- ]
 viewDraggableQuestionList : Model -> List (Html Msg.Msg)
 viewDraggableQuestionList model =
-    let
-        questions = List.indexedMap (itemView model.dnd) model.questions
-    in
-        case questions of
+    [ (case List.indexedMap (itemView model.dnd) model.questions of
+                first :: rest ->
+                    MList.list MList.config
+                       first
+                       rest
+                _ -> 
+                    Html.text " ")
             
-            first :: rest ->
-                [list
-                    (MList.config
-                        |> MList.setTwoLine True
-                        --|> MList.setNonInteractive True
-                    )
-                    first
-                    rest
-                , ghostView model.dnd model.questions
-                ]
+        , ghostView model.dnd model.questions
+    ]
+    -- let
+    --     questions = List.indexedMap (itemView model.dnd) model.questions
+    -- in
+    --     case questions of
+            
+    --         first :: rest ->
+    --             [list
+    --                 (MList.config
+    --                     |> MList.setTwoLine True
+    --                     --|> MList.setNonInteractive True
+    --                 )
+    --                 first
+    --                 rest
+    --             , ghostView model.dnd model.questions
+    --             ]
 
-            _ ->
-                [text "NoItem"]
+    --         _ ->
+    --             [text "NoItem"]
 
 itemView : DnDList.Model -> Int -> Item -> MLItem.ListItem Msg.Msg
 itemView dnd index item =
     let
+        itemId : String
+        itemId =
+            "id-" ++ item.id
+        --system = dndSystem
+    in
+    case system.info dnd of
+        Just { dragIndex } ->
+            if dragIndex /= index then
+                MLItem.listItem 
+                    (MLItem.config 
+                    |> MLItem.setAttributes (Html.Attributes.id itemId :: system.dropEvents index itemId))
+                    [ Html.text item.id ]
+
+            else
+                MLItem.listItem
+                    (MLItem.config 
+                    |> MLItem.setAttributes [ Html.Attributes.id itemId ])
+                    [ Html.text "[---------]" ]
+
+        Nothing ->
+            MLItem.listItem
+                (MLItem.config 
+                |> MLItem.setAttributes (Html.Attributes.id itemId :: system.dragEvents index itemId))
+                [ Html.text item.id ]
+    {- let
         itemId : String
         itemId =
             "id-" ++ item.id
@@ -438,14 +482,14 @@ itemView dnd index item =
                 |> MLItem.setAttributes [Html.Attributes.id itemId]
                 |> MLItem.setOnClick (Msg.Follow Db.QuestionType item.id)
                 )
-                    [ MLItem.text [] {primary = [Html.text item.id ], secondary = [] }, MLItem.meta [] [ Icon.icon (dndSystem.dragEvents index itemId) "star" ] ]
+                    [ MLItem.text [] {primary = [Html.text item.id ], secondary = [] }, MLItem.meta [] [ Icon.icon (dndSystem.dragEvents index itemId) "star" ] ] -}
 
 ghostView : DnDList.Model -> List Item -> Html.Html Msg.Msg
 ghostView dnd items =
     let
         maybeDragItem : Maybe Item
         maybeDragItem =
-            dndSystem.info dnd
+            system.info dnd
                 |> Maybe.andThen (\{ dragIndex } -> items |> List.drop dragIndex |> List.head)
     in
     case maybeDragItem of
@@ -456,7 +500,7 @@ ghostView dnd items =
                     --|> MList.setNonInteractive True
                 )
             (listItem
-                (MLItem.config |> MLItem.setAttributes  (dndSystem.ghostStyles dnd)
+                (MLItem.config |> MLItem.setAttributes  (system.ghostStyles dnd)
                 )
                     [ MLItem.text [] {primary = [ Html.text item.id ], secondary = [] } ])
             []
