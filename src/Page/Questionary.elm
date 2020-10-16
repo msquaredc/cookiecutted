@@ -22,6 +22,7 @@ import Material.Select.Item as SelectItem
 import Material.TextArea as TextArea
 import Material.TextField as TextField
 import Material.Typography as Typography
+import Material.Menu as Menu
 import Material.Icon as Icon
 import Msg
 import Page exposing (Page(..))
@@ -50,9 +51,11 @@ import Task
 type alias Model =
     { 
      id : String
+    , questionary : Maybe (Db.Timestamp Db.Questionary)
     , focus : Fokus
     , dnd : DnDList.Model
     , questions : List Item
+    , menu : Maybe String
     }
 
 type alias Item =
@@ -74,16 +77,16 @@ defaultFokus =
 -- INIT
 
 
-init : String -> Fokus -> DnDList.Model -> List Item -> Model
-init id focus dnd questions=
-    Model id focus dnd questions
+init : String -> Fokus -> DnDList.Model -> List Item -> Maybe (Db.Timestamp Db.Questionary) -> Model
+init id focus dnd questions questionary =
+    Model id questionary focus dnd questions Nothing 
 
 page : Session.Session -> String -> Fokus -> Maybe (List Item) -> DnDList.Model -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id focus mbquestions dndmodel =
     let
         model =
             { session = session
-            , page = init id focus dndmodel questions
+            , page = init id focus dndmodel questions questionary
             , view = view
             , toMsg = identity
             , subscriptions = system.subscriptions dndmodel
@@ -97,6 +100,7 @@ page session id focus mbquestions dndmodel =
                     |> List.sortBy (\(_, question) -> question.value.index)
                     |> (List.map (\(a, b)-> Item a b))
         questions = Maybe.withDefault dbquestions mbquestions
+        questionary = Dict.get id session.db.questionnaries
     in
     ( Page model, Cmd.none )
 
@@ -167,6 +171,13 @@ update message (Page model) =
                                     { oldmodel | focus = defaultFokus }
                             in
                             ( Page { model | page = newmodel }, Cmd.none )
+                Msg.ContextMenu id ->
+                            let
+                                newmodel =
+                                    { oldmodel | menu = id }
+                            in
+                            ( Page { model | page = newmodel }, Cmd.none )
+                    
                 {- Msg.OnQuestionDrag msg_ ->
                     let
                         ( dnd, items ) =
@@ -292,8 +303,8 @@ view (Page.Page model) =
                                                 inner [] [
                                                     cell [LG.span2Desktop,LG.span1Tablet][]
                                                     , cell [LG.span8Desktop,LG.span6Tablet] <|
-                                                        --viewQuestionList db infos infos.questions
-                                                        viewDraggableQuestionList model.page
+                                                        [viewQuestionList model.page db infos infos.questions]
+                                                        --viewDraggableQuestionList model.page
                                                     
                                                 ]
                                             ]
@@ -497,7 +508,7 @@ ghostView dnd items =
             list
                 (MList.config
                     |> MList.setTwoLine True
-                    --|> MList.setNonInteractive True
+                    |> MList.setNonInteractive True
                 )
             (listItem
                 (MLItem.config |> MLItem.setAttributes  (system.ghostStyles dnd)
@@ -512,24 +523,24 @@ ghostView dnd items =
             Html.text ""
 
 
-viewQuestionList : Db.Database -> RelatedData -> List (OrderAware Db.Question) -> Html Msg.Msg
-viewQuestionList db infos questions =
+viewQuestionList : Model -> Db.Database -> RelatedData -> List (OrderAware Db.Question) -> Html Msg.Msg
+viewQuestionList model db infos questions =
     case questions of
         first :: rest ->
             list
                 (MList.config
                     |> MList.setTwoLine True
                 )
-                (viewQuestionListItem db first)
+                (viewQuestionListItem model db first)
             <|
-                List.map (viewQuestionListItem db) rest
+                List.map (viewQuestionListItem model db) rest
 
         _ ->
             text "NoItem"
 
 
-viewQuestionListItem : Db.Database -> OrderAware Db.Question -> MLItem.ListItem Msg.Msg
-viewQuestionListItem db { id, value, previous, next } =
+viewQuestionListItem : Model -> Db.Database -> OrderAware Db.Question -> MLItem.ListItem Msg.Msg
+viewQuestionListItem model db { id, value, previous, next } =
     let
         x =
             1
@@ -538,22 +549,37 @@ viewQuestionListItem db { id, value, previous, next } =
         --downMsg = Match.swapFields Db.QuestionType "index" Updater.IntMsg ( post.id, id ) ( post.value.index, value.index )
     in
     listItem
-        (MLItem.config {- |> MLItem.setOnClick ()-})
+        (MLItem.config {- |> MLItem.setOnClick (Msg.Follow Db.QuestionType id)-})
     <|
-        [ MLItem.text []
+        [ MLItem.text [onClick <| Msg.Follow Db.QuestionType id]
             { primary = [ Html.text value.text ]
             , secondary = [ Html.text <| Maybe.withDefault value.input_type <| Maybe.map (\it -> IT.toString it.value) <|Dict.get value.input_type db.input_types ]
             }
         , MLItem.meta []
             [
+                Html.div [Menu.surfaceAnchor][
                 IconButton.iconButton
                     (IconButton.config
                         |> IconButton.setOnClick
-                            (Msg.Follow Db.QuestionType id))
-                    (IconButton.icon "edit")
+                            (Msg.Questionary <| Msg.ContextMenu <| Just id))
+                    (IconButton.icon "more_vert")
+                , Menu.menu
+                (Menu.config
+                    |> Menu.setOpen (model.menu == Just id)
+                    |> Menu.setOnClose (Msg.Questionary <| Msg.ContextMenu <| Nothing)
+                )
+                [ MList.list
+                    (MList.config |> MList.setWrapFocus True)
+                    (MLItem.listItem MLItem.config
+                        [ text "Menu item" ]
+                    )
+                    [ MLItem.listItem MLItem.config
+                        [ text "Menu item" ]
+                    ]
+                ]
             ]
-        ]
-            ++ (case ( previous, next ) of
+        ]]
+            {- ++ (case ( previous, next ) of
                     ( Just prev, Just post ) ->
                         [ MLItem.meta []
                             [ IconButton.iconButton
@@ -595,7 +621,7 @@ viewQuestionListItem db { id, value, previous, next } =
 
                     _ ->
                         []
-               )
+               ) -}
 
 
 viewQuestionCard : Db.Database -> Maybe String -> OrderAware Db.Question -> Html Msg.Msg
@@ -889,8 +915,8 @@ viewList elements onClick =
 
 
 toTitle : Model -> String
-toTitle _ =
-    "Home ⧽ Questionary"
+toTitle model =
+    Maybe.withDefault "Home ⧽ Questionary" <| Maybe.map (\x -> x.value.name) model.questionary
 
 
 textForm : Maybe String -> Form.FormFunctor msg

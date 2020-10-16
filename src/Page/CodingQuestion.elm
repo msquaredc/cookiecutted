@@ -1,4 +1,4 @@
-module Page.Question exposing (..)
+module Page.CodingQuestion exposing (..)
 
 import Dict
 import Html exposing (Html, p, text)
@@ -26,13 +26,10 @@ import Viewer exposing (detailsConfig)
 
 type alias Model =
     { id : String
-    , question : Maybe (Db.Timestamp Db.Question)
+    , question : Maybe (Db.Timestamp Db.CodingQuestion)
     , short : Maybe String
     , long : Maybe String
     , list : Maybe String
-    , codingQuestionaryID : Maybe String
-    , codingQuestionary : Maybe (Db.Timestamp Db.CodingQuestionary)
-    , codingQuestions : List (String, Db.Timestamp Db.CodingQuestion)
     }
 
 
@@ -43,23 +40,16 @@ init db id =
         emptyModel =
             Model
                 id
-                (Dict.get id db.questions)
+                (Dict.get id db.coding_questions)
                 Nothing
                 Nothing
                 Nothing
-                cid
-                (Maybe.map Tuple.second coding_questionary)
-                coding_questions
+                
         
-        cid = (Maybe.map Tuple.first coding_questionary)
-        coding_questionary =  (Dict.filter (\cqid cq -> cq.value.question == id) db.coding_questionnaries)
-                              |> Dict.toList
-                              |> List.sortBy (\(cqid, cq) -> cq.created)
-                              |> List.head
-        coding_questions = Dict.filter (\cqqid cqq -> Just cqq.value.coding_questionary == cid ) db.coding_questions
-                            |> Dict.toList
+        
+       
         q =
-            Dict.get id db.questions
+            Dict.get id db.coding_questions
                 |> Maybe.map .value
 
         it_id =
@@ -67,7 +57,7 @@ init db id =
 
         it =
             q
-                |> Maybe.andThen (Db.question.viewer db)
+                |> Maybe.andThen (Db.coding_question.viewer db)
                 |> Maybe.map .input_type
     in
     case ( it, it_id ) of
@@ -214,12 +204,7 @@ view (Page.Page model) =
         mbInfos =
             relatedData model.page.id db
 
-        moreInfos : String
-        moreInfos =
-            Dict.get model.page.id db.questions
-                |> Maybe.map .value
-                |> Maybe.andThen (Result.toMaybe << Db.question.toString "*")
-                |> Maybe.withDefault "Nothing Found"
+        
     in
     { detailsConfig
         | title = toTitle model.page
@@ -243,13 +228,13 @@ view (Page.Page model) =
                                         ]
                                     , TextField.filled
                                         (TextField.config
-                                            |> TextField.setLabel (Just "Question text")
+                                            |> TextField.setLabel (Just "Coding Question text")
                                             |> TextField.setValue (Just infos.text)
                                             |> TextField.setFullwidth True
                                             |> TextField.setOnInput
                                                 (\x ->
                                                     Match.setField
-                                                        { kind = Db.QuestionType
+                                                        { kind = Db.CodingQuestionType
                                                         , attribute = "text"
                                                         , setter = Updater.StringMsg
                                                         , id = model.page.id
@@ -260,7 +245,6 @@ view (Page.Page model) =
                                     ]
                                         ++ viewInputTypeSelection model.page infos.input_type
                                 , cell [] <| viewSettings model.session.db model.page.id model.page infos.input_type
-                                , cell [] <| viewCodingQuestions model.page
                                 ]
                             ]
 
@@ -290,7 +274,7 @@ type alias RelatedData =
 
 relatedData : String -> Db.Database -> Maybe RelatedData
 relatedData id db =
-    case Dict.get id db.questions of
+    case Dict.get id db.coding_questions of
         Just timestampedQuestion ->
             let
                 coding_questions =
@@ -305,7 +289,7 @@ relatedData id db =
             Just
                 { id = id
                 , text = question.text
-                , input_type = ( question.input_type, Db.question.viewer db question |> Maybe.map .input_type )
+                , input_type = ( question.input_type, Db.coding_question.viewer db question |> Maybe.map .input_type )
 
                 --, question = ( questionary.study, Maybe.map .value <| Dict.get questionary.study db.studie)
                 --, max_index = List.maximum <| List.map (\( _, x ) -> x.index) coding_questions
@@ -355,7 +339,7 @@ viewInputTypeSelection model ( id, _ ) =
                     (case model.short of
                         Just short ->
                             Match.setField
-                                { kind = Db.QuestionType
+                                { kind = Db.CodingQuestionType
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
@@ -367,7 +351,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 Msg.CreateRandom (Db.InputTypeType Db.ShortKind)
                                     [ \x ->
                                         Match.setField
-                                            { kind = Db.QuestionType
+                                            { kind = Db.CodingQuestionType
                                             , attribute = "input_type"
                                             , setter = Updater.StringMsg
                                             , id = model.id
@@ -384,7 +368,7 @@ viewInputTypeSelection model ( id, _ ) =
                         (case model.short of
                             Just short ->
                                 Match.setField
-                                    { kind = Db.QuestionType
+                                    { kind = Db.CodingQuestionType
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
@@ -396,7 +380,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     Msg.CreateRandom (Db.InputTypeType Db.ShortKind)
                                         [ \x ->
                                             Match.setField
-                                                { kind = Db.QuestionType
+                                                { kind = Db.CodingQuestionType
                                                 , attribute = "input_type"
                                                 , setter = Updater.StringMsg
                                                 , id = model.id
@@ -414,7 +398,7 @@ viewInputTypeSelection model ( id, _ ) =
                     (case model.long of
                         Just long ->
                             Match.setField
-                                { kind = Db.QuestionType
+                                { kind = Db.CodingQuestionType
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
@@ -426,7 +410,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 Msg.CreateRandom (Db.InputTypeType Db.LongKind)
                                     [ \x ->
                                         Match.setField
-                                            { kind = Db.QuestionType
+                                            { kind = Db.CodingQuestionType
                                             , attribute = "input_type"
                                             , setter = Updater.StringMsg
                                             , id = model.id
@@ -443,7 +427,7 @@ viewInputTypeSelection model ( id, _ ) =
                         (case model.long of
                             Just long ->
                                 Match.setField
-                                    { kind = Db.QuestionType
+                                    { kind = Db.CodingQuestionType
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
@@ -455,7 +439,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     Msg.CreateRandom (Db.InputTypeType Db.LongKind)
                                         [ \x ->
                                             Match.setField
-                                                { kind = Db.QuestionType
+                                                { kind = Db.CodingQuestionType
                                                 , attribute = "input_type"
                                                 , setter = Updater.StringMsg
                                                 , id = model.id
@@ -473,7 +457,7 @@ viewInputTypeSelection model ( id, _ ) =
                     (case model.list of
                         Just list ->
                             Match.setField
-                                { kind = Db.QuestionType
+                                { kind = Db.CodingQuestionType
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
@@ -485,7 +469,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 Msg.CreateRandom (Db.InputTypeType Db.ListKind)
                                     [ \x ->
                                         Match.setField
-                                            { kind = Db.QuestionType
+                                            { kind = Db.CodingQuestionType
                                             , attribute = "input_type"
                                             , setter = Updater.StringMsg
                                             , id = model.id
@@ -502,7 +486,7 @@ viewInputTypeSelection model ( id, _ ) =
                         (case model.list of
                             Just list ->
                                 Match.setField
-                                    { kind = Db.QuestionType
+                                    { kind = Db.CodingQuestionType
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
@@ -514,7 +498,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     Msg.CreateRandom (Db.InputTypeType Db.ListKind)
                                         [ \x ->
                                             Match.setField
-                                                { kind = Db.QuestionType
+                                                { kind = Db.CodingQuestionType
                                                 , attribute = "input_type"
                                                 , setter = Updater.StringMsg
                                                 , id = model.id
@@ -526,95 +510,7 @@ viewInputTypeSelection model ( id, _ ) =
             ]
         ]
 
-viewCodingQuestions : Model -> List (Html Msg.Msg)
-viewCodingQuestions model =
-    let
-        enabled = case model.codingQuestionary of
-                        Just cq ->
-                            cq.value.enabled == True
-                        _ ->
-                            False
-        
-    in
-    [FormField.formField
-        (FormField.config
-            |> FormField.setLabel (Just "Enable Coding")
-        )
-        [ Switch.switch
-            (Switch.config
-                |> Switch.setChecked (enabled)
-                |> Switch.setOnChange (
-                    case (model.codingQuestionaryID, model.codingQuestionary) of
-                        (Just cqid, Just cq) ->
-                            Match.setField
-                                { kind = Db.CodingQuestionaryType
-                                , attribute = "enabled"
-                                , setter = Updater.BoolMsg
-                                , id = cqid
-                                , value = not cq.value.enabled
-                                }
-                        _ -> 
-                            Msg.CRUD <|
-                                Msg.CreateRandom Db.CodingQuestionaryType
-                                    [ \x ->
-                                        Match.setField
-                                            { kind = Db.CodingQuestionaryType
-                                            , attribute = "question"
-                                            , setter = Updater.StringMsg
-                                            , id = x
-                                            , value = model.id
-                                            }
-                                    , \x -> Match.setField
-                                            { kind = Db.CodingQuestionaryType
-                                            , attribute = "enabled"
-                                            , setter = Updater.BoolMsg
-                                            , id = x
-                                            , value = True
-                                            }
-                                    ]
-                        
-                )
-            ) ] 
-    , case List.map viewCodingQuestion model.codingQuestions of
-        first :: rest ->
-            List.list List.config
-            first
-            rest
-        _ ->
-            case model.codingQuestionaryID of 
-                Just _ ->
-                    text "No Question yet!"
-                Nothing ->
-                    Html.div [][]
-    , case model.codingQuestionaryID of
-        Just cid ->
-            Button.unelevated
-            (Button.config
-                |> Button.setIcon (Just <| Button.icon "add")
-                |> Button.setOnClick (
-                    --Just <|
-                        Msg.CRUD <|
-                            Msg.CreateRandom Db.CodingQuestionType
-                                [ \x ->
-                                    Match.setField
-                                        { kind = Db.CodingQuestionType
-                                        , attribute = "coding_questionary"
-                                        , setter = Updater.StringMsg
-                                        , id = x
-                                        , value = cid
-                                        }
-                                ]
-                ))
-            "Add"
-        Nothing -> 
-            Html.div [][]
-    ]
 
-viewCodingQuestion : (String, Db.Timestamp Db.CodingQuestion) -> ListItem Msg.Msg
-viewCodingQuestion (id, cquestion) =
-    (ListItem.listItem (ListItem.config |> ListItem.setOnClick (Msg.Follow Db.CodingQuestionType id))
-        [ text cquestion.value.text ]
-            )
 
 viewSettings : Db.Database -> String -> Model -> ( String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewSettings db id model ( itid, mbit ) =

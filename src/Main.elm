@@ -20,7 +20,9 @@ import Page.Question as Question
 import Page.Study as Study
 import Page.Top as Top
 import Page.User as User
+import Page.CodingQuestion as CodingQuestion
 import Page.Answer as Answer
+import Page.Code as Code
 import Ports
 import Random exposing (generate)
 import Random.Char exposing (latin)
@@ -61,7 +63,9 @@ type Page
     | Event (Page.Page Event.Model Msg.Msg)
     | Questionary (Page.Page Questionary.Model Msg.Msg)
     | Question (Page.Page Question.Model Msg.Msg)
+    | CodingQuestion (Page.Page CodingQuestion.Model Msg.Msg)
     | Answer (Page.Page Answer.Model Msg.Msg)
+    | Code (Page.Page Code.Model Msg.Msg)
 
 
 
@@ -481,8 +485,16 @@ update message model =
             mapPageMsg model Question (Page.update message m)
                 |> defaultUpdate message
 
+        CodingQuestion m ->
+            mapPageMsg model CodingQuestion (Page.update message m)
+                |> defaultUpdate message
+
         Answer m ->
             mapPageMsg model Answer (Page.update message m)
+                |> defaultUpdate message
+        
+        Code m ->
+            mapPageMsg model Code (Page.update message m)
                 |> defaultUpdate message
 
         NotFound _ ->
@@ -533,7 +545,13 @@ view model =
         Question m ->
             Page.view m model.header model.time
         
+        CodingQuestion m ->
+            Page.view m model.header model.time
+        
         Answer m ->
+            Page.view m model.header model.time
+        
+        Code m ->
             Page.view m model.header model.time
 
 
@@ -637,8 +655,14 @@ extractSession model =
         
         Question m ->
             getSession m
+        
+        CodingQuestion m ->
+            getSession m
 
         Answer m ->
+            getSession m
+
+        Code m ->
             getSession m
 
 
@@ -688,9 +712,17 @@ updateSession model session =
             Question.page session m.page.id
                 |> (\( x, y ) -> ( { model | page = Question x }, y ))
         
+        CodingQuestion (Page.Page m) ->
+            CodingQuestion.page session m.page.id
+                |> (\( x, y ) -> ( { model | page = CodingQuestion x }, y ))
+        
         Answer (Page.Page m) ->
             Answer.page session m.page
                 |> (\( x, y ) -> ( { model | page = Answer x }, y ))
+        
+        Code (Page.Page m) ->
+            Code.page session m.page.id
+                |> (\( x, y ) -> ( { model | page = Code x }, y ))
 
 
 updateDb : Db.Database -> ( Model, Cmd Msg.Msg ) -> ( Model, Cmd Msg.Msg )
@@ -759,6 +791,8 @@ parser model session =
             (mapPageMsg model PageOne (PageOne.page session))
         , route (Parser.s paths.study </> Parser.string)
             (\id -> mapPageMsg model Study (Study.page session id False))
+        , route (Parser.s paths.study </> Parser.string </> Parser.s "code")
+            (\id -> mapPageMsg model Code (Code.page session id)) 
         --
         , route (Parser.s paths.event </> Parser.string </> Answer.parser )
             (\eid answer_result -> 
@@ -803,6 +837,8 @@ parser model session =
             (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus Nothing Viewer.system.model))
         , route (Parser.s paths.question </> Parser.string)
             (\id -> mapPageMsg model Question (Question.page session id))
+        , route (Parser.s paths.coding_question </> Parser.string)
+            (\id -> mapPageMsg model CodingQuestion (CodingQuestion.page session id))
         , route (Parser.s paths.admin </> Admin.parser)
             (\presult -> mapPageMsg model Admin (Admin.page session presult))
 
@@ -827,6 +863,7 @@ paths =
     , event = "event"
     , questionary = "questionary"
     , question = "question"
+    , coding_question = "coding_question"
 
     --, newPage = "newpage"
     }

@@ -143,6 +143,15 @@ view (Page.Page model) =
                                                                         [] infos.title ]
                                 , p [] [ text <| "Description:" ++ infos.description ]
                                 , p [] [ text <| "Leader: " ++ viewLeader infos.leader model.session.user ]
+                                , p [][ unelevated
+                                        (Button.config
+                                            |> Button.setIcon (Just <| Button.icon "add")
+                                            |> Button.setOnClick (Msg.FollowSubpage Db.StudyType model.page.id ["code"][])
+                                            --     --Just <|
+                                                    
+                                            -- )
+                                            )
+                                        "StartCoding"]
                                 ]
                             , cell []
                                 [ Html.h1 [ Typography.headline5 ] [ text "Events" ]

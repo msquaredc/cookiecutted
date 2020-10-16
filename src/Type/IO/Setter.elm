@@ -127,7 +127,9 @@ bool msg val =
     case msg of
         BoolUpdateMsg f ->
             Ok (f val)
-            
+        
+        BoolMsg b ->
+            Ok (b)
         _ ->
             Err <| Mismatch msg (BoolMsg val)
 
@@ -329,4 +331,9 @@ toString msg =
             name ++ " (custom) ->" ++ toString msg_
         Custom name Nothing ->
             name ++ " (custom)"
+        BoolMsg b ->
+            "(bool) " ++ if b then
+                            "TRUE"
+                         else
+                            "FALSE"
         _ -> "Yet undeclared!"

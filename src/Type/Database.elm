@@ -141,14 +141,16 @@ coding =
 
 type alias CodingAnswer =
     { coding_question : String
-    , coding_frame : String
+    --, coding_frame : String
+    , answer : String
     , value : String
     }
 
 
 type alias CodingAnswerView =
     { coding_question : CodingQuestion
-    , coding_frame : CodingFrame
+    --, coding_frame : CodingFrame
+    , answer : Answer
     , value : String
     }
 
@@ -157,7 +159,8 @@ coding_answer : IO CodingAnswer Database CodingAnswerView msg
 coding_answer =
     entity CodingAnswer CodingAnswerView
         |> reference "coding_question" string .coding_question .coding_questions Dict.get .value
-        |> reference "coding_frame" string .coding_frame .coding_frames Dict.get .value
+        |> reference "answer" string .answer .answers Dict.get .value
+        --|> reference "coding_frame" string .coding_frame .coding_frames Dict.get .value
         |> attribute "value" string .value
 
 
@@ -182,11 +185,15 @@ coding_frame =
 
 type alias CodingQuestion =
     { coding_questionary : String
+    , text : String
+    , input_type : String
     }
 
 
 type alias CodingQuestionView =
     { coding_questionary : CodingQuestionary
+    , text : String
+    , input_type : IT.InputType
     }
 
 
@@ -194,15 +201,20 @@ coding_question : IO CodingQuestion Database CodingQuestionView msg
 coding_question =
     entity CodingQuestion CodingQuestionView
         |> reference "coding_questionary" string .coding_questionary .coding_questionnaries Dict.get .value
+        |> attribute "text" string .text
+        |> reference "input_type" string .input_type .input_types Dict.get .value
+        |> updateEmpty (\x -> { x | text = "Unnamed Coding Question" })
 
 
 type alias CodingQuestionary =
     { question : String
+    , enabled : Bool
     }
 
 
 type alias CodingQuestionaryView =
     { question : Question
+    , enabled : Bool
     }
 
 
@@ -210,6 +222,7 @@ coding_questionary : IO CodingQuestionary Database CodingQuestionaryView msg
 coding_questionary =
     entity CodingQuestionary CodingQuestionaryView
         |> reference "question" string .question .questions Dict.get .value
+        |> attribute "enabled" bool .enabled
 
 
 type alias Event =

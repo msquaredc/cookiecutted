@@ -196,10 +196,30 @@ view (Page.Page model) =
                                                     econf
                                                     [] 
                                                     (Maybe.withDefault "" <| Maybe.map (\x -> x.value.name) <| Dict.get model.page.id db.events)]
-                                    , p [][ text <| "Location:" ++ infos.location]]
+                                    , p [][ text <| "Location:" ++ infos.location]
+                                    , p [][ unelevated
+                                        (Button.config
+                                            |> Button.setIcon (Just <| Button.icon "add")
+                                            |> Button.setOnClick (
+                                                --Just <|
+                                                    Msg.CRUD <|
+                                                        Msg.CreateRandom Db.TestSubjectType
+                                                            [ \x ->
+                                                                Match.setField
+                                                                    { kind = Db.TestSubjectType
+                                                                    , attribute = "event"
+                                                                    , setter = Updater.StringMsg
+                                                                    , id = x
+                                                                    , value = infos.id
+                                                                    }
+                                                            ]
+                                            ))
+                                        "Add Subjects"]
+                                    
+                                    ]
                                     --, p [][ text <| "Leader: " ++ viewLeader infos.leader model.session.user]   
                                 
-                                , cell []
+                                {- , cell []
                                     [ Html.h1 [ Typography.headline5 ] [ text "Questionnaries" ]
                                     , viewList 
                                         infos.questionnaries 
@@ -223,7 +243,7 @@ view (Page.Page model) =
                                                             ]
                                             )
                                             )
-                                        "Add"]
+                                        "Add"] -}
                                 , cell [][viewTable db infos.questionnaries infos.test_subjects infos.id]                
                                 ]]
                                 -- , layoutGridCell [][
