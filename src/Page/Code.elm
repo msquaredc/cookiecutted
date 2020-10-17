@@ -31,6 +31,7 @@ type alias Model =
     , answer : Maybe (String, Db.Timestamp Db.CodingAnswer)
 --    , answers : List (String, Db.Timestamp Db.CodingAnswer)
     , current : Maybe (CodingAnswerTemplate)
+    , currentEmpty : Maybe (String,String)
     , previous : Maybe (Msg.Msg)
     , next : Maybe (Msg.Msg)
     }
@@ -171,7 +172,7 @@ init id db =
                         
                     
     in
-        Model id templates currentAnswer currentQuestion (getMsg previous) (getMsg next)
+        Model id templates currentAnswer currentQuestion (List.head qids_missing) (getMsg previous) (getMsg next)
 
 
 -- INIT
@@ -227,7 +228,7 @@ view (Page.Page pageM) =
                                 
                                 Element.layout [ height <| px <| viewportHeight - 48, padding 24] <|
                                     Element.column [height fill, width fill]
-                                        [ Element.el [ height fill, width fill ] <| viewCodingQuestion db current.coding_questionId current.coding_question model.answer current.answerId model
+                                        [ Element.el [ height fill, width fill ] <| viewCodingQuestion db current.coding_questionId current.coding_question model.answer current.answerId model current.answer
                                         , Element.row [ Element.alignBottom, width fill]
                                             [ Element.el [Element.alignLeft] <| Element.html
                                                 (case model.previous of
@@ -256,15 +257,54 @@ view (Page.Page pageM) =
                              
 
                     Nothing ->
-                        Html.div demoContent
-                            [ text "Nothing to do!"
-                            ]
+                        case model.currentEmpty of
+                            Just (answerid, coding_questionid) ->
+                                let
+                                    mbcoding_question = Dict.get coding_questionid db.coding_questions
+                                    mbinput_type = Maybe.map (\x -> Dict.get x.value.input_type db.input_types) mbcoding_question
+                                    mbanswer = Dict.get answerid db.answers
+                                in
+                                case (mbinput_type, mbanswer, mbcoding_question) of
+                                    (Just input_type, Just answer, Just coding_question) ->
+                                        Element.layout [ height <| px <| viewportHeight - 48, padding 24] <|
+                                        Element.column [height fill, width fill]
+                                            [ Element.el [ height fill, width fill ] <| viewCodingQuestion db coding_questionid coding_question Nothing answerid model answer
+                                            , Element.row [ Element.alignBottom, width fill]
+                                                [ Element.el [Element.alignLeft] <| Element.html
+                                                    (case model.previous of
+                                                        Just prev ->
+                                                            Button.raised
+                                                                (Button.config |> Button.setOnClick prev)
+                                                                "Previous"
+
+                                                        Nothing ->
+                                                            text ""
+                                                    )
+                                                , Element.el [ Element.centerX, width fill ] (Element.text "")
+                                                , Element.el [ Element.alignRight] <| Element.html
+                                                    (case model.next of
+                                                        Just next ->
+                                                            Button.raised
+                                                                (Button.config |> Button.setOnClick next)
+                                                                "Next"
+
+                                                        Nothing ->
+                                                            text ""
+                                                    )
+                                                ]
+                                            ]
+                                    _ ->
+                                        text "I failed to start."
+                            Nothing -> 
+                                Html.div demoContent
+                                    [ text "Nothing to do!"
+                                    ]
             ]
     }
 
 
-viewCodingQuestion : Db.Database -> String -> Db.Timestamp Db.CodingQuestion -> Maybe ( String, Db.Timestamp Db.CodingAnswer ) -> String -> Model -> Element.Element Msg.Msg
-viewCodingQuestion db qid tquestion mbAnswer anid model =
+viewCodingQuestion : Db.Database -> String -> Db.Timestamp Db.CodingQuestion -> Maybe ( String, Db.Timestamp Db.CodingAnswer ) -> String -> Model -> Db.Timestamp Db.Answer -> Element.Element Msg.Msg
+viewCodingQuestion db qid tquestion mbAnswer anid model answer =
     let
         question = tquestion.value
         mbit =
@@ -323,6 +363,7 @@ viewCodingQuestion db qid tquestion mbAnswer anid model =
     in
     Keyed.column [width fill, height fill] [
         ( "title", Element.el [ width fill, height fill] <| Element.el [Element.centerX, Element.centerY {-Background.color (Element.rgb 0.8 0.8 0.8)-},padding 32] <| Element.paragraph [Font.size 32] [Element.text question.text] )
+           , ("answer",Element.el [ width fill, height fill] <| Element.el [Element.centerX, Element.centerY {-Background.color (Element.rgb 0.8 0.8 0.8)-},padding 32] <| Element.paragraph [Font.size 32] [Element.text answer.value.value])
             ,("edit", Keyed.row [width fill, height fill] [
             ("padleft", Element.el [width fill] <| Element.none)
             , (qid, Element.el [ width fill, height fill] <| Element.el [Element.centerY, width fill] <| (case mbit of
