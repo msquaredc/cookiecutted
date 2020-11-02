@@ -69,7 +69,7 @@ viewPortrait config =
         , content = config.drawerContent
         } 
     , MDrawer.scrim [] []
-    , MDrawer.content [] [
+    , Html.div [] [ --MDrawer.content
         I.viewTopAppBar
             {topAppBar = 
                 TopAppBar.regular 
