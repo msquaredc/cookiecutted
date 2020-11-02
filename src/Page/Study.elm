@@ -12,6 +12,7 @@ import Material.List.Item as MLItem exposing (listItem, graphic)
 import Material.Typography as Typography
 import Material.Icon as Icon
 import Material.IconButton as IconButton
+import File.Download as Download
 import Msg
 import Page exposing (Page(..))
 import Session
@@ -99,7 +100,8 @@ update message (Page model) =
                             in
                             
                             ( Page {model| page = new_page}, Cmd.none )
-
+                Msg.ExportStudy id ->
+                    ( Page model, Download.string "export.csv" "text/csv" "Not implemented yet!" )
         _ ->
             ( Page model, Cmd.none )
 
@@ -133,6 +135,7 @@ view (Page.Page model) =
         Just infos ->
             { detailsConfig
                 | title = toTitle model.page
+                , actions = [("get_app", Msg.Study <| Msg.ExportStudy infos.id)]
                 , user = model.session.user
                 , body = \_ -> 
                     [ layoutGrid [ Typography.typography ]

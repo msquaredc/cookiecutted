@@ -81,6 +81,7 @@ type EditableTextMsg
 
 type StudyMsg
     = StudyNameEdit EditableTextMsg
+    | ExportStudy String
 
 
 type EventMsg
