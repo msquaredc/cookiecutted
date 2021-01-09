@@ -34,7 +34,7 @@ import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
 import Type.IO.Setter as Updater
-import Type.IO.Internal as Id exposing (Id, unbox)
+import Type.IO.Internal as Id exposing (Id, unbox, box)
 import Viewer exposing (detailsConfig, system)
 import Viewer.OrderAwareList exposing (OrderAware, orderAwareList)
 import DnDList
@@ -51,7 +51,7 @@ import Task
 
 type alias Model =
     { 
-     id : String
+     id : Id Db.Questionary String
     , questionary : Maybe (Db.Timestamp Db.Questionary)
     , focus : Fokus
     , dnd : DnDList.Model
@@ -80,7 +80,7 @@ defaultFokus =
 
 init : String -> Fokus -> DnDList.Model -> List Item -> Maybe (Db.Timestamp Db.Questionary) -> Model
 init id focus dnd questions questionary =
-    Model id questionary focus dnd questions Nothing 
+    Model (box id) questionary focus dnd questions Nothing 
 
 page : Session.Session -> String -> Fokus -> Maybe (List Item) -> DnDList.Model -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id focus mbquestions dndmodel =
@@ -214,7 +214,7 @@ changeIndices old new =
     |> Task.succeed 
     |> Task.perform identity
 
-changeIndex : Item -> Item -> Maybe (Match.FieldConfig Int)
+changeIndex : Item -> Item -> Maybe (Match.FieldConfig Int Db.Question)
 changeIndex old new =
     if old.question.value.index == new.question.value.index then
         Nothing
@@ -224,7 +224,7 @@ changeIndex old new =
                     { kind = Db.QuestionType
                     , attribute = "index"
                     , setter = Updater.IntMsg
-                    , id = id
+                    , id = box id
                     , value = index
                     }
         in
@@ -256,15 +256,15 @@ view (Page.Page model) =
                                     { kind = Db.QuestionType
                                     , attribute = "questionary"
                                     , setter = Updater.StringMsg
-                                    , id = x
-                                    , value = infos.id
+                                    , id = box x
+                                    , value = unbox infos.id
                                     }
                             , \x ->
                                 Match.setField
                                     { kind = Db.QuestionType
                                     , attribute = "index"
                                     , setter = Updater.IntMsg
-                                    , id = x
+                                    , id = box x
                                     , value = Maybe.withDefault 0 <| Maybe.map ((+) 1) infos.max_index
                                     }
                             ]
@@ -554,7 +554,7 @@ viewQuestionListItem model db { id, value, previous, next } =
     <|
         [ MLItem.text [onClick <| Msg.Follow Db.QuestionType id]
             { primary = [ Html.text value.text ]
-            , secondary = [ Html.text <| Maybe.withDefault value.input_type <| Maybe.map (\it -> IT.toString it.value) <|Dict.get value.input_type db.input_types ]
+            , secondary = [ Html.text <| Maybe.withDefault (unbox value.input_type) <| Maybe.map (\it -> IT.toString it.value) <|Dict.get (unbox value.input_type) db.input_types ]
             }
         , MLItem.meta []
             [
@@ -851,7 +851,7 @@ viewSingleInputType kind =
 
 
 type alias RelatedData =
-    { id : String
+    { id : Id Db.Questionary String
     , name : String
     , study : ( Id Db.Study String, Maybe Db.Study )
     , questions : List (OrderAware Db.Question)
@@ -862,14 +862,14 @@ type alias RelatedData =
     }
 
 
-relatedData : String -> Db.Database -> Maybe RelatedData
+relatedData : Id Db.Questionary String -> Db.Database -> Maybe RelatedData
 relatedData id db =
-    case Dict.get id db.questionnaries of
+    case Dict.get (unbox id) db.questionnaries of
         Just timestampedQuestionary ->
             let
                 questions =
                     List.sortBy (\( _, y ) -> y.index) <|
-                        List.filter (\( _, y ) -> unbox y.questionary == id) <|
+                        List.filter (\( _, y ) -> y.questionary == id) <|
                             List.map (\( x, y ) -> ( x, y.value )) <|
                                 Dict.toList db.questions
 
@@ -883,7 +883,7 @@ relatedData id db =
                 , max_index = List.maximum <| List.map (\( _, x ) -> x.index) questions
                 , questions = orderAwareList questions
                 , created = Time.millisToPosix timestampedQuestionary.created
-                , creator = ( timestampedQuestionary.creator, Maybe.map .value <| Dict.get timestampedQuestionary.creator db.users )
+                , creator = ( timestampedQuestionary.creator, Maybe.map .value <| Dict.get (unbox timestampedQuestionary.creator) db.users )
                 , updated = Time.millisToPosix timestampedQuestionary.modified
                 }
 
