@@ -10,6 +10,7 @@ import List.Extra
 import Material.Checkbox as Checkbox exposing (config)
 import Material.TextField as TextField exposing (config)
 import Maybe.Extra
+import Type.IO.Internal as Id exposing (Id)
 
 
 type UpdateMsg
@@ -423,8 +424,21 @@ attribute name getter childform parentform label callback kind acc =
 
 
 
-reference : String -> (c -> a) -> Form a msg -> Form (c) msg -> Form c msg
-reference = attribute
+reference : String -> (c -> Id b a) -> Form a msg -> Form (c) msg -> Form c msg
+reference name getter childform parentform label callback kind acc =
+        let
+            ( head, tail ) =
+                parseHeadTail acc
+            newname = (label ++ "." ++ name)
+        in
+        if name == head then
+            childform newname (callback<<AttrMsg head) (Id.unbox (getter kind)) tail
+
+        else
+            -- if head == "*" then
+            --     parentform label callback kind acc ++ childform newname (callback<<AttrMsg head) (getter kind) tail
+            -- else
+            parentform label callback kind acc
 
 references : String -> (c -> (List a)) -> Form (List a) msg -> Form (c) msg -> Form c msg
 references name getter childform parentform label callback kind acc =

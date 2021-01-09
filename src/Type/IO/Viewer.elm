@@ -3,6 +3,7 @@ module Type.IO.Viewer exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Maybe.Extra
+import Type.IO.Internal as Id exposing (Id)
 
 
 type alias Viewer db full view =
@@ -94,14 +95,14 @@ attribute getter parent db full =
 
 
 reference :
-    (c -> comparable) --keygetter
+    (c -> Id g comparable) --keygetter
     -> (db -> e) --dbgetter
     -> (comparable -> e -> Maybe f) --Dict.get
     -> (f -> a) -- .value
     -> Viewer db c (a -> d)
     -> Viewer db c d
 reference keygetter dictgetter foreigngetter post parent db full =
-    foreigngetter (keygetter full) (dictgetter db)
+    foreigngetter (Id.unbox (keygetter full)) (dictgetter db)
         |> Maybe.map post
         |> (\x ->
                 case ( x, parent db full ) of

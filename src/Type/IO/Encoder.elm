@@ -3,6 +3,7 @@ module Type.IO.Encoder exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Encode
+import Type.IO.Internal as Id exposing (Id)
 
 
 type Encoder a
@@ -121,7 +122,7 @@ attribute name def getter parent =
             SingleEncoder pe
 
 
-reference : String -> (b -> comparable) -> Encoder comparable -> Encoder b -> Encoder b
+reference : String -> (b -> Id c comparable) -> Encoder comparable -> Encoder b -> Encoder b
 reference name getter def parent =
     case parent of
         ListEncoder pe ->
@@ -130,12 +131,12 @@ reference name getter def parent =
                     case def of
                         SingleEncoder e ->
                             ( name
-                            , e (getter x)
+                            , e (Id.unbox (getter x))
                             )
 
                         ListEncoder e ->
                             ( name
-                            , collapseEncoder (ListEncoder e) (getter x)
+                            , collapseEncoder (ListEncoder e) (Id.unbox(getter x))
                             )
                  )
                     :: pe

@@ -10,6 +10,7 @@ import Type.IO.Encoder as Encoder exposing (Encoder)
 import Type.IO.Form as Form exposing (Form)
 import Type.IO.ToString as ToString exposing (ToString)
 import Type.IO.Setter as Update exposing (PartialUpdater)
+import Type.IO.Internal as Id exposing (Id)
 import Type.IO.Viewer as Viewer exposing (Viewer)
 
 
@@ -25,7 +26,6 @@ type alias PartialIO delta full db view msg =
     , form : Form full msg
     , updater : PartialUpdater full delta
     }
-
 
 type alias IO kind db view msg =
     PartialIO kind kind db view msg
@@ -216,20 +216,20 @@ attribute name def getter parent =
 reference :
     String
     -> IO comparable db comparable msg -- Key
-    -> (c -> comparable) -- KeyGetter
+    -> (c -> Id g comparable) -- KeyGetter
     -> (db -> f) -- lookup
     -> (comparable -> f -> Maybe d) -- MaybeGetter
     -> (d -> a)
-    -> PartialIO (comparable -> b) c db (a -> e) msg -- Old Entity
+    -> PartialIO ((Id g comparable) -> b) c db (a -> e) msg -- Old Entity
     -> PartialIO b c db e msg
 reference name def getter lookup foreigngetter post parent =
-    { decoder = Decoder.reference name def.decoder parent.decoder
-    , strDecoder = \a -> Decoder.reference name (def.strDecoder a) (parent.strDecoder a)
-    , encoder = Encoder.reference name getter def.encoder parent.encoder
+    { decoder = Decoder.reference name (Json.Decode.map Id.box def.decoder) parent.decoder
+    , strDecoder = \a -> Decoder.reference name (Json.Decode.map Id.box (def.strDecoder a)) (parent.strDecoder a)
+    , encoder = Encoder.reference name getter def.encoder parent.encoder 
     , toString = ToString.reference name getter def.toString parent.toString
-    , fuzzer = Fuzz.andMap def.fuzzer parent.fuzzer
+    , fuzzer = Fuzz.andMap (Fuzz.map Id.box def.fuzzer) parent.fuzzer
     , viewer = Viewer.reference getter lookup foreigngetter post parent.viewer
-    , empty = parent.empty def.empty
+    , empty = parent.empty (Id.box def.empty)
     , fields = parent.fields ++ [ name ]
     , form = Form.reference name getter def.form parent.form
     , updater = Update.reference name getter def.updater parent.updater
@@ -250,7 +250,7 @@ references name def getter lookup foreigngetter post parent =
     , strDecoder = \a -> Decoder.references name (def.strDecoder a) (parent.strDecoder a)
     , encoder = Encoder.references name getter def.encoder parent.encoder
     , toString = ToString.references name getter def.toString parent.toString
-    , fuzzer = Fuzz.andMap (Fuzz.list def.fuzzer) parent.fuzzer
+    , fuzzer = Fuzz.andMap (Fuzz.list def.fuzzer) parent.fuzzer 
     , viewer = Viewer.references getter lookup foreigngetter post parent.viewer
     , empty = parent.empty (list def).empty
     , fields = parent.fields ++ [ name ]

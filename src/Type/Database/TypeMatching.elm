@@ -5,9 +5,10 @@ import Html exposing (Html)
 import Msg
 import Task exposing (perform)
 import Time exposing (Posix, now, posixToMillis)
-import Type.Database exposing (..)
+import Type.Database as Db exposing (..)
 import Type.IO.Form as Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id)
 import Type.Database.InputType exposing (InputType)
 import Type.Database.InputType as IT exposing (input_type)
 
@@ -269,7 +270,7 @@ keys kind db =
             g db.input_types
 
 
-forms : String -> Type -> String -> Type.Database.Database -> (String -> (String -> Msg.Msg) -> Html Msg.Msg) -> Result Form.Error (Html.Html Msg.Msg)
+forms : String -> Type -> String -> Db.Database -> (String -> (String -> Msg.Msg) -> Html Msg.Msg) -> Result Form.Error (Html.Html Msg.Msg)
 forms id kind acc db f =
     let
         m : UpdateMsg -> Msg.Msg
@@ -351,7 +352,7 @@ dispatchDb dt id kind db =
                 update db <|
                 case dt of
                     New u ->
-                        Dict.insert id { config | creator = u } table
+                        Dict.insert id { config | creator = Id.box u } table
                     Delete ->
                         Dict.remove id table
     in
@@ -404,6 +405,12 @@ dispatchDb dt id kind db =
                 ListKind ->
                     g db.input_types {input_type|empty = IT.List IT.listConfig.empty} (\t x -> {t | input_types = x})
 
+{- getReferenceHolder : (Type, String) -> Database -> List (Type, String)
+getReferenceHolder (kind,id) db =
+    case kind of
+        AnswerType ->
+            CodingAnswer -}
+
 getField : String -> String -> Type -> Database -> Maybe String
 getField id fname kind db =
     database.toString (toStringPlural kind ++ "." ++ id ++ ".value." ++ fname) db
@@ -421,11 +428,49 @@ getTimestampUpdaterMsg kind id attribute time =
                             posixToMillis time
 
 
+
 setTimestamp : Type -> String -> String -> Cmd Msg.Msg
 setTimestamp kind id attribute =
     getTimestampUpdaterMsg kind id attribute
         |> (\x -> perform x now)
 
+filterBy : (Row b -> Id a c) -> (Database -> Table b) -> Database -> Id a c -> List (Row b)
+filterBy attr dbgetter db old =
+    dbgetter db
+    |> Db.rows
+    |> List.filter (\x -> attr x == old)
+
+resolveAttributes : (a -> Id b String) -> (Database -> Table b) -> Database -> Row a -> List (Row a, Row b)
+resolveAttributes attr dbgetter db (oldid,fullold) = 
+    let
+        f id = dbgetter db
+               |> Db.rows
+               |> List.filter (\(cid, _) -> cid == id)
+    in
+    (oldid,fullold)
+    |> (\(id, value) -> ((id, value),(f (attr value.value))))
+    |> (\(oldval, list) -> List.map (\newval -> (oldval,newval)) list)
+
+    
+
+
+join : (Row b -> Id a String) -> (Database -> Table b) -> Database -> List (Row a ) -> List ((Row a),(Row b))
+join attr dbgetter db old =
+    let
+        k = List.map (\(id, value) -> id) old
+    in
+    old
+    |> List.map (\(id, value) -> ((id, value),(filterBy attr dbgetter db id)))
+    |> List.map (\(oldval, list) -> List.map (\newval -> (oldval,newval)) list)
+    |> List.concat
+    
+concatTupleFirst : (List a, b) -> List (a, b)
+concatTupleFirst (l,elem) =
+    List.map (\x -> (x, elem)) l
+
+concatTupleLast : (a, List b) -> List (a, b)
+concatTupleLast (elem, l) = 
+    List.map (\x -> (elem, x)) l
 
 type alias FieldConfig a =
     {

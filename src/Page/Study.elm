@@ -101,6 +101,20 @@ update message (Page model) =
                             
                             ( Page {model| page = new_page}, Cmd.none )
                 Msg.ExportStudy id ->
+                    let
+                        events = Match.filterBy .study .events model.session.db id
+                        eventXanswers = Match.join .event .answers model.session.db events
+                        eventXIanswersXquestionsI = List.map (Tuple.mapSecond (Match.resolveAttributes (\x -> x.question) .questions model.session.db)) eventXanswers
+                                                  |> List.concatMap Match.concatTupleLast
+                                                  
+                        eventXIIanswersXtest_subjectsIXquestionsI = List.map (Tuple.mapSecond (Tuple.mapFirst (Match.resolveAttributes (\x -> x.test_subject) .test_subjects model.session.db))) eventXanswersXquestions
+                                                                    |> List.map (Tuple.mapSecond Match.concatTupleFirst)
+                                                                    |> List.concatMap Match.concatTupleLast
+                        {- eventXIIanswersXtest_subjectsIXIquestionsXcoding_questionI -}
+                        e4 = 
+                            List.map (Tuple.mapSecond (Tuple.mapSecond)) eventXIIanswersXtest_subjectsIXquestionsI
+                    in
+                    
                     ( Page model, Download.string "export.csv" "text/csv" "Not implemented yet!" )
         _ ->
             ( Page model, Cmd.none )
