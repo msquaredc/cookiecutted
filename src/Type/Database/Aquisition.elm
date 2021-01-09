@@ -29,7 +29,7 @@ type alias SerializableStudyDatapoint =
     }
 
 
-serializableStudyDatapoint : String -> Database -> List (Aquisition SerializableStudyDatapoint Type.Database.CodingQuestion String)
+serializableStudyDatapoint : String -> Database -> List (Aquisition SerializableStudyDatapoint Type.Database.User String)
 serializableStudyDatapoint id db =
     Aquisition SerializableStudyDatapoint (Id.box id)
         |> addAttrSingle (Value .study) .events (Value .name) db
@@ -44,7 +44,7 @@ serializableStudyDatapoint id db =
         |> moveReferenceList (Value .coding_questionary) .coding_questions (Raw Tuple.first) db
         |> addAttrList (Value .coding_question) .coding_answers (Value .value) db
         |> moveReferenceList (Value .coding_question) .coding_answers (Raw Tuple.first) db 
-        --|> moveReferenceList (Raw (\(x,y) -> y.creator)) .users (Raw Tuple.first) db
+        |> moveReferenceList (Raw Tuple.first ) .coding_answers (Raw (\(x,y) -> y.creator)) db
         |> addAttrList (Raw (\(x,y) -> y.creator)) .users (Value (\x -> Maybe.withDefault "" x.name)) db
         
 

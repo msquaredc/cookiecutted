@@ -440,6 +440,7 @@ filterBy attr dbgetter db old =
     |> Db.rows
     |> List.filter (\x -> attr x == old)
 
+
 resolveAttributes : (a -> Id b String) -> (Database -> Table b) -> Database -> Row a -> List (Row a, Row b)
 resolveAttributes attr dbgetter db (oldid,fullold) = 
     let
