@@ -19,7 +19,9 @@ import Session
 import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
+import Type.Database.Aquisition as Aq exposing (..)
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 import Viewer.EditableText as EditableText
 
@@ -32,7 +34,7 @@ import Viewer.EditableText as EditableText
 
 
 type alias Model =
-    { id : String
+    { id : Id Db.Study String
     , nameFocus : Bool
     }
 
@@ -41,7 +43,7 @@ type alias Model =
 -- INIT
 
 
-init : String -> Bool -> Model
+init : Id Db.Study String -> Bool -> Model
 init =
     Model 
      {-
@@ -57,7 +59,7 @@ init =
                                 }}
     -}
 
-page : Session.Session -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Study String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id focus=
     let
         model =
@@ -101,8 +103,8 @@ update message (Page model) =
                             
                             ( Page {model| page = new_page}, Cmd.none )
                 Msg.ExportStudy id ->
-                    ( Page model, Download.string "export.csv" "text/csv" "Not implemented yet!" )
-        _ ->
+                    ( Page model, Download.string "export.csv" "text/csv" <| exportStudy (box id) model.session.db )
+        _ -> 
             ( Page model, Cmd.none )
 
 
@@ -135,7 +137,7 @@ view (Page.Page model) =
         Just infos ->
             { detailsConfig
                 | title = toTitle model.page
-                , actions = [("get_app", Msg.Study <| Msg.ExportStudy infos.id)]
+                , actions = [("get_app", Msg.Study <| Msg.ExportStudy <| unbox infos.id)]
                 , user = model.session.user
                 , body = \_ -> 
                     [ layoutGrid [ Typography.typography ]
@@ -149,7 +151,7 @@ view (Page.Page model) =
                                 , p [][ unelevated
                                         (Button.config
                                             |> Button.setIcon (Just <| Button.icon "add")
-                                            |> Button.setOnClick (Msg.FollowSubpage Db.StudyType model.page.id ["code"][])
+                                            |> Button.setOnClick (Msg.FollowSubpage Db.StudyType (unbox model.page.id) ["code"][])
                                             --     --Just <|
                                                     
                                             -- )
@@ -171,8 +173,8 @@ view (Page.Page model) =
                                                                 { kind = Db.EventType
                                                                 , attribute = "study"
                                                                 , setter = Updater.StringMsg
-                                                                , id = x
-                                                                , value = infos.id
+                                                                , id = box x
+                                                                , value = unbox infos.id
                                                                 }
                                                         ]
                                         ))
@@ -193,8 +195,8 @@ view (Page.Page model) =
                                                                 { kind = Db.QuestionaryType
                                                                 , attribute = "study"
                                                                 , setter = Updater.StringMsg
-                                                                , id = x
-                                                                , value = infos.id
+                                                                , id = box x
+                                                                , value = unbox infos.id
                                                                 }
                                                         ]
                                         )
@@ -228,21 +230,21 @@ view (Page.Page model) =
 
 
 type alias RelatedData =
-    { id : String
+    { id : Id Db.Study String
     , title : String
-    , leader : ( String, Maybe Db.User )
+    , leader : ( Id Db.User String, Maybe Db.User )
     , description : String
-    , events : List ( String, Db.Event )
-    , questionnaries : List ( String, Db.Questionary )
+    , events : List ( Id Db.Event String, Db.Event )
+    , questionnaries : List ( Id Db.Questionary String, Db.Questionary )
     , created : Posix
-    , creator : ( String, Maybe Db.User )
+    , creator : ( Id Db.User String, Maybe Db.User )
     , updated : Posix
     }
 
 
-relatedData : String -> Db.Database -> Maybe RelatedData
+relatedData : Id Db.Study String -> Db.Database -> Maybe RelatedData
 relatedData id db =
-    case Dict.get id db.studies of
+    case Dict.get (unbox id) db.studies of
         Just timestampedStudy ->
             let
                 study =
@@ -251,12 +253,12 @@ relatedData id db =
             Just
                 { id = id
                 , title = study.name
-                , leader = ( study.leader, Maybe.map .value <| Dict.get study.leader db.users )
+                , leader = ( study.leader, Maybe.map .value <| Dict.get (unbox study.leader) db.users )
                 , description = study.description
-                , events = List.filter (\( _, y ) -> y.study == id) <| List.map (\( x, y ) -> ( x, y.value )) <| Dict.toList db.events
-                , questionnaries = List.filter (\( _, y ) -> y.study == id) <| List.map (\( x, y ) -> ( x, y.value )) <| Dict.toList db.questionnaries
+                , events = List.filter (\( _, y ) -> y.study == id) <| List.map (\( x, y ) -> (box x, y.value )) <| Dict.toList db.events
+                , questionnaries = List.filter (\( _, y ) -> y.study == id) <| List.map (\( x, y ) -> ( box x, y.value )) <| Dict.toList db.questionnaries
                 , created = Time.millisToPosix timestampedStudy.created
-                , creator = ( timestampedStudy.creator, Maybe.map .value <| Dict.get timestampedStudy.creator db.users )
+                , creator = ( timestampedStudy.creator, Maybe.map .value <| Dict.get (unbox timestampedStudy.creator) db.users )
                 , updated = Time.millisToPosix timestampedStudy.modified
                 }
 
@@ -264,20 +266,20 @@ relatedData id db =
             Nothing
 
 
-viewLeader : ( String, Maybe Db.User ) -> Maybe String -> String
+viewLeader : ( Id Db.User String, Maybe Db.User ) -> Maybe (Id Db.User String) -> String
 viewLeader ( id, mbLeader ) cur =
     if Just id == cur then
         "You"
 
     else
         Maybe.andThen .name mbLeader
-            |> Maybe.withDefault id
+            |> Maybe.withDefault (unbox id)
 
 
-viewList : List ( String, a ) -> (String -> msg) -> (a -> String) -> Html msg
+viewList : List ( Id a String, a ) -> (String -> msg) -> (a -> String) -> Html msg
 viewList elements onClick nameGetter =
     let
-        mlist =  List.map (\( x, y ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick x) ) [ graphic [] [ identicon "100%" x ], text <| nameGetter y ]) elements
+        mlist =  List.map (\( x, y ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick (unbox x)) ) [ graphic [] [ identicon "100%" (unbox x) ], text <| nameGetter y ]) elements
     in
         case mlist of 
             f :: r ->
@@ -292,3 +294,39 @@ viewList elements onClick nameGetter =
 toTitle : Model -> String
 toTitle _ =
     "Home ⧽ Study"
+
+type alias SerializableStudyDatapoint =
+    { event : String
+    , question : String
+    , answer : String
+    , coding_question : String
+    , coding_answer : String
+    , coder : String
+    }
+
+exportStudy : Id Db.Study String -> Db.Database -> String
+exportStudy id db =
+    let
+        datapoints = Aquisition SerializableStudyDatapoint id
+            |> start (Value .study) db.events (Value .name)
+            |> move (Value .study) db.questionnaries (Raw Tuple.first)
+            |> add (Value .questionary) db.questions (Value .text)
+            -- |> addAttrList (Value .questionary) .questions (Value .input_ty) db (\_ -> ["Implement Me!"])
+            |> move (Value .questionary) db.questions (Raw Tuple.first)
+            |> add (Value .question) db.answers (Value .value)
+            --|> moveReferenceList (Value .question) .answers (Raw Tuple.first) db
+            |> move (Value .question) db.coding_questionnaries (Raw Tuple.first)
+            |> add (Value .coding_questionary) db.coding_questions (Value .text)
+            |> move(Value .coding_questionary) db.coding_questions (Raw Tuple.first) 
+            |> add (Value .coding_question) db.coding_answers (Value .value)
+            |> move (Value .coding_question) db.coding_answers (Raw Tuple.first)
+            |> move (Raw Tuple.first ) db.coding_answers (Raw (\(x,y) -> y.creator))
+            |> add (Raw (\(x,y) -> y.creator)) db.users (Value (\x -> Maybe.withDefault "" x.name))
+            |> end
+    in
+        List.map serializeStudyDatapoint datapoints
+        |> String.join "\n"
+
+serializeStudyDatapoint : SerializableStudyDatapoint -> String
+serializeStudyDatapoint data =
+    String.join ";" [data.event,data.coder,data.question,data.answer,data.coding_question,data.coding_answer]

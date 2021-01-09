@@ -5,7 +5,7 @@ import Result.Extra
 import Dict exposing (Dict)
 import Array exposing (Array)
 import Array.Extra
-
+import Type.IO.Internal as Id exposing (Id)
 
 type alias Person =
     { name : String }
@@ -18,7 +18,7 @@ person_str_updater getter f x =
 
 type alias Car =
     { brand : Maybe String
-    , model : String
+    , model : Id Person String
     , age : Int
     }
 
@@ -133,6 +133,7 @@ bool msg val =
         _ ->
             Err <| Mismatch msg (BoolMsg val)
 
+
 maybe : a -> Updater a -> Updater (Maybe a)
 maybe empty old msg val =
     case msg of
@@ -245,7 +246,7 @@ result emptyErr emptyOk err ok msg val =
             |> Result.map Ok
         _ ->  
             Err <| Mismatch msg (ResultErrMsg ErrorMsg)
-            
+     
 array : a -> Updater a -> Updater (Array a)
 array empty old msg val =
     case msg of
@@ -271,8 +272,15 @@ attribute name getter def parent msg car =
     (parent msg car) 
     |> Result.map2 (\x y -> y x) (updateWithLong getter name def msg car)
 
-reference : String -> (car -> comparable) ->  Updater comparable -> PartialUpdater car (comparable -> b) -> PartialUpdater car b
-reference = attribute
+reference : String -> (car -> Id a comparable) ->  Updater comparable -> PartialUpdater car ((Id a comparable) -> b) -> PartialUpdater car b
+reference name getter def parent msg car =
+    let
+        iddef msg_ car_ = def msg_ (Id.unbox car_)
+                               |> Result.map (Id.box)
+    in
+    (parent msg car) 
+    |> Result.map2 (\x y -> y x) (updateWithLong getter name iddef msg car)
+
 
 references : String -> (car -> (List comparable)) -> comparable -> Updater comparable -> PartialUpdater car ((List comparable) -> b) -> PartialUpdater car b
 references name getter empty def =
@@ -290,7 +298,7 @@ carUpdater2 =
     |> attribute "age" .age int
 
 car1 : Car
-car1 = Car Nothing "mymodel" 12 
+car1 = Car Nothing (Id.box "mymodel") 12 
 
 car2 : Result Error Car
 car2 = carUpdater2 (AttributeMsg "brand" (MaybeUpdateMsg (Just (StringMsg "Hello")))) car1

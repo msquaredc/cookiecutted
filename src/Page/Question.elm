@@ -21,33 +21,34 @@ import Type.Database as Db
 import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 
 
 type alias Model =
-    { id : String
+    { id : Id Db.Question String
     , question : Maybe (Db.Timestamp Db.Question)
-    , short : Maybe String
-    , long : Maybe String
-    , list : Maybe String
-    , codingQuestionaryID : Maybe String
+    , short : Maybe (Id IT.InputType String)
+    , long : Maybe (Id IT.InputType String)
+    , list : Maybe (Id IT.InputType String)
+    , codingQuestionaryID : Maybe (Id Db.CodingQuestionary String)
     , codingQuestionary : Maybe (Db.Timestamp Db.CodingQuestionary)
     , codingQuestions : List (String, Db.Timestamp Db.CodingQuestion)
     }
 
 
-init : Db.Database -> String -> Model
+init : Db.Database -> Id Db.Question String -> Model
 init db id =
     let
         emptyModel : Model
         emptyModel =
             Model
                 id
-                (Dict.get id db.questions)
+                (Dict.get (unbox id) db.questions)
                 Nothing
                 Nothing
                 Nothing
-                cid
+                (Maybe.map box cid)
                 (Maybe.map Tuple.second coding_questionary)
                 coding_questions
         
@@ -56,10 +57,10 @@ init db id =
                               |> Dict.toList
                               |> List.sortBy (\(cqid, cq) -> cq.created)
                               |> List.head
-        coding_questions = Dict.filter (\cqqid cqq -> Just cqq.value.coding_questionary == cid ) db.coding_questions
+        coding_questions = Dict.filter (\cqqid cqq -> Just cqq.value.coding_questionary == Maybe.map box cid ) db.coding_questions
                             |> Dict.toList
         q =
-            Dict.get id db.questions
+            Dict.get (unbox id) db.questions
                 |> Maybe.map .value
 
         it_id =
@@ -84,7 +85,7 @@ init db id =
             emptyModel
 
 
-page : Session.Session -> String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Question String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id =
     let
         model =
@@ -127,7 +128,7 @@ update message (Page model) =
             in
             newq <|
                 Dict.update
-                    oldmodel.id
+                    (unbox oldmodel.id)
                     (Maybe.map
                         (\i ->
                             let
@@ -216,7 +217,7 @@ view (Page.Page model) =
 
         moreInfos : String
         moreInfos =
-            Dict.get model.page.id db.questions
+            Dict.get (unbox model.page.id) db.questions
                 |> Maybe.map .value
                 |> Maybe.andThen (Result.toMaybe << Db.question.toString "*")
                 |> Maybe.withDefault "Nothing Found"
@@ -276,21 +277,21 @@ toTitle _ =
 
 
 type alias RelatedData =
-    { id : String
+    { id : Id Db.Question String
     , text : String
-    , input_type : ( String, Maybe IT.InputType )
+    , input_type : ( Id IT.InputType String, Maybe IT.InputType )
 
     --, question : ( String, Maybe Db.Question)
     --, coding_questions : List (OrderAware Db.CodingQuestion)
     , created : Posix
-    , creator : ( String, Maybe Db.User )
+    , creator : ( Id Db.User String, Maybe Db.User )
     , updated : Posix
     }
 
 
-relatedData : String -> Db.Database -> Maybe RelatedData
+relatedData : Id Db.Question String -> Db.Database -> Maybe RelatedData
 relatedData id db =
-    case Dict.get id db.questions of
+    case Dict.get (unbox id) db.questions of
         Just timestampedQuestion ->
             let
                 coding_questions =
@@ -311,7 +312,7 @@ relatedData id db =
                 --, max_index = List.maximum <| List.map (\( _, x ) -> x.index) coding_questions
                 --, coding_questions = orderAwareList coding_questions
                 , created = Time.millisToPosix timestampedQuestion.created
-                , creator = ( timestampedQuestion.creator, Maybe.map .value <| Dict.get timestampedQuestion.creator db.users )
+                , creator = ( timestampedQuestion.creator, Maybe.map .value <| Dict.get (unbox timestampedQuestion.creator) db.users )
                 , updated = Time.millisToPosix timestampedQuestion.modified
                 }
 
@@ -344,7 +345,7 @@ relatedData id db =
 -}
 
 
-viewInputTypeSelection : Model -> ( String, Maybe IT.InputType ) -> List (Html Msg.Msg)
+viewInputTypeSelection : Model -> ( Id IT.InputType String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewInputTypeSelection model ( id, _ ) =
     List.map (\x -> Html.p [] [ x ])
         [ FormField.formField
@@ -359,7 +360,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
-                                , value = short
+                                , value = unbox short
                                 }
 
                         Nothing ->
@@ -388,7 +389,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
-                                    , value = short
+                                    , value = unbox short
                                     }
 
                             Nothing ->
@@ -418,7 +419,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
-                                , value = long
+                                , value = unbox long
                                 }
 
                         Nothing ->
@@ -447,7 +448,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
-                                    , value = long
+                                    , value = unbox long
                                     }
 
                             Nothing ->
@@ -477,7 +478,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
-                                , value = list
+                                , value = unbox list
                                 }
 
                         Nothing ->
@@ -506,7 +507,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
-                                    , value = list
+                                    , value = unbox list
                                     }
 
                             Nothing ->
@@ -561,14 +562,14 @@ viewCodingQuestions model =
                                             { kind = Db.CodingQuestionaryType
                                             , attribute = "question"
                                             , setter = Updater.StringMsg
-                                            , id = x
-                                            , value = model.id
+                                            , id = box x
+                                            , value = unbox model.id
                                             }
                                     , \x -> Match.setField
                                             { kind = Db.CodingQuestionaryType
                                             , attribute = "enabled"
                                             , setter = Updater.BoolMsg
-                                            , id = x
+                                            , id = box x
                                             , value = True
                                             }
                                     ]
@@ -600,8 +601,8 @@ viewCodingQuestions model =
                                         { kind = Db.CodingQuestionType
                                         , attribute = "coding_questionary"
                                         , setter = Updater.StringMsg
-                                        , id = x
-                                        , value = cid
+                                        , id = box x
+                                        , value = unbox cid
                                         }
                                 ]
                 ))
@@ -616,14 +617,14 @@ viewCodingQuestion (id, cquestion) =
         [ text cquestion.value.text ]
             )
 
-viewSettings : Db.Database -> String -> Model -> ( String, Maybe IT.InputType ) -> List (Html Msg.Msg)
+viewSettings : Db.Database -> Id Db.Question String -> Model -> ( Id IT.InputType String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewSettings db id model ( itid, mbit ) =
     let
         umessage attribute setter value =
             Msg.CRUD <|
                 Msg.Update <|
                     Updater.AttributeMsg "questions" <|
-                        Updater.DictKeyMsg id <|
+                        Updater.DictKeyMsg (unbox id) <|
                             Updater.AttributeMsg "value" <|
                                 Updater.AttributeMsg "input_type" <|
                                     Updater.AttributeMsg attribute <|
@@ -636,7 +637,7 @@ viewSettings db id model ( itid, mbit ) =
                 |> Maybe.withDefault ""
     in
     if model.short == Just itid then
-        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get x db.input_types) model.short of
+        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.short of
             Just (IT.ShortAnswer short) ->
                 [ TextField.filled
                     (TextField.config
@@ -726,7 +727,7 @@ viewSettings db id model ( itid, mbit ) =
 
     else
         if model.long == Just itid then
-            case Maybe.map .value <| Maybe.andThen (\x -> Dict.get x db.input_types) model.long of
+            case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.long of
             Just (IT.LongAnswer long) ->
                 [ TextField.filled
                     (TextField.config
@@ -815,7 +816,7 @@ viewSettings db id model ( itid, mbit ) =
                 [ text "No Config found" ]
         else
             if model.list == Just itid then
-                case Maybe.map .value <| Maybe.andThen (\x -> Dict.get x db.input_types) model.list of
+                case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.list of
                     Just (IT.List list) ->
                         [ text "Boxes or Radio?"
                         , FormField.formField

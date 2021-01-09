@@ -26,6 +26,7 @@ import Session
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Url.Builder
 import Utils exposing (..)
 import Viewer exposing (detailsConfig)
@@ -180,8 +181,8 @@ view (Page.Page model) =
                                                         { kind = Db.StudyType
                                                         , attribute = "leader"
                                                         , setter = Updater.StringMsg
-                                                        , id = x
-                                                        , value = user
+                                                        , id = box x
+                                                        , value = unbox user
                                                         }
                                                 , Msg.Follow Db.StudyType
                                                 ]
@@ -212,7 +213,7 @@ view (Page.Page model) =
     }
 
 
-studyOverview : String -> Page.Page Model Msg.Msg -> List (Html Msg.Msg)
+studyOverview : Id Db.User String -> Page.Page Model Msg.Msg -> List (Html Msg.Msg)
 studyOverview user (Page.Page model) =
     let
         db =

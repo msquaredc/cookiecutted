@@ -1,19 +1,21 @@
 module Viewer.OrderAwareList exposing (..)
 
+import Type.IO.Internal exposing (Id)
+
 
 type alias OrderAware a =
     { value : a
     , previous :
         Maybe
-            { id : String
+            { id : Id a String
             , value : a
             }
     , next :
         Maybe
-            { id : String
+            { id : Id a String
             , value : a
             }
-    , id : String
+    , id : Id a String
     }
 
 
@@ -30,7 +32,7 @@ prePost prev xs =
             ( prev, a, Just b ) :: prePost (Just a) (b :: c)
 
 
-orderAwareList : List ( String, a ) -> List (OrderAware a)
+orderAwareList : List ( Id a String, a ) -> List (OrderAware a)
 orderAwareList old =
     let
         mapToValue a =

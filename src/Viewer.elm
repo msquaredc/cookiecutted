@@ -1,4 +1,4 @@
-module Viewer exposing (Details, Header, detailsConfig, header, notFound, textForm, update, view, wideTextForm, system)
+module Viewer exposing (Details, Header, detailsConfig, header, notFound, system, textForm, update, view, wideTextForm)
 
 --import Url.Builder
 
@@ -6,6 +6,7 @@ import Browser
 import DateFormat.Relative exposing (relativeTime)
 import Device
 import Dict
+import DnDList
 import Html exposing (Html, a, div, h1, h3, p, text)
 import Html.Attributes exposing (class, href, style)
 import Identicon exposing (identicon)
@@ -30,12 +31,13 @@ import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
+import Type.IO.Internal exposing (box, unbox)
 import Type.IO.Setter as Updater
 import Utils
 import Viewer.Desktop as Desktop
 import Viewer.Handset as Handset
 import Viewer.Tablet as Tablet
-import DnDList
+import Type.IO.Internal exposing (Id, box, unbox)
 
 
 
@@ -49,9 +51,9 @@ type alias Details msg =
     { title : String
     , body : Maybe Posix -> List (Html msg)
     , search : Maybe String
-    , user : Maybe String
+    , user : Maybe (Id Db.User String)
     , top : Bool
-    , actions : List (String, msg)
+    , actions : List ( String, msg )
     }
 
 
@@ -99,7 +101,8 @@ viewSnackbar : Header -> Html Msg.Msg
 viewSnackbar h =
     Snackbar.snackbar
         (Snackbar.config { onClosed = Msg.SnackbarClosed }
-        |> Snackbar.setCloseOnEscape True)
+            |> Snackbar.setCloseOnEscape True
+        )
         h.queue
 
 
@@ -116,7 +119,7 @@ view session msg details h time =
                     Just userid ->
                         let
                             username =
-                                Dict.get userid session.db.users
+                                Dict.get (unbox userid) session.db.users
                                     |> Maybe.map .value
                                     |> Maybe.andThen .name
                         in
@@ -142,11 +145,11 @@ view session msg details h time =
                             { title = Just details.title --Nothing
                             , body = div [] <| details.body time
                             , openDrawer = Msg.Viewer OpenDrawer
-                            , user = Maybe.map (identicon "100%") session.user
+                            , user = Maybe.map (\x -> identicon "100%" (unbox x)) session.user
                             , closeDrawer = Msg.Viewer CloseDrawer
                             , drawerOpen = h.drawerOpen
                             , drawerTitle = Maybe.withDefault "User" username
-                            , drawerSubtitle = Html.text <| "ID: " ++ userid
+                            , drawerSubtitle = Html.text <| "ID: " ++ unbox userid
                             , drawerContent = viewDrawerContent 0
                             , navButtonIcon =
                                 if details.top then
@@ -331,7 +334,7 @@ viewHeader2 config details =
                         <|
                             IconButton.customIcon Html.i
                                 []
-                                [ identicon "100%" s ]
+                                [ identicon "100%" (unbox s) ]
                 ]
             ]
         ]
@@ -383,21 +386,24 @@ detailsConfig =
     , actions = []
     }
 
+
 system : DnDList.System a Msg.Msg
 system =
-    DnDList.create 
+    DnDList.create
         { beforeUpdate = \_ _ list -> list
         , movement = DnDList.Vertical
         , listen = DnDList.OnDrag
         , operation = DnDList.Rotate
-        } 
+        }
         Msg.DnDEvent
+
 
 header : Header
 header =
     { drawerOpen = False
     , new_username = ""
     , queue = Snackbar.initialQueue
+
     --, search = Nothing
     }
 
@@ -536,7 +542,7 @@ selectUser users =
             , LayoutGrid.cell [] <|
                 let
                     sList =
-                        List.map (\user -> MLItem.listItem (MLItem.config |> MLItem.setOnClick (Msg.SetUser user)) [ MLItem.graphic [] [ identicon "100%" user ], Html.text user ]) users
+                        List.map (\user -> MLItem.listItem (MLItem.config |> MLItem.setOnClick (Msg.SetUser (box user))) [ MLItem.graphic [] [ identicon "100%" user ], Html.text user ]) users
                 in
                 case sList of
                     fir :: res ->
@@ -572,7 +578,7 @@ userDialog open users new_username time =
                             { kind = Db.UserType
                             , attribute = "name"
                             , setter = Updater.MaybeSetMsg << Just << Updater.StringMsg
-                            , id = x
+                            , id = box x
                             , value = username
                             }
                     ]
@@ -592,12 +598,13 @@ userDialog open users new_username time =
                             (userIdenticonIcon id).attributes
                             (userIdenticonIcon id).elements
                         , MLItem.text []
-                            { primary = [ Html.text <| Maybe.withDefault id user.name ]
+                            { primary = [ Html.text <| Maybe.withDefault (unbox id) user.name ]
                             , secondary = [ Html.text <| "Last login " ++ (Maybe.withDefault "" <| Maybe.map (\x -> relativeTime x (Time.millisToPosix user.last_login)) time) ]
                             }
                         ]
                 )
             <|
+            List.map (Tuple.mapFirst box) <|
                 List.reverse <|
                     List.sortBy (\( _, b ) -> b.last_login) users
     in
@@ -653,11 +660,11 @@ type alias HtmlElement msg =
     }
 
 
-userIdenticonIcon : String -> HtmlElement msg
+userIdenticonIcon : Id Db.User String -> HtmlElement msg
 userIdenticonIcon id =
     { attributes =
         [ Html.Attributes.style "background-color" "rgba(0,0,0,.1)"
         , Html.Attributes.style "color" "#fff"
         ]
-    , elements = [ identicon "66%" id ]
+    , elements = [ identicon "66%" (unbox id) ]
     }

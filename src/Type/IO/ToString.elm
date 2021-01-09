@@ -4,6 +4,7 @@ import Dict exposing (Dict)
 import List.Extra
 import Result.Extra
 import Array exposing (Array)
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 
 type Error =
     NotFound
@@ -152,7 +153,7 @@ attribute name def getter parent =
                 parent acc value
 
 
-reference : String -> (c -> comparable) -> ToString comparable -> ToString c -> ToString c
+reference : String -> (c -> Id a comparable) -> ToString comparable -> ToString c -> ToString c
 reference name getter def parent =
     \acc value ->
         let
@@ -160,11 +161,11 @@ reference name getter def parent =
                 parseHeadTail acc
         in
         if name == head then
-            def acc (getter value)
+            def acc (Id.unbox (getter value))
 
         else
             if acc == "*" then
-                def "*" (getter value)
+                def "*" (Id.unbox (getter value))
                 |> Result.map (\x -> name ++ ":" ++ x ++ "\n")
                 |> Result.map (\x -> case parent acc value of
                                         Ok s ->
@@ -182,7 +183,7 @@ references name getter def parent =
                 parseHeadTail acc
         in
         if name == head || name == "*" then
-            (list def) tail (getter value)
+            (list def) tail <| (getter value)
 
         else
             parent acc value

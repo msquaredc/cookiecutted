@@ -19,6 +19,7 @@ import Type.Database as Db
 import Type.Database.InputType exposing (InputType(..))
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 import Url.Parser as Parser exposing ((</>))
 import Url.Parser.Query as Query
@@ -141,7 +142,7 @@ view (Page.Page model) =
             \_ -> [
                 case infos.currentQuestionId of
                     Just qid ->
-                        case Dict.get qid <| Dict.fromList infos.questions of
+                        case Dict.get (unbox qid) <| Dict.fromList (List.map (\(a,b) -> (unbox a, b)) infos.questions ) of
                             Just question ->
                                 
                                 Element.layout [ height <| px <| viewportHeight - 48, padding 24] <|
@@ -183,11 +184,11 @@ view (Page.Page model) =
     }
 
 
-viewQuestion : Db.Database -> String -> Db.Question -> Maybe ( String, Db.Answer ) -> Model -> Element.Element Msg.Msg
+viewQuestion : Db.Database -> Id Db.Question String -> Db.Question -> Maybe ( Id Db.Answer String, Db.Answer ) -> Model -> Element.Element Msg.Msg
 viewQuestion db qid question mbAnswer model =
     let
         mbit =
-            Dict.get question.input_type db.input_types
+            Dict.get (unbox question.input_type) db.input_types
                 |> Maybe.map (\x -> x.value)
 
         mbvalue =
@@ -217,15 +218,15 @@ viewQuestion db qid question mbAnswer model =
                                         { kind = Db.AnswerType
                                         , attribute = "question"
                                         , setter = Updater.StringMsg
-                                        , id = answerid
-                                        , value = qid
+                                        , id = box answerid
+                                        , value = unbox qid
                                         }
                                 , \answerid ->
                                     Match.setField
                                         { kind = Db.AnswerType
                                         , attribute = "event"
                                         , setter = Updater.StringMsg
-                                        , id = answerid
+                                        , id = box answerid
                                         , value = model.event
                                         }
                                 , \answerid ->
@@ -233,7 +234,7 @@ viewQuestion db qid question mbAnswer model =
                                         { kind = Db.AnswerType
                                         , attribute = "test_subject"
                                         , setter = Updater.StringMsg
-                                        , id = answerid
+                                        , id = box answerid
                                         , value = model.test_subject
                                         }
                                 , \answerid ->
@@ -241,7 +242,7 @@ viewQuestion db qid question mbAnswer model =
                                         { kind = Db.AnswerType
                                         , attribute = "value"
                                         , setter = Updater.StringMsg
-                                        , id = answerid
+                                        , id = box answerid
                                         , value = x
                                         }
                                 ]
@@ -251,7 +252,7 @@ viewQuestion db qid question mbAnswer model =
         ( "title", Element.el [ width fill, height fill] <| Element.el [Element.centerX, Element.centerY {-Background.color (Element.rgb 0.8 0.8 0.8)-},padding 32] <| Element.paragraph [Font.size 32] [Element.text question.text] )
             ,("edit", Keyed.row [width fill, height fill] [
             ("padleft", Element.el [width fill] <| Element.none)
-            , (qid, Element.el [ width fill, height fill] <| Element.el [Element.centerY, width fill] <| (case mbit of
+            , (unbox qid, Element.el [ width fill, height fill] <| Element.el [Element.centerY, width fill] <| (case mbit of
                     Nothing ->
                         Element.html <| text "Undefined input type" 
                     Just (ShortAnswer s) ->
@@ -285,11 +286,11 @@ viewQuestion db qid question mbAnswer model =
 
 
 type alias RelatedData =
-    { questions : List ( String, Db.Question )
-    , answers : List ( String, Db.Answer )
-    , qids_missing : List String
-    , currentQuestionId : Maybe String
-    , currentAnswer : Maybe ( String, Db.Answer )
+    { questions : List ( Id Db.Question String, Db.Question )
+    , answers : List ( Id Db.Answer String, Db.Answer )
+    , qids_missing : List (Id Db.Question String)
+    , currentQuestionId : Maybe (Id Db.Question String)
+    , currentAnswer : Maybe ( Id Db.Answer String, Db.Answer )
     , next : Maybe Msg.Msg
     , previous : Maybe Msg.Msg
     }
@@ -300,23 +301,24 @@ relatedData db model =
     let
         questions =
             db.questions
-                |> Dict.filter (\_ val -> val.value.questionary == model.questionary)
-                |> Dict.filter (\_ val -> Dict.member val.value.input_type db.input_types)
+                |> Dict.filter (\_ val -> val.value.questionary == box model.questionary)
+                |> Dict.filter (\_ val -> Dict.member (unbox val.value.input_type) db.input_types)
                 |> Dict.toList
                 |> List.sortBy (\( _, val ) -> val.value.index)
-                |> List.map (\( id, val ) -> ( id, val.value ))
+                |> List.map (\( id, val ) -> ( box id, val.value ))
 
         qids =
             List.map (\( x, _ ) -> x) questions
 
         answers =
             List.map (\qid -> Dict.filter (\_ val -> val.value.question == qid) db.answers) qids
-                |> List.map (Dict.filter (\_ val -> val.value.event == model.event))
-                |> List.map (Dict.filter (\_ val -> val.value.test_subject == model.test_subject))
+                |> List.map (Dict.filter (\_ val -> val.value.event == box model.event))
+                |> List.map (Dict.filter (\_ val -> val.value.test_subject == box model.test_subject))
                 |> List.map Dict.toList
                 |> List.map (List.sortBy (\( _, val ) -> val.created))
                 |> List.filterMap List.Extra.last
                 |> List.sortBy (\( _, val ) -> val.accessed)
+                |> List.map (\(a, b) -> (box a, b))
 
         qids_present =
             List.map (\( _, val ) -> val.value.question) answers
@@ -340,10 +342,13 @@ relatedData db model =
 
         currentAnswer =
             answerFromId currentQuestion
+            
 
+        curID : Maybe Int
         curID =
             Maybe.andThen (\x -> List.Extra.elemIndex x qids) currentQuestion
 
+        nextID : Maybe (Id Db.Question String)
         nextID =
             Maybe.andThen (\x -> List.Extra.getAt (x + 1) qids) curID
 
@@ -356,10 +361,11 @@ relatedData db model =
         prevAnswer =
             answerFromId prevID
 
+        getMsg : Maybe (Id Db.Question String) -> Maybe (Id Db.Answer String, Db.Answer) -> Maybe (Msg.Msg)
         getMsg id answer =
             case answer of
                 Just ( aid, _ ) ->
-                    Just (Msg.CRUD <| Msg.Access Db.AnswerType aid)
+                    Just (Msg.CRUD <| Msg.Access Db.AnswerType (unbox aid))
 
                 Nothing ->
                     Maybe.map
@@ -371,15 +377,15 @@ relatedData db model =
                                             { kind = Db.AnswerType
                                             , attribute = "question"
                                             , setter = Updater.StringMsg
-                                            , id = answerid
-                                            , value = qid
+                                            , id = box answerid
+                                            , value = unbox qid
                                             }
                                     , \answerid ->
                                         Match.setField
                                             { kind = Db.AnswerType
                                             , attribute = "event"
                                             , setter = Updater.StringMsg
-                                            , id = answerid
+                                            , id = box answerid
                                             , value = model.event
                                             }
                                     , \answerid ->
@@ -387,7 +393,7 @@ relatedData db model =
                                             { kind = Db.AnswerType
                                             , attribute = "test_subject"
                                             , setter = Updater.StringMsg
-                                            , id = answerid
+                                            , id = box answerid
                                             , value = model.test_subject
                                             }
                                     ]

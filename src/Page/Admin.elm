@@ -25,6 +25,7 @@ import Type.IO exposing (form2update)
 import Type.IO.Form as Form
 import Type.IO.Setter as Update
 import Type.IO.ToString as ToString
+import Type.IO.Internal exposing (Id, box, unbox)
 import Url.Parser as Parser exposing ((</>), (<?>))
 import Url.Parser.Query as Query
 import Viewer exposing (detailsConfig)
@@ -118,7 +119,7 @@ update message (Page model) =
                                     model.session
 
                                 newsession =
-                                    { oldsession | db = Match.new index kind (Maybe.withDefault "" model.session.user) model.session.db }
+                                    { oldsession | db = Match.new (box index) kind (Maybe.withDefault (box "") model.session.user) model.session.db }
                             in
                             ( Page { model | session = newsession }, Cmd.none )
 

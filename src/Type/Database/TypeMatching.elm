@@ -5,9 +5,10 @@ import Html exposing (Html)
 import Msg
 import Task exposing (perform)
 import Time exposing (Posix, now, posixToMillis)
-import Type.Database exposing (..)
+import Type.Database as Db exposing (..)
 import Type.IO.Form as Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, unbox)
 import Type.Database.InputType exposing (InputType)
 import Type.Database.InputType as IT exposing (input_type)
 
@@ -269,7 +270,7 @@ keys kind db =
             g db.input_types
 
 
-forms : String -> Type -> String -> Type.Database.Database -> (String -> (String -> Msg.Msg) -> Html Msg.Msg) -> Result Form.Error (Html.Html Msg.Msg)
+forms : String -> Type -> String -> Db.Database -> (String -> (String -> Msg.Msg) -> Html Msg.Msg) -> Result Form.Error (Html.Html Msg.Msg)
 forms id kind acc db f =
     let
         m : UpdateMsg -> Msg.Msg
@@ -329,18 +330,18 @@ forms id kind acc db f =
             g input_type db.input_types
 
 type DispatchType = 
-    New String
+    New (Id Db.User String)
     | Delete
 
-new : String -> Type -> String -> Database -> Database
+new : Id a String -> Type -> Id Db.User String -> Database -> Database
 new id kind u db=
     dispatchDb (New u) id kind db
 
-delete : String -> Type -> Database -> Database
+delete : Id a String -> Type -> Database -> Database
 delete =
     dispatchDb Delete
 
-dispatchDb : DispatchType -> String -> Type -> Database -> Database
+dispatchDb : DispatchType -> Id a String -> Type -> Database -> Database
 dispatchDb dt id kind db =
     let
         g table def update =
@@ -351,9 +352,9 @@ dispatchDb dt id kind db =
                 update db <|
                 case dt of
                     New u ->
-                        Dict.insert id { config | creator = u } table
+                        Dict.insert (unbox id) { config | creator = u } table
                     Delete ->
-                        Dict.remove id table
+                        Dict.remove (unbox id) table
     in
     case kind of
         AnswerType ->
@@ -404,6 +405,12 @@ dispatchDb dt id kind db =
                 ListKind ->
                     g db.input_types {input_type|empty = IT.List IT.listConfig.empty} (\t x -> {t | input_types = x})
 
+{- getReferenceHolder : (Type, String) -> Database -> List (Type, String)
+getReferenceHolder (kind,id) db =
+    case kind of
+        AnswerType ->
+            CodingAnswer -}
+
 getField : String -> String -> Type -> Database -> Maybe String
 getField id fname kind db =
     database.toString (toStringPlural kind ++ "." ++ id ++ ".value." ++ fname) db
@@ -421,42 +428,81 @@ getTimestampUpdaterMsg kind id attribute time =
                             posixToMillis time
 
 
+
 setTimestamp : Type -> String -> String -> Cmd Msg.Msg
 setTimestamp kind id attribute =
     getTimestampUpdaterMsg kind id attribute
         |> (\x -> perform x now)
 
+filterBy : (Row b -> Id a c) -> (Database -> Table b) -> Database -> Id a c -> List (Row b)
+filterBy attr dbgetter db old =
+    dbgetter db
+    |> Db.rows
+    |> List.filter (\x -> attr x == old)
 
-type alias FieldConfig a =
+
+resolveAttributes : (a -> Id b String) -> (Database -> Table b) -> Database -> Row a -> List (Row a, Row b)
+resolveAttributes attr dbgetter db (oldid,fullold) = 
+    let
+        f id = dbgetter db
+               |> Db.rows
+               |> List.filter (\(cid, _) -> cid == id)
+    in
+    (oldid,fullold)
+    |> (\(id, value) -> ((id, value),(f (attr value.value))))
+    |> (\(oldval, list) -> List.map (\newval -> (oldval,newval)) list)
+
+    
+
+
+join : (Row b -> Id a String) -> (Database -> Table b) -> Database -> List (Row a ) -> List ((Row a),(Row b))
+join attr dbgetter db old =
+    let
+        k = List.map (\(id, value) -> id) old
+    in
+    old
+    |> List.map (\(id, value) -> ((id, value),(filterBy attr dbgetter db id)))
+    |> List.map (\(oldval, list) -> List.map (\newval -> (oldval,newval)) list)
+    |> List.concat
+    
+concatTupleFirst : (List a, b) -> List (a, b)
+concatTupleFirst (l,elem) =
+    List.map (\x -> (x, elem)) l
+
+concatTupleLast : (a, List b) -> List (a, b)
+concatTupleLast (elem, l) = 
+    List.map (\x -> (elem, x)) l
+
+type alias FieldConfig a b =
     {
         kind : Type,
         attribute : String,
         setter : (a -> Updater.Msg),
-        id : String,
+        id : Id b String,
         value : a
     }
 
-setField : FieldConfig a -> Msg.Msg
+setField : FieldConfig a b -> Msg.Msg
 setField {kind, attribute, setter, id, value} =
     Msg.CRUD <|
         Msg.Update <|
             Updater.AttributeMsg (toStringPlural kind) <|
-                Updater.DictKeyMsg id <|
+                Updater.DictKeyMsg (unbox id) <|
                     Updater.AttributeMsg "value" <|
                         Updater.AttributeMsg attribute <|
                             setter value
 
-setManyFields : List (FieldConfig a) -> Msg.Msg
+setManyFields : List (FieldConfig a b) -> Msg.Msg
 setManyFields f =
     List.map setFieldRaw f
     |> Msg.UpdateAll
     |> Msg.CRUD
 
-setFieldRaw : FieldConfig a -> Updater.Msg
+setFieldRaw : FieldConfig a b -> Updater.Msg
 setFieldRaw {kind, attribute, setter, id, value} =
 
             Updater.AttributeMsg (toStringPlural kind) <|
-                Updater.DictKeyMsg id <|
+                Updater.DictKeyMsg (unbox id) <|
                     Updater.AttributeMsg "value" <|
                         Updater.AttributeMsg attribute <|
                             setter value
@@ -479,7 +525,7 @@ updateField config updater =
 
 -- go down and get value via update
 
-swapFields : Type -> String -> (a -> Updater.Msg) -> (String, String) -> (a, a) -> Msg.Msg
+swapFields : Type -> String -> (a -> Updater.Msg) -> (Id b String, Id b String) -> (a, a) -> Msg.Msg
 swapFields kind attribute setter (f_id,s_id) (f_val, s_val) =
     Msg.CRUD <|
         Msg.UpdateAll

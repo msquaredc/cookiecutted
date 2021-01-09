@@ -5,6 +5,7 @@ import Time
 import Type.Database as Db
 import Type.Flags
 import Type.Database.TypeMatching as Match
+import Type.IO.Internal exposing (Id)
 --import Type.LocalStorage
 
 
@@ -22,7 +23,7 @@ type alias Session =
         { width : Int
         , height : Int
         }
-    , user : Maybe String
+    , user : Maybe (Id Db.User String)
     --    , localStorage : Maybe Type.LocalStorage.LocalStorage
     , db : Db.Database
     }

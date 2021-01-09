@@ -4,6 +4,8 @@ import Dict exposing (..)
 import Type.Database.InputType as IT
 import Type.IO exposing (..)
 import Type.IO.Encoder exposing (Encoder(..))
+import Type.IO.Internal as Id exposing (Id)
+import Tuple
 
 
 
@@ -14,6 +16,8 @@ import Type.IO.Encoder exposing (Encoder(..))
 type alias Table a =
     Dict String (Timestamp a)
 
+type alias Row a = 
+    (Id a String, Timestamp a)
 
 type alias TableView a =
     Dict String (TimestampView a)
@@ -83,10 +87,10 @@ database =
 
 
 type alias Answer =
-    { question : String
-    , test_subject : String
+    { question : Id Question String
+    , test_subject : Id TestSubject String
     , value : String
-    , event : String
+    , event : Id Event String
     }
 
 
@@ -108,7 +112,7 @@ answer =
 
 
 type alias Coder =
-    { user : String
+    { user : Id User String
     }
 
 
@@ -120,11 +124,11 @@ type alias CoderView =
 coder : IO Coder Database CoderView msg
 coder =
     entity Coder CoderView
-        |> reference "user" string .user .users Dict.get .value
+    |> reference "user" string .user .users Dict.get .value
 
 
 type alias Coding =
-    { coder : String
+    { coder : Id Coder String
     }
 
 
@@ -140,9 +144,9 @@ coding =
 
 
 type alias CodingAnswer =
-    { coding_question : String
+    { coding_question : Id CodingQuestion String
     --, coding_frame : String
-    , answer : String
+    , answer : Id Answer String
     , value : String
     }
 
@@ -165,8 +169,8 @@ coding_answer =
 
 
 type alias CodingFrame =
-    { answer : String
-    , coding : String
+    { answer : Id Answer String
+    , coding : Id Coding String
     }
 
 
@@ -184,9 +188,9 @@ coding_frame =
 
 
 type alias CodingQuestion =
-    { coding_questionary : String
+    { coding_questionary : Id CodingQuestionary String
     , text : String
-    , input_type : String
+    , input_type : Id IT.InputType String
     }
 
 
@@ -207,7 +211,7 @@ coding_question =
 
 
 type alias CodingQuestionary =
-    { question : String
+    { question : Id Question String
     , enabled : Bool
     }
 
@@ -226,9 +230,9 @@ coding_questionary =
 
 
 type alias Event =
-    { place : String
+    { place : Id Place String
     , date : String
-    , study : String
+    , study : Id Study String
     , name : String
     }
 
@@ -268,10 +272,10 @@ place =
 
 
 type alias Question =
-    { questionary : String
+    { questionary : Id Questionary String
     , index : Int
     , text : String
-    , input_type : String
+    , input_type : Id IT.InputType String
     }
 
 
@@ -295,7 +299,7 @@ question =
 
 type alias Questionary =
     { name : String
-    , study : String
+    , study : Id Study String
     }
 
 
@@ -316,7 +320,7 @@ questionary =
 type alias Study =
     { name : String
     , description : String
-    , leader : String
+    , leader : Id User String
     }
 
 
@@ -338,7 +342,7 @@ study =
 
 type alias TestSubject =
     { id : String
-    , event : String
+    , event : Id Event String
     , infos : Dict String String
     }
 
@@ -373,7 +377,7 @@ user =
 
 
 type alias Timestamp a =
-    { creator : String
+    { creator : Id User String
     , created : Int
     , modified : Int
     , accessed : Int
@@ -447,3 +451,8 @@ type InputTypeKind =
 updateEmpty : (a -> a) -> IO a b c msg -> IO a b c msg
 updateEmpty f prev =
     { prev | empty = f prev.empty }
+
+rows : Table a -> List (Row a)
+rows old = 
+    Dict.toList old
+    |> List.map (Tuple.mapFirst Id.box)

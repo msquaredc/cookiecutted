@@ -22,6 +22,7 @@ import Material.List as MList exposing (list)
 import Material.List.Item as MLItem exposing (listItem, graphic)
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer.EditableText as EditableText
 import Url.Builder
 import Url.Parser as Parser exposing ((</>))
@@ -35,19 +36,19 @@ import Url.Parser.Query as Query
 
 type alias Model =
     { page : Msg.EventSubPage
-    , id : String
+    , id : Id Db.Event String
     , nameFocus : Bool
     }
 
 -- INIT
 
 
-init : Msg.EventSubPage -> String -> Bool -> Model
-init =
-    Model 
+init : Msg.EventSubPage -> Id Db.Event String -> Bool -> Model
+init page_ id =
+    Model page_ id
 
 
-page : Session.Session -> Msg.EventSubPage -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Msg.EventSubPage -> Id Db.Event String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session subpage id focus =
     let
         model =
@@ -134,7 +135,7 @@ view (Page.Page model) =
             { detailsConfig
                 | title = infos.name
                 , user = model.session.user
-                , actions = [("settings", Msg.FollowSubpage Db.EventType infos.id ["settings"] [])]
+                , actions = [("settings", Msg.FollowSubpage Db.EventType (unbox infos.id) ["settings"] [])]
                 , body =\_ -> 
                     [
                         {- TabBar.tabBar TabBar.config
@@ -166,7 +167,7 @@ view (Page.Page model) =
                                 inner [][
                                 cell [LG.span8Desktop]
                                     [ Html.h1 [ Typography.headline5 ] [ text "Test Subjects" ]
-                                    , viewList infos.test_subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 x)
+                                    , viewList infos.test_subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 (unbox x))
                                     , unelevated
                                         (Button.config
                                             |> Button.setIcon (Just <| Button.icon "add")
@@ -179,8 +180,8 @@ view (Page.Page model) =
                                                                     { kind = Db.TestSubjectType
                                                                     , attribute = "event"
                                                                     , setter = Updater.StringMsg
-                                                                    , id = x
-                                                                    , value = infos.id
+                                                                    , id = box x
+                                                                    , value = unbox infos.id
                                                                     }
                                                             ]
                                             ))
@@ -195,8 +196,8 @@ view (Page.Page model) =
                                                 EditableText.text 
                                                     econf
                                                     [] 
-                                                    (Maybe.withDefault "" <| Maybe.map (\x -> x.value.name) <| Dict.get model.page.id db.events)]
-                                    , p [][ text <| "Location:" ++ infos.location]
+                                                    (Maybe.withDefault "" <| Maybe.map (\x -> x.value.name) <| Dict.get (unbox model.page.id) db.events)]
+                                    , p [][ text <| "Location:" ++ unbox infos.location]
                                     , p [][ unelevated
                                         (Button.config
                                             |> Button.setIcon (Just <| Button.icon "add")
@@ -209,8 +210,8 @@ view (Page.Page model) =
                                                                     { kind = Db.TestSubjectType
                                                                     , attribute = "event"
                                                                     , setter = Updater.StringMsg
-                                                                    , id = x
-                                                                    , value = infos.id
+                                                                    , id = box x
+                                                                    , value = unbox infos.id
                                                                     }
                                                             ]
                                             ))
@@ -284,7 +285,7 @@ view (Page.Page model) =
                         layoutGrid [] [
                             inner [][
                                 cell [][
-                                    Html.h1 [ Typography.headline5 ] [ text <| "Event not Found: " ++ model.page.id ]
+                                    Html.h1 [ Typography.headline5 ] [ text <| "Event not Found: " ++ (unbox model.page.id) ]
                                 ]
                             ]
                         ]
@@ -299,20 +300,20 @@ view (Page.Page model) =
 -- HELPERS
 type alias RelatedData =
     {
-        id : String,
+        id : Id Db.Event String,
         name : String,
-        location : String,
+        location : Id Db.Place String,
         created : Posix,
-        creator : (String, Maybe Db.User),
+        creator : (Id Db.User String, Maybe Db.User),
         updated : Posix,
-        study : (String, Maybe Db.Study),
-        questionnaries : List (String, Db.Questionary),
-        test_subjects : List (String, Db.TestSubject)
+        study : (Id Db.Study String, Maybe Db.Study),
+        questionnaries : List (Id Db.Questionary String, Db.Questionary),
+        test_subjects : List (Id Db.TestSubject String, Db.TestSubject)
     }
 
-relatedData : String -> Db.Database -> Maybe RelatedData
+relatedData : Id Db.Event String -> Db.Database -> Maybe RelatedData
 relatedData id db =
-    case Dict.get id db.events of
+    case Dict.get (unbox id) db.events of
         Just timestampedEvent ->
             let
                 event = timestampedEvent.value
@@ -322,12 +323,12 @@ relatedData id db =
                         id = id,
                         name = event.name,
                         location = event.place,
-                        study = (event.study, Maybe.map .value <| Dict.get event.study db.studies),
+                        study = (event.study, Maybe.map .value <| Dict.get (unbox event.study) db.studies),
                         created = Time.millisToPosix timestampedEvent.created,
-                        creator = (timestampedEvent.creator, Maybe.map .value <| Dict.get timestampedEvent.creator db.users),
+                        creator = (timestampedEvent.creator, Maybe.map .value <| Dict.get (unbox timestampedEvent.creator) db.users),
                         updated = Time.millisToPosix timestampedEvent.modified,
-                        questionnaries = Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.study == event.study) db.questionnaries,
-                        test_subjects = Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.event == id) db.test_subjects
+                        questionnaries = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.study == event.study) db.questionnaries,
+                        test_subjects = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.event == id) db.test_subjects
                     }
     
         Nothing ->
@@ -359,10 +360,10 @@ viewList elements onClick =
                     )
                     []
  -}
-viewList : List ( String, a ) -> (String -> msg) -> ((String, a) -> String) -> Html msg
+viewList : List ( Id a String, a ) -> (String -> msg) -> ((Id a String, a) -> String) -> Html msg
 viewList elements onClick nameGetter =
     let
-        mlist =  List.map (\( x, y ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick x) ) [ graphic [] [ identicon "100%" x ], text <| nameGetter (x,y)]) elements
+        mlist =  List.map (\( x, y ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick (unbox x)) ) [ graphic [] [ identicon "100%" (unbox x) ], text <| nameGetter (x,y)]) elements
     in
         case mlist of 
             f :: r ->
@@ -373,7 +374,7 @@ viewList elements onClick nameGetter =
                     (listItem MLItem.config [ text "Nothing here, create one?" ])
                     []
 
-viewTable : Db.Database -> List (String, Db.Questionary) -> List (String, Db.TestSubject) -> String ->  Html Msg.Msg
+viewTable : Db.Database -> List (Id Db.Questionary String, Db.Questionary) -> List (Id Db.TestSubject String, Db.TestSubject) -> Id Db.Event String ->  Html Msg.Msg
 viewTable db questionnaries test_subjects event_id =
     DataTable.dataTable DataTable.config
         { thead =
@@ -385,10 +386,10 @@ viewTable db questionnaries test_subjects event_id =
             List.map (\(test_subject_id,test_subject_value) ->
 
                     DataTable.row [] <|
-                        DataTable.cell [] [text <| String.toUpper <| String.left 4 test_subject_id]::List.map (\(questionary_id, questionary_value) ->
+                        DataTable.cell [] [text <| String.toUpper <| String.left 4 (unbox test_subject_id)]::List.map (\(questionary_id, questionary_value) ->
                             DataTable.cell [] [ 
                                 let
-                                    answers = Dict.filter (\answer_id answer_table -> List.member answer_table.value.question q_ids ) db.answers
+                                    answers = Dict.filter (\answer_id answer_table -> List.member (unbox answer_table.value.question) q_ids ) db.answers
                                               |> Dict.filter (\answer_id answer_table -> answer_table.value.test_subject == test_subject_id)
                                               |> Dict.toList
                                     questions = Dict.filter (\question_id question_table -> question_table.value.questionary == questionary_id) db.questions
@@ -396,7 +397,7 @@ viewTable db questionnaries test_subjects event_id =
                                     q_ids = List.map (\(qid,_)-> qid) questions
                                 in
                                     Button.unelevated
-                                        (Button.config |> Button.setOnClick (Msg.FollowSubpage Db.EventType event_id ["answer"] [Url.Builder.string "qid" questionary_id, Url.Builder.string "tsid" test_subject_id]) ) <| (String.fromInt <| List.length answers) ++ "/" ++ (String.fromInt <| List.length questions)
+                                        (Button.config |> Button.setOnClick (Msg.FollowSubpage Db.EventType (unbox event_id) ["answer"] [Url.Builder.string "qid" (unbox questionary_id), Url.Builder.string "tsid" (unbox test_subject_id)]) ) <| (String.fromInt <| List.length answers) ++ "/" ++ (String.fromInt <| List.length questions)
                             ]
                         )
                         questionnaries

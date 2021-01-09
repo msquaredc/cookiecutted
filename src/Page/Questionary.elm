@@ -34,6 +34,7 @@ import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, unbox, box)
 import Viewer exposing (detailsConfig, system)
 import Viewer.OrderAwareList exposing (OrderAware, orderAwareList)
 import DnDList
@@ -50,7 +51,7 @@ import Task
 
 type alias Model =
     { 
-     id : String
+     id : Id Db.Questionary String
     , questionary : Maybe (Db.Timestamp Db.Questionary)
     , focus : Fokus
     , dnd : DnDList.Model
@@ -77,11 +78,11 @@ defaultFokus =
 -- INIT
 
 
-init : String -> Fokus -> DnDList.Model -> List Item -> Maybe (Db.Timestamp Db.Questionary) -> Model
+init : Id Db.Questionary String -> Fokus -> DnDList.Model -> List Item -> Maybe (Db.Timestamp Db.Questionary) -> Model
 init id focus dnd questions questionary =
     Model id questionary focus dnd questions Nothing 
 
-page : Session.Session -> String -> Fokus -> Maybe (List Item) -> DnDList.Model -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Questionary String -> Fokus -> Maybe (List Item) -> DnDList.Model -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id focus mbquestions dndmodel =
     let
         model =
@@ -100,7 +101,7 @@ page session id focus mbquestions dndmodel =
                     |> List.sortBy (\(_, question) -> question.value.index)
                     |> (List.map (\(a, b)-> Item a b))
         questions = Maybe.withDefault dbquestions mbquestions
-        questionary = Dict.get id session.db.questionnaries
+        questionary = Dict.get (unbox id) session.db.questionnaries
     in
     ( Page model, Cmd.none )
 
@@ -213,7 +214,7 @@ changeIndices old new =
     |> Task.succeed 
     |> Task.perform identity
 
-changeIndex : Item -> Item -> Maybe (Match.FieldConfig Int)
+changeIndex : Item -> Item -> Maybe (Match.FieldConfig Int Db.Question)
 changeIndex old new =
     if old.question.value.index == new.question.value.index then
         Nothing
@@ -223,7 +224,7 @@ changeIndex old new =
                     { kind = Db.QuestionType
                     , attribute = "index"
                     , setter = Updater.IntMsg
-                    , id = id
+                    , id = box id
                     , value = index
                     }
         in
@@ -255,15 +256,15 @@ view (Page.Page model) =
                                     { kind = Db.QuestionType
                                     , attribute = "questionary"
                                     , setter = Updater.StringMsg
-                                    , id = x
-                                    , value = infos.id
+                                    , id = box x
+                                    , value = unbox infos.id
                                     }
                             , \x ->
                                 Match.setField
                                     { kind = Db.QuestionType
                                     , attribute = "index"
                                     , setter = Updater.IntMsg
-                                    , id = x
+                                    , id = box x
                                     , value = Maybe.withDefault 0 <| Maybe.map ((+) 1) infos.max_index
                                     }
                             ]
@@ -551,9 +552,9 @@ viewQuestionListItem model db { id, value, previous, next } =
     listItem
         (MLItem.config {- |> MLItem.setOnClick (Msg.Follow Db.QuestionType id)-})
     <|
-        [ MLItem.text [onClick <| Msg.Follow Db.QuestionType id]
+        [ MLItem.text [onClick <| Msg.Follow Db.QuestionType (unbox id)]
             { primary = [ Html.text value.text ]
-            , secondary = [ Html.text <| Maybe.withDefault value.input_type <| Maybe.map (\it -> IT.toString it.value) <|Dict.get value.input_type db.input_types ]
+            , secondary = [ Html.text <| Maybe.withDefault (unbox value.input_type) <| Maybe.map (\it -> IT.toString it.value) <|Dict.get (unbox value.input_type) db.input_types ]
             }
         , MLItem.meta []
             [
@@ -561,11 +562,11 @@ viewQuestionListItem model db { id, value, previous, next } =
                 IconButton.iconButton
                     (IconButton.config
                         |> IconButton.setOnClick
-                            (Msg.Questionary <| Msg.ContextMenu <| Just id))
+                            (Msg.Questionary <| Msg.ContextMenu <| Just <| unbox id))
                     (IconButton.icon "more_vert")
                 , Menu.menu
                 (Menu.config
-                    |> Menu.setOpen (model.menu == Just id)
+                    |> Menu.setOpen (model.menu == Just (unbox id))
                     |> Menu.setOnClose (Msg.Questionary <| Msg.ContextMenu <| Nothing)
                 )
                 [ MList.list
@@ -624,16 +625,16 @@ viewQuestionListItem model db { id, value, previous, next } =
                ) -}
 
 
-viewQuestionCard : Db.Database -> Maybe String -> OrderAware Db.Question -> Html Msg.Msg
+viewQuestionCard : Db.Database -> Maybe (Id Db.Question String) -> OrderAware Db.Question -> Html Msg.Msg
 viewQuestionCard db mbCur { id, value, previous, next } =
     let
         setMsg x callback =
-            Match.setField
+            Match.setField 
                 { kind = Db.QuestionType
                 , attribute = "input_type"
                 , setter = \y -> Updater.Custom y callback
-                , value = id
-                , id = x
+                , value = unbox id
+                , id = box x
                 }
 
         question =
@@ -644,7 +645,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
             { blocks =
                 [ block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ]
-                        [ Result.withDefault (div [] []) <| Match.forms id Db.QuestionType "text" db <| wideTextForm Nothing ]
+                        [ Result.withDefault (div [] []) <| Match.forms (unbox id) Db.QuestionType "text" db <| wideTextForm Nothing ]
                 , block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ] <|
                         let
@@ -662,7 +663,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                                 [ Select.outlined
                                     (Select.config
                                         |> Select.setLabel (Just "Question Type")
-                                        |> Select.setSelected (Just (question.input_type))
+                                        |> Select.setSelected (Just (unbox question.input_type))
                                         |> Select.setOnChange (\x -> setMsg x Nothing)
                                     )
                                     f
@@ -708,7 +709,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
         Card.card Card.config
             { blocks =
                 Card.primaryAction
-                    [ Html.Events.onClick <| Msg.Questionary <| Msg.CurrentQuestionSelected <| Just id ]
+                    [ Html.Events.onClick <| Msg.Questionary <| Msg.CurrentQuestionSelected <| Just (unbox id) ]
                     [ block <|
                         div [ Html.Attributes.style "padding" "1rem", Typography.headline6 ]
                             [ text question.text ]
@@ -850,26 +851,26 @@ viewSingleInputType kind =
 
 
 type alias RelatedData =
-    { id : String
+    { id : Id Db.Questionary String
     , name : String
-    , study : ( String, Maybe Db.Study )
+    , study : ( Id Db.Study String, Maybe Db.Study )
     , questions : List (OrderAware Db.Question)
     , created : Posix
-    , creator : ( String, Maybe Db.User )
+    , creator : (Id Db.User String, Maybe Db.User )
     , updated : Posix
     , max_index : Maybe Int
     }
 
 
-relatedData : String -> Db.Database -> Maybe RelatedData
+relatedData : Id Db.Questionary String -> Db.Database -> Maybe RelatedData
 relatedData id db =
-    case Dict.get id db.questionnaries of
+    case Dict.get (unbox id) db.questionnaries of
         Just timestampedQuestionary ->
             let
                 questions =
                     List.sortBy (\( _, y ) -> y.index) <|
                         List.filter (\( _, y ) -> y.questionary == id) <|
-                            List.map (\( x, y ) -> ( x, y.value )) <|
+                            List.map (\( x, y ) -> (box x, y.value )) <|
                                 Dict.toList db.questions
 
                 questionary =
@@ -878,11 +879,11 @@ relatedData id db =
             Just
                 { id = id
                 , name = questionary.name
-                , study = ( questionary.study, Maybe.map .value <| Dict.get questionary.study db.studies )
+                , study = ( questionary.study, Maybe.map .value <| Dict.get (unbox questionary.study) db.studies )
                 , max_index = List.maximum <| List.map (\( _, x ) -> x.index) questions
                 , questions = orderAwareList questions
                 , created = Time.millisToPosix timestampedQuestionary.created
-                , creator = ( timestampedQuestionary.creator, Maybe.map .value <| Dict.get timestampedQuestionary.creator db.users )
+                , creator = ( timestampedQuestionary.creator, Maybe.map .value <| Dict.get (unbox timestampedQuestionary.creator) db.users )
                 , updated = Time.millisToPosix timestampedQuestionary.modified
                 }
 
@@ -892,10 +893,10 @@ relatedData id db =
 
 
 
-viewStudy : ( String, Maybe Db.Study ) -> Maybe String -> String
+viewStudy : ( Id Db.Study String, Maybe Db.Study ) -> Maybe (Id Db.User String) -> String
 viewStudy ( id, mbStudy ) cur =
     Maybe.map .name mbStudy
-        |> Maybe.withDefault id
+        |> Maybe.withDefault (unbox id)
 
 
 viewList : List ( String, a ) -> (String -> msg) -> Html msg

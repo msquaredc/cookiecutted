@@ -23,6 +23,8 @@ import Json.Encode
 import Type.Database exposing (Type)
 import Type.IO.Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
+import Type.IO.Internal exposing (Id)
+import Type.Database as Db
 import Type.Database.InputType as IT
 import Material.Snackbar as Snackbar
 import Time exposing (Posix)
@@ -39,7 +41,7 @@ type Msg
     | Viewer ViewerMsg
     | Top TopMsg
     | User UserMsg
-    | Admin AdminMsg
+    | Admin (AdminMsg)
       -- | NewPageMsg NewPage.Msg
     | PageOne PageOneMsg
     | Study StudyMsg
@@ -54,7 +56,7 @@ type Msg
     | Form UpdateMsg
     | Follow Type String
     | FollowSubpage Type String (List String) (List Url.Builder.QueryParameter)
-    | SetUser String
+    | SetUser (Id Db.User String)
     | Back
     | Tick Posix
     | SnackbarClosed Snackbar.MessageId
@@ -144,5 +146,5 @@ type UserMsg
 
 type AdminMsg
     = AdminForm UpdateMsg
-    | AdminDb DbMsg
+    | AdminDb (DbMsg)
     | ValueChanged String
