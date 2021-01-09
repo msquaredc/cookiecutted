@@ -34,14 +34,14 @@ type alias Model =
     }
 
 
-init : Db.Database -> String -> Model
+init : Db.Database -> Id Db.Question String -> Model
 init db id =
     let
         emptyModel : Model
         emptyModel =
             Model
-                (box id)
-                (Dict.get id db.coding_questions)
+                id
+                (Dict.get (unbox id) db.coding_questions)
                 Nothing
                 Nothing
                 Nothing
@@ -50,7 +50,7 @@ init db id =
         
        
         q =
-            Dict.get id db.coding_questions
+            Dict.get (unbox id) db.coding_questions
                 |> Maybe.map .value
 
         it_id =
@@ -75,7 +75,7 @@ init db id =
             emptyModel
 
 
-page : Session.Session -> String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Question String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id =
     let
         model =

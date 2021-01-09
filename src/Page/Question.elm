@@ -37,14 +37,14 @@ type alias Model =
     }
 
 
-init : Db.Database -> String -> Model
+init : Db.Database -> Id Db.Question String -> Model
 init db id =
     let
         emptyModel : Model
         emptyModel =
             Model
-                (box id)
-                (Dict.get id db.questions)
+                id
+                (Dict.get (unbox id) db.questions)
                 Nothing
                 Nothing
                 Nothing
@@ -53,14 +53,14 @@ init db id =
                 coding_questions
         
         cid = (Maybe.map Tuple.first coding_questionary)
-        coding_questionary =  (Dict.filter (\cqid cq -> cq.value.question == box id) db.coding_questionnaries)
+        coding_questionary =  (Dict.filter (\cqid cq -> cq.value.question == id) db.coding_questionnaries)
                               |> Dict.toList
                               |> List.sortBy (\(cqid, cq) -> cq.created)
                               |> List.head
         coding_questions = Dict.filter (\cqqid cqq -> Just cqq.value.coding_questionary == Maybe.map box cid ) db.coding_questions
                             |> Dict.toList
         q =
-            Dict.get id db.questions
+            Dict.get (unbox id) db.questions
                 |> Maybe.map .value
 
         it_id =
@@ -85,7 +85,7 @@ init db id =
             emptyModel
 
 
-page : Session.Session -> String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Question String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id =
     let
         model =

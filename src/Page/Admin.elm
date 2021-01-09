@@ -119,7 +119,7 @@ update message (Page model) =
                                     model.session
 
                                 newsession =
-                                    { oldsession | db = Match.new (Maybe.withDefault (box "") model.session.user) kind index model.session.db }
+                                    { oldsession | db = Match.new (box index) kind (Maybe.withDefault (box "") model.session.user) model.session.db }
                             in
                             ( Page { model | session = newsession }, Cmd.none )
 

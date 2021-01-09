@@ -78,11 +78,11 @@ defaultFokus =
 -- INIT
 
 
-init : String -> Fokus -> DnDList.Model -> List Item -> Maybe (Db.Timestamp Db.Questionary) -> Model
+init : Id Db.Questionary String -> Fokus -> DnDList.Model -> List Item -> Maybe (Db.Timestamp Db.Questionary) -> Model
 init id focus dnd questions questionary =
-    Model (box id) questionary focus dnd questions Nothing 
+    Model id questionary focus dnd questions Nothing 
 
-page : Session.Session -> String -> Fokus -> Maybe (List Item) -> DnDList.Model -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Questionary String -> Fokus -> Maybe (List Item) -> DnDList.Model -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id focus mbquestions dndmodel =
     let
         model =
@@ -96,12 +96,12 @@ page session id focus mbquestions dndmodel =
 
             --            , update = Page.liftupdate update
             }
-        dbquestions = Dict.filter (\qid question -> unbox question.value.questionary == id) session.db.questions
+        dbquestions = Dict.filter (\qid question -> question.value.questionary == id) session.db.questions
                     |> Dict.toList
                     |> List.sortBy (\(_, question) -> question.value.index)
                     |> (List.map (\(a, b)-> Item a b))
         questions = Maybe.withDefault dbquestions mbquestions
-        questionary = Dict.get id session.db.questionnaries
+        questionary = Dict.get (unbox id) session.db.questionnaries
     in
     ( Page model, Cmd.none )
 

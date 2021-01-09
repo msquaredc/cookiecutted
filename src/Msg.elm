@@ -33,7 +33,7 @@ import Url.Builder
 import DnDList
 
 
-type Msg a
+type Msg
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | OnWindowResize Int Int
@@ -41,7 +41,7 @@ type Msg a
     | Viewer ViewerMsg
     | Top TopMsg
     | User UserMsg
-    | Admin (AdminMsg a)
+    | Admin (AdminMsg)
       -- | NewPageMsg NewPage.Msg
     | PageOne PageOneMsg
     | Study StudyMsg
@@ -52,7 +52,7 @@ type Msg a
     | Db Updater.Msg
     | OnDbChange Json.Encode.Value
     | Search String
-    | CRUD (DbMsg a)
+    | CRUD DbMsg
     | Form UpdateMsg
     | Follow Type String
     | FollowSubpage Type String (List String) (List Url.Builder.QueryParameter)
@@ -122,12 +122,12 @@ type ListMsg
     
 
 
-type DbMsg a
-    = Create Type String (List (String -> Msg a))
-    | CreateRandom Type (List (String -> Msg a))
+type DbMsg
+    = Create Type String (List (String -> Msg))
+    | CreateRandom Type (List (String -> Msg))
     | Update Updater.Msg
     | UpdateAll (List Updater.Msg)
-    | Delete Type (Id a String)
+    | Delete Type String
     | Access Type String
     --| SwapAttributes Type (String, String) String
 
@@ -144,7 +144,7 @@ type UserMsg
     = UserNothing
 
 
-type AdminMsg a
+type AdminMsg
     = AdminForm UpdateMsg
-    | AdminDb (DbMsg a)
+    | AdminDb (DbMsg)
     | ValueChanged String

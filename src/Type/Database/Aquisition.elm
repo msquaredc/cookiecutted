@@ -20,36 +20,6 @@ type alias Aquisition a b c =
     }
 
 
-type alias SerializableStudyDatapoint =
-    { event : String
-    , question : String
-    , answer : String
-    , coding_question : String
-    , coding_answer : String
-    , coder : String
-    }
-
-
-serializableStudyDatapoint : String -> Database -> List SerializableStudyDatapoint
-serializableStudyDatapoint id db =
-    Aquisition SerializableStudyDatapoint (Id.box id)
-        |> start (Value .study) db.events (Value .name)
-        |> move (Value .study) db.questionnaries (Raw Tuple.first)
-        |> add (Value .questionary) db.questions (Value .text)
-        -- |> addAttrList (Value .questionary) .questions (Value .input_ty) db (\_ -> ["Implement Me!"])
-        |> move (Value .questionary) db.questions (Raw Tuple.first)
-        |> add (Value .question) db.answers (Value .value)
-        --|> moveReferenceList (Value .question) .answers (Raw Tuple.first) db
-        |> move (Value .question) db.coding_questionnaries (Raw Tuple.first)
-        |> add (Value .coding_questionary) db.coding_questions (Value .text)
-        |> move(Value .coding_questionary) db.coding_questions (Raw Tuple.first) 
-        |> add (Value .coding_question) db.coding_answers (Value .value)
-        |> move (Value .coding_question) db.coding_answers (Raw Tuple.first)
-        |> move (Raw Tuple.first ) db.coding_answers (Raw (\(x,y) -> y.creator))
-        |> add (Raw (\(x,y) -> y.creator)) db.users (Value (\x -> Maybe.withDefault "" x.name))
-        |> end
-        
-
 start = addAttrSingle
 add = addAttrList
 move = moveReferenceList

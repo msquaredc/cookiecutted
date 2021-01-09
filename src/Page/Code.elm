@@ -27,7 +27,7 @@ import Type.Database exposing (Answer)
 
 
 type alias Model =
-    { id : String
+    { id : Id Db.Study String
     , templates : List (CodingAnswerTemplate)
     , answer : Maybe (Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer)
 --    , answers : List (String, Db.Timestamp Db.CodingAnswer)
@@ -49,7 +49,7 @@ type alias CodingAnswerTemplate =
         , input_type : Db.Timestamp InputType
     }
 
-init : String -> Db.Database -> Model
+init : Id Db.Study String -> Db.Database -> Model
 init id db =
     let
         question2codingQuestionary : (Id Db.Question String, Db.Timestamp Db.Question ) -> List (Id Db.CodingQuestionary String, Db.Timestamp Db.CodingQuestionary)
@@ -67,7 +67,7 @@ init id db =
             |> Dict.toList
             |> List.map (\(itid, other) -> (box itid, other))
 
-        answers = Dict.filter (\eid event -> event.value.study == box id) db.events
+        answers = Dict.filter (\eid event -> event.value.study == id) db.events
                   |> Dict.toList
                   |> List.map (\(eid,event) -> (box eid, event))
                   |> List.map (\(eid,event) -> Dict.filter (\aid answer -> answer.value.event == eid) db.answers)
@@ -187,7 +187,7 @@ init id db =
 -- INIT
 
 
-page : Session.Session -> String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Study String -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id =
     let
         model =

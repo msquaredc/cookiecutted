@@ -19,6 +19,7 @@ import Session
 import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
+import Type.Database.Aquisition as Aq exposing (..)
 import Type.IO.Setter as Updater
 import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
@@ -42,9 +43,9 @@ type alias Model =
 -- INIT
 
 
-init : String -> Bool -> Model
-init id =
-    Model (box id)
+init : Id Db.Study String -> Bool -> Model
+init =
+    Model 
      {-
         { active = False
         , activator = Msg.Study <| Msg.StudyNameEdit Msg.GetFocus
@@ -58,12 +59,12 @@ init id =
                                 }}
     -}
 
-page : Session.Session -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Id Db.Study String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session id focus=
     let
         model =
             { session = session
-            , page = Model (box id) focus
+            , page = Model id focus
             , view = view
             , toMsg = identity
             , subscriptions = Sub.none
@@ -102,11 +103,7 @@ update message (Page model) =
                             
                             ( Page {model| page = new_page}, Cmd.none )
                 Msg.ExportStudy id ->
-                    let
-                        --events = Match.filterBy .study .events model.session.db id
-                        events = 1
-                    in
-                        ( Page model, Download.string "export.csv" "text/csv" "Not implemented yet!" )
+                    ( Page model, Download.string "export.csv" "text/csv" <| exportStudy (box id) model.session.db )
         _ -> 
             ( Page model, Cmd.none )
 
@@ -297,3 +294,39 @@ viewList elements onClick nameGetter =
 toTitle : Model -> String
 toTitle _ =
     "Home ⧽ Study"
+
+type alias SerializableStudyDatapoint =
+    { event : String
+    , question : String
+    , answer : String
+    , coding_question : String
+    , coding_answer : String
+    , coder : String
+    }
+
+exportStudy : Id Db.Study String -> Db.Database -> String
+exportStudy id db =
+    let
+        datapoints = Aquisition SerializableStudyDatapoint id
+            |> start (Value .study) db.events (Value .name)
+            |> move (Value .study) db.questionnaries (Raw Tuple.first)
+            |> add (Value .questionary) db.questions (Value .text)
+            -- |> addAttrList (Value .questionary) .questions (Value .input_ty) db (\_ -> ["Implement Me!"])
+            |> move (Value .questionary) db.questions (Raw Tuple.first)
+            |> add (Value .question) db.answers (Value .value)
+            --|> moveReferenceList (Value .question) .answers (Raw Tuple.first) db
+            |> move (Value .question) db.coding_questionnaries (Raw Tuple.first)
+            |> add (Value .coding_questionary) db.coding_questions (Value .text)
+            |> move(Value .coding_questionary) db.coding_questions (Raw Tuple.first) 
+            |> add (Value .coding_question) db.coding_answers (Value .value)
+            |> move (Value .coding_question) db.coding_answers (Raw Tuple.first)
+            |> move (Raw Tuple.first ) db.coding_answers (Raw (\(x,y) -> y.creator))
+            |> add (Raw (\(x,y) -> y.creator)) db.users (Value (\x -> Maybe.withDefault "" x.name))
+            |> end
+    in
+        List.map serializeStudyDatapoint datapoints
+        |> String.join "\n"
+
+serializeStudyDatapoint : SerializableStudyDatapoint -> String
+serializeStudyDatapoint data =
+    String.join ";" [data.event,data.coder,data.question,data.answer,data.coding_question,data.coding_answer]

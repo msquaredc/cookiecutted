@@ -330,10 +330,10 @@ forms id kind acc db f =
             g input_type db.input_types
 
 type DispatchType = 
-    New String
+    New (Id Db.User String)
     | Delete
 
-new : Id a String -> Type -> String -> Database -> Database
+new : Id a String -> Type -> Id Db.User String -> Database -> Database
 new id kind u db=
     dispatchDb (New u) id kind db
 
@@ -352,7 +352,7 @@ dispatchDb dt id kind db =
                 update db <|
                 case dt of
                     New u ->
-                        Dict.insert (unbox id) { config | creator = Id.box u } table
+                        Dict.insert (unbox id) { config | creator = u } table
                     Delete ->
                         Dict.remove (unbox id) table
     in

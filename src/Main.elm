@@ -36,6 +36,7 @@ import Type.Database.TypeMatching as Match
 import Type.Flags
 import Type.IO exposing (form2update)
 import Type.IO.Setter as Updater
+import Type.IO.Internal exposing (Id, box, unbox)
 import Url
 import Url.Builder
 import Url.Parser as Parser exposing ((</>),(<?>))
@@ -204,7 +205,7 @@ defaultUpdate message ( model, effect ) =
                                 List.map (\y -> y id) callbacks
 
                             newDb =
-                                Match.new id kind (Maybe.withDefault "" session.user) db
+                                Match.new (box id) kind (Maybe.withDefault (box "") session.user) db
 
                             -- |> (\x -> List.foldl (\a b -> a b) (Ok x) updatesWithId)
                         in
@@ -212,8 +213,8 @@ defaultUpdate message ( model, effect ) =
                             (\( x, y ) -> ( x, Cmd.batch [ y, Match.setTimestamp kind id "created" ] )) <|
                                 case kind of
                                     Db.UserType ->
-                                        updateDbSession model { session | user = Just id } newDb
-                                        |> chainableUpdate (Msg.SetUser id)
+                                        updateDbSession model { session | user = Just (box id) } newDb
+                                        |> chainableUpdate (Msg.SetUser (box id))
 
                                     Db.QuestionaryType ->
                                         updateDbSession model session newDb
@@ -226,7 +227,7 @@ defaultUpdate message ( model, effect ) =
                                                                 , attribute = "questionary"
                                                                 , setter = Updater.StringMsg
                                                                 , value = id
-                                                                , id = x
+                                                                , id = box x
                                                                 }
                                                         ]
                                                     )
@@ -304,7 +305,7 @@ defaultUpdate message ( model, effect ) =
 
                     Msg.Delete kind id ->
                         let
-                            newDb = Match.delete id kind db
+                            newDb = Match.delete (box id) kind db
                         in
                             updateDbSession model session newDb
                     -- Msg.SwapAttributes kind (first, second) attribute ->
@@ -790,9 +791,9 @@ parser model session =
         , route (Parser.s paths.pageOne)
             (mapPageMsg model PageOne (PageOne.page session))
         , route (Parser.s paths.study </> Parser.string)
-            (\id -> mapPageMsg model Study (Study.page session id False))
+            (\id -> mapPageMsg model Study (Study.page session (box id) False))
         , route (Parser.s paths.study </> Parser.string </> Parser.s "code")
-            (\id -> mapPageMsg model Code (Code.page session id)) 
+            (\id -> mapPageMsg model Code (Code.page session (box id))) 
         --
         , route (Parser.s paths.event </> Parser.string </> Answer.parser )
             (\eid answer_result -> 
@@ -806,7 +807,7 @@ parser model session =
                         Event.page
                             session 
                             Msg.EventSettings
-                            eid 
+                            (box eid)
                             False)
 
             )
@@ -816,14 +817,14 @@ parser model session =
                 Event.page
                     session 
                     Msg.EventPeople
-                    id 
+                    (box id)
                     False))
         , route (Parser.s paths.event </> Parser.string </> Parser.s "settings")
             (\id -> mapPageMsg model Event (
                 Event.page
                     session 
                     Msg.EventSettings
-                    id 
+                    (box id)
                     False))
             
         , route (Parser.s paths.event </> Parser.string)
@@ -831,14 +832,14 @@ parser model session =
                 Event.page
                     session 
                     Msg.EventOverview
-                    id 
+                    (box id)
                     False))
         , route (Parser.s paths.questionary </> Parser.string)
-            (\id -> mapPageMsg model Questionary (Questionary.page session id Questionary.defaultFokus Nothing Viewer.system.model))
+            (\id -> mapPageMsg model Questionary (Questionary.page session (box id) Questionary.defaultFokus Nothing Viewer.system.model))
         , route (Parser.s paths.question </> Parser.string)
-            (\id -> mapPageMsg model Question (Question.page session id))
+            (\id -> mapPageMsg model Question (Question.page session (box id)))
         , route (Parser.s paths.coding_question </> Parser.string)
-            (\id -> mapPageMsg model CodingQuestion (CodingQuestion.page session id))
+            (\id -> mapPageMsg model CodingQuestion (CodingQuestion.page session (box id)))
         , route (Parser.s paths.admin </> Admin.parser)
             (\presult -> mapPageMsg model Admin (Admin.page session presult))
 

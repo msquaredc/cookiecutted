@@ -43,12 +43,12 @@ type alias Model =
 -- INIT
 
 
-init : Msg.EventSubPage -> String -> Bool -> Model
+init : Msg.EventSubPage -> Id Db.Event String -> Bool -> Model
 init page_ id =
-    Model page_ (box id)
+    Model page_ id
 
 
-page : Session.Session -> Msg.EventSubPage -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
+page : Session.Session -> Msg.EventSubPage -> Id Db.Event String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 page session subpage id focus =
     let
         model =
