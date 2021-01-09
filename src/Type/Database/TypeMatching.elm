@@ -333,15 +333,15 @@ type DispatchType =
     New String
     | Delete
 
-new : String -> Type -> String -> Database -> Database
+new : Id a String -> Type -> String -> Database -> Database
 new id kind u db=
     dispatchDb (New u) id kind db
 
-delete : String -> Type -> Database -> Database
+delete : Id a String -> Type -> Database -> Database
 delete =
     dispatchDb Delete
 
-dispatchDb : DispatchType -> String -> Type -> Database -> Database
+dispatchDb : DispatchType -> Id a String -> Type -> Database -> Database
 dispatchDb dt id kind db =
     let
         g table def update =
@@ -352,9 +352,9 @@ dispatchDb dt id kind db =
                 update db <|
                 case dt of
                     New u ->
-                        Dict.insert id { config | creator = Id.box u } table
+                        Dict.insert (unbox id) { config | creator = Id.box u } table
                     Delete ->
-                        Dict.remove id table
+                        Dict.remove (unbox id) table
     in
     case kind of
         AnswerType ->

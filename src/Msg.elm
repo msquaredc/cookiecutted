@@ -23,6 +23,8 @@ import Json.Encode
 import Type.Database exposing (Type)
 import Type.IO.Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
+import Type.IO.Internal exposing (Id)
+import Type.Database as Db
 import Type.Database.InputType as IT
 import Material.Snackbar as Snackbar
 import Time exposing (Posix)
@@ -31,7 +33,7 @@ import Url.Builder
 import DnDList
 
 
-type Msg
+type Msg a
     = LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | OnWindowResize Int Int
@@ -39,7 +41,7 @@ type Msg
     | Viewer ViewerMsg
     | Top TopMsg
     | User UserMsg
-    | Admin AdminMsg
+    | Admin (AdminMsg a)
       -- | NewPageMsg NewPage.Msg
     | PageOne PageOneMsg
     | Study StudyMsg
@@ -50,11 +52,11 @@ type Msg
     | Db Updater.Msg
     | OnDbChange Json.Encode.Value
     | Search String
-    | CRUD DbMsg
+    | CRUD (DbMsg a)
     | Form UpdateMsg
     | Follow Type String
     | FollowSubpage Type String (List String) (List Url.Builder.QueryParameter)
-    | SetUser String
+    | SetUser (Id Db.User String)
     | Back
     | Tick Posix
     | SnackbarClosed Snackbar.MessageId
@@ -120,12 +122,12 @@ type ListMsg
     
 
 
-type DbMsg
-    = Create Type String (List (String -> Msg))
-    | CreateRandom Type (List (String -> Msg))
+type DbMsg a
+    = Create Type String (List (String -> Msg a))
+    | CreateRandom Type (List (String -> Msg a))
     | Update Updater.Msg
     | UpdateAll (List Updater.Msg)
-    | Delete Type String
+    | Delete Type (Id a String)
     | Access Type String
     --| SwapAttributes Type (String, String) String
 
@@ -142,7 +144,7 @@ type UserMsg
     = UserNothing
 
 
-type AdminMsg
+type AdminMsg a
     = AdminForm UpdateMsg
-    | AdminDb DbMsg
+    | AdminDb (DbMsg a)
     | ValueChanged String

@@ -893,7 +893,7 @@ relatedData id db =
 
 
 
-viewStudy : ( Id Db.Study String, Maybe Db.Study ) -> Maybe String -> String
+viewStudy : ( Id Db.Study String, Maybe Db.Study ) -> Maybe (Id Db.User String) -> String
 viewStudy ( id, mbStudy ) cur =
     Maybe.map .name mbStudy
         |> Maybe.withDefault (unbox id)
