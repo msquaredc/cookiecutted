@@ -19,6 +19,7 @@ import Type.Database as Db
 import Type.Database.InputType exposing (InputType(..))
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 import Url.Parser as Parser exposing ((</>))
 import Url.Parser.Query as Query
@@ -28,55 +29,62 @@ import Type.Database exposing (Answer)
 type alias Model =
     { id : String
     , templates : List (CodingAnswerTemplate)
-    , answer : Maybe (String, Db.Timestamp Db.CodingAnswer)
+    , answer : Maybe (Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer)
 --    , answers : List (String, Db.Timestamp Db.CodingAnswer)
     , current : Maybe (CodingAnswerTemplate)
-    , currentEmpty : Maybe (String,String)
+    , currentEmpty : Maybe (Id Answer String, Id Db.CodingQuestion String)
     , previous : Maybe (Msg.Msg)
     , next : Maybe (Msg.Msg)
     }
 
 type alias CodingAnswerTemplate =
     {
-        answerId : String
+        answerId : Id Db.Answer String
         , answer : Db.Timestamp Db.Answer
-        , questionId : String
+        , questionId : Id Db.Question String
         , question : Db.Timestamp Db.Question
-        , coding_questionId : String
+        , coding_questionId : Id Db.CodingQuestion String
         , coding_question : Db.Timestamp Db.CodingQuestion
-        , input_typeId : String
+        , input_typeId : Id InputType String
         , input_type : Db.Timestamp InputType
     }
 
 init : String -> Db.Database -> Model
 init id db =
     let
-        question2codingQuestionary : (String, Db.Timestamp Db.Question ) -> List (String, Db.Timestamp Db.CodingQuestionary)
+        question2codingQuestionary : (Id Db.Question String, Db.Timestamp Db.Question ) -> List (Id Db.CodingQuestionary String, Db.Timestamp Db.CodingQuestionary)
         question2codingQuestionary (qid, value ) =
             Dict.filter (\cid cq -> cq.value.question == qid) db.coding_questionnaries
             |> Dict.toList
-        codingQuestionary2codingQuestion : (String, Db.Timestamp Db.CodingQuestionary ) -> List (String, Db.Timestamp Db.CodingQuestion)
+            |> List.map (\(cid, other) -> (box cid, other))
+        codingQuestionary2codingQuestion : (Id Db.CodingQuestionary String, Db.Timestamp Db.CodingQuestionary ) -> List (Id Db.CodingQuestion String, Db.Timestamp Db.CodingQuestion)
         codingQuestionary2codingQuestion (qid, value) =
             Dict.filter (\cid cq -> cq.value.coding_questionary == qid) db.coding_questions
             |> Dict.toList
+            |> List.map (\(cid, other) -> (box cid, other))
         codingQuestion2input_type (qid, value) =
-            Dict.filter (\itid it -> value.value.input_type == itid) db.input_types
+            Dict.filter (\itid it -> value.value.input_type == box itid) db.input_types
             |> Dict.toList
-        answers = Dict.filter (\eid event -> event.value.study == id) db.events
+            |> List.map (\(itid, other) -> (box itid, other))
+
+        answers = Dict.filter (\eid event -> event.value.study == box id) db.events
                   |> Dict.toList
+                  |> List.map (\(eid,event) -> (box eid, event))
                   |> List.map (\(eid,event) -> Dict.filter (\aid answer -> answer.value.event == eid) db.answers)
                   |> List.map (Dict.toList)
                   |> List.concat
-        all_coding_answers = List.map (\(answer_id,answer) -> ((answer_id, answer),Dict.filter (\question_id question -> answer.value.question == question_id) db.questions )) answers
+        all_coding_answers = List.map (\(answer_id,answer) -> ((box answer_id, answer),Dict.filter (\question_id question -> answer.value.question == box question_id) db.questions )) answers
                          |> List.map (\(answer, questiondict)-> (answer, Dict.toList questiondict))
                          |> List.map (\(answer, questions) -> List.map (\question -> (answer,question)) questions)
                          |> List.concat
+                         |> List.map (\(a,(b,c))-> (a,(box b,c)))
                          |> List.map (\(answer, question) -> (answer, question, question2codingQuestionary question ))
                          |> List.map (\(answer, question, codingQuestionnaries) -> List.map (\codingQuestionary -> (answer,question,codingQuestionary)) codingQuestionnaries )
                          |> List.concat
                          |> List.map (\(answer, question, questionary) -> (answer, question, codingQuestionary2codingQuestion questionary ))
                          |> List.map (\(answer, question, codingQuestions) -> List.map (\codingQuestion -> (answer,question,codingQuestion)) codingQuestions )
                          |> List.concat
+                         |> List.map (\(a,b,c)-> (a,b,c))
                          |> List.map (\(a, q, c) -> (a, q, (c,codingQuestion2input_type c )))
                          |> List.map (\(a, q, (c,cl))->List.map (\cs -> (a, q, (c,cs))) cl)
                          |> List.concat
@@ -85,14 +93,15 @@ init id db =
                                 , question = question
                                 , coding_question = coding_question
                                 , input_type = input_type})
-        all_relevant_keys : List (String, String)
+        all_relevant_keys : List (Id Answer String, Id Db.CodingQuestion String)
         all_relevant_keys = List.map (\{answer,coding_question} -> (answer, coding_question)) all_coding_answers
                             |> List.map (\((aid,_),(cqid,_))-> (aid, cqid))
-        present_coding_answers : List (String, Db.Timestamp Db.CodingAnswer)
+        present_coding_answers : List (Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer)
         present_coding_answers = Dict.filter (\cai cav -> List.member (cav.value.answer, cav.value.coding_question) all_relevant_keys) db.coding_answers
                                  |> Dict.toList
                                  |> List.sortBy (\(_,cav) -> cav.accessed)
-        history : List (String, Db.Timestamp Db.CodingAnswer)
+                                 |> List.map (\(cai,cav) -> (box cai, cav))
+        history : List (Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer)
         history = List.sortBy (\(_,cav) -> cav.created) present_coding_answers
         templates = List.map (\{answer,question, coding_question,input_type} -> 
                                     CodingAnswerTemplate
@@ -105,11 +114,11 @@ init id db =
                                         (Tuple.first input_type)
                                         (Tuple.second input_type)
                                         ) all_coding_answers
-        qids_missing : List (String, String)
+        qids_missing : List (Id Answer String, Id Db.CodingQuestion String)
         qids_missing =
             List.filter (\(answerid,coding_questionid) -> not <| List.member (answerid, coding_questionid) (List.map (\(_,ca) -> (ca.value.answer,ca.value.coding_question)) present_coding_answers)) all_relevant_keys
         
-        currentAnswer : Maybe (String, Db.Timestamp Db.CodingAnswer)
+        currentAnswer : Maybe (Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer)
         currentAnswer =
             List.Extra.last present_coding_answers
         
@@ -127,18 +136,18 @@ init id db =
         curID =
             Maybe.andThen (\x -> List.Extra.elemIndex x history) currentAnswer
 
-        next : Maybe (String, Db.Timestamp Db.CodingAnswer)
+        next : Maybe (Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer)
         next =
             Maybe.andThen (\x -> List.Extra.getAt (x + 1) history) curID
 
-        previous : Maybe (String, Db.Timestamp Db.CodingAnswer)
+        previous : Maybe (Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer)
         previous =
             Maybe.andThen (\x -> List.Extra.getAt (x - 1) history) curID
 
         getMsg answer =
             case answer of
                 Just (aid,_) ->
-                    Just (Msg.CRUD <| Msg.Access Db.CodingAnswerType aid)
+                    Just (Msg.CRUD <| Msg.Access Db.CodingAnswerType (unbox aid))
 
                 Nothing ->
                     case List.head qids_missing of
@@ -152,16 +161,16 @@ init id db =
                                                 { kind = Db.CodingAnswerType
                                                 , attribute = "answer"
                                                 , setter = Updater.StringMsg
-                                                , id = canswerid
-                                                , value = answerid
+                                                , id = box canswerid
+                                                , value = unbox answerid
                                                 }
                                         , \canswerid ->
                                             Match.setField
                                                 { kind = Db.CodingAnswerType
                                                 , attribute = "coding_question"
                                                 , setter = Updater.StringMsg
-                                                , id = canswerid
-                                                , value = coding_questionid
+                                                , id = box canswerid
+                                                , value = unbox coding_questionid
                                                 }
                                         ]
                                     )
@@ -260,9 +269,9 @@ view (Page.Page pageM) =
                         case model.currentEmpty of
                             Just (answerid, coding_questionid) ->
                                 let
-                                    mbcoding_question = Dict.get coding_questionid db.coding_questions
-                                    mbinput_type = Maybe.map (\x -> Dict.get x.value.input_type db.input_types) mbcoding_question
-                                    mbanswer = Dict.get answerid db.answers
+                                    mbcoding_question = Dict.get (unbox coding_questionid) db.coding_questions 
+                                    mbinput_type = Maybe.map (\x -> Dict.get (unbox x.value.input_type) db.input_types) mbcoding_question
+                                    mbanswer = Dict.get (unbox answerid) db.answers
                                 in
                                 case (mbinput_type, mbanswer, mbcoding_question) of
                                     (Just input_type, Just answer, Just coding_question) ->
@@ -303,12 +312,12 @@ view (Page.Page pageM) =
     }
 
 
-viewCodingQuestion : Db.Database -> String -> Db.Timestamp Db.CodingQuestion -> Maybe ( String, Db.Timestamp Db.CodingAnswer ) -> String -> Model -> Db.Timestamp Db.Answer -> Element.Element Msg.Msg
+viewCodingQuestion : Db.Database -> Id Db.CodingQuestion String -> Db.Timestamp Db.CodingQuestion -> Maybe ( Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer ) -> Id Db.Answer String -> Model -> Db.Timestamp Db.Answer -> Element.Element Msg.Msg
 viewCodingQuestion db qid tquestion mbAnswer anid model answer =
     let
         question = tquestion.value
         mbit =
-            Dict.get question.input_type db.input_types
+            Dict.get (unbox question.input_type) db.input_types
                 |> Maybe.map (\x -> x.value)
 
         mbvalue =
@@ -338,8 +347,8 @@ viewCodingQuestion db qid tquestion mbAnswer anid model answer =
                                         { kind = Db.CodingAnswerType
                                         , attribute = "coding_question"
                                         , setter = Updater.StringMsg
-                                        , id = answerid
-                                        , value = qid
+                                        , id = box answerid
+                                        , value = unbox qid
                                         }
                                 
                                 , \answerid ->
@@ -347,15 +356,15 @@ viewCodingQuestion db qid tquestion mbAnswer anid model answer =
                                         { kind = Db.CodingAnswerType
                                         , attribute = "answer"
                                         , setter = Updater.StringMsg
-                                        , id = answerid
-                                        , value = anid
+                                        , id = box answerid
+                                        , value = unbox anid
                                         }
                                 , \answerid ->
                                     Match.setField
                                         { kind = Db.AnswerType
                                         , attribute = "value"
                                         , setter = Updater.StringMsg
-                                        , id = answerid
+                                        , id = box answerid
                                         , value = x
                                         }
                                 ]
@@ -366,7 +375,7 @@ viewCodingQuestion db qid tquestion mbAnswer anid model answer =
            , ("answer",Element.el [ width fill, height fill] <| Element.el [Element.centerX, Element.centerY {-Background.color (Element.rgb 0.8 0.8 0.8)-},padding 32] <| Element.paragraph [Font.size 32] [Element.text answer.value.value])
             ,("edit", Keyed.row [width fill, height fill] [
             ("padleft", Element.el [width fill] <| Element.none)
-            , (qid, Element.el [ width fill, height fill] <| Element.el [Element.centerY, width fill] <| (case mbit of
+            , (unbox qid, Element.el [ width fill, height fill] <| Element.el [Element.centerY, width fill] <| (case mbit of
                     Nothing ->
                         Element.html <| text "Undefined input type" 
                     Just (ShortAnswer s) ->

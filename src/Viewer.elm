@@ -31,6 +31,7 @@ import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Utils
 import Viewer.Desktop as Desktop
 import Viewer.Handset as Handset
@@ -572,7 +573,7 @@ userDialog open users new_username time =
                             { kind = Db.UserType
                             , attribute = "name"
                             , setter = Updater.MaybeSetMsg << Just << Updater.StringMsg
-                            , id = x
+                            , id = box x
                             , value = username
                             }
                     ]

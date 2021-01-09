@@ -26,6 +26,7 @@ import Session
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (box)
 import Url.Builder
 import Utils exposing (..)
 import Viewer exposing (detailsConfig)
@@ -180,7 +181,7 @@ view (Page.Page model) =
                                                         { kind = Db.StudyType
                                                         , attribute = "leader"
                                                         , setter = Updater.StringMsg
-                                                        , id = x
+                                                        , id = box x
                                                         , value = user
                                                         }
                                                 , Msg.Follow Db.StudyType
@@ -221,7 +222,7 @@ studyOverview user (Page.Page model) =
     db.studies
         |> Dict.toList
         |> List.map (\( x, y ) -> ( x, y.value ))
-        |> List.filter (\( x, y ) -> y.leader == user)
+        |> List.filter (\( x, y ) -> y.leader == box user)
         --        |> List.map (\(x,y) -> (x, Db.study.viewer db y))
         |> List.map (\( x, y ) -> studyCard x y)
 

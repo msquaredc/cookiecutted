@@ -21,16 +21,17 @@ import Type.Database as Db
 import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 
 
 type alias Model =
-    { id : String
+    { id : Id Db.Question String
     , question : Maybe (Db.Timestamp Db.Question)
-    , short : Maybe String
-    , long : Maybe String
-    , list : Maybe String
-    , codingQuestionaryID : Maybe String
+    , short : Maybe (Id IT.InputType String)
+    , long : Maybe (Id IT.InputType String)
+    , list : Maybe (Id IT.InputType String)
+    , codingQuestionaryID : Maybe (Id Db.CodingQuestionary String)
     , codingQuestionary : Maybe (Db.Timestamp Db.CodingQuestionary)
     , codingQuestions : List (String, Db.Timestamp Db.CodingQuestion)
     }

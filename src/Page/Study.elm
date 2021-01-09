@@ -20,6 +20,7 @@ import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 import Viewer.EditableText as EditableText
 

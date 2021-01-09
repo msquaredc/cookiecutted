@@ -21,15 +21,16 @@ import Type.Database as Db
 import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 
 
 type alias Model =
-    { id : String
+    { id : (Id Db.CodingQuestion String)
     , question : Maybe (Db.Timestamp Db.CodingQuestion)
-    , short : Maybe String
-    , long : Maybe String
-    , list : Maybe String
+    , short : Maybe (Id IT.InputType String)
+    , long : Maybe (Id IT.InputType String)
+    , list : Maybe (Id IT.InputType String)
     }
 
 
@@ -39,7 +40,7 @@ init db id =
         emptyModel : Model
         emptyModel =
             Model
-                id
+                (box id)
                 (Dict.get id db.coding_questions)
                 Nothing
                 Nothing
@@ -117,7 +118,7 @@ update message (Page model) =
             in
             newq <|
                 Dict.update
-                    oldmodel.id
+                    (unbox oldmodel.id)
                     (Maybe.map
                         (\i ->
                             let
@@ -272,14 +273,14 @@ type alias RelatedData =
     }
 
 
-relatedData : String -> Db.Database -> Maybe RelatedData
+relatedData : Id Db.CodingQuestion String -> Db.Database -> Maybe RelatedData
 relatedData id db =
-    case Dict.get id db.coding_questions of
+    case Dict.get (unbox id) db.coding_questions of
         Just timestampedQuestion ->
             let
                 coding_questions =
                     {- List.sortBy (\( _, y ) -> y.index) <| -}
-                    List.filter (\( _, y ) -> y.question == id) <|
+                    List.filter (\( _, y ) -> y.question == unbox id) <|
                         List.map (\( x, y ) -> ( x, y.value )) <|
                             Dict.toList db.coding_questionnaries
 

@@ -8,7 +8,7 @@ import Time exposing (Posix, now, posixToMillis)
 import Type.Database as Db exposing (..)
 import Type.IO.Form as Form exposing (UpdateMsg(..))
 import Type.IO.Setter as Updater
-import Type.IO.Internal as Id exposing (Id)
+import Type.IO.Internal as Id exposing (Id, unbox)
 import Type.Database.InputType exposing (InputType)
 import Type.Database.InputType as IT exposing (input_type)
 
@@ -473,36 +473,36 @@ concatTupleLast : (a, List b) -> List (a, b)
 concatTupleLast (elem, l) = 
     List.map (\x -> (elem, x)) l
 
-type alias FieldConfig a =
+type alias FieldConfig a b =
     {
         kind : Type,
         attribute : String,
         setter : (a -> Updater.Msg),
-        id : String,
+        id : Id b String,
         value : a
     }
 
-setField : FieldConfig a -> Msg.Msg
+setField : FieldConfig a b -> Msg.Msg
 setField {kind, attribute, setter, id, value} =
     Msg.CRUD <|
         Msg.Update <|
             Updater.AttributeMsg (toStringPlural kind) <|
-                Updater.DictKeyMsg id <|
+                Updater.DictKeyMsg (unbox id) <|
                     Updater.AttributeMsg "value" <|
                         Updater.AttributeMsg attribute <|
                             setter value
 
-setManyFields : List (FieldConfig a) -> Msg.Msg
+setManyFields : List (FieldConfig a b) -> Msg.Msg
 setManyFields f =
     List.map setFieldRaw f
     |> Msg.UpdateAll
     |> Msg.CRUD
 
-setFieldRaw : FieldConfig a -> Updater.Msg
+setFieldRaw : FieldConfig a b -> Updater.Msg
 setFieldRaw {kind, attribute, setter, id, value} =
 
             Updater.AttributeMsg (toStringPlural kind) <|
-                Updater.DictKeyMsg id <|
+                Updater.DictKeyMsg (unbox id) <|
                     Updater.AttributeMsg "value" <|
                         Updater.AttributeMsg attribute <|
                             setter value
@@ -525,7 +525,7 @@ updateField config updater =
 
 -- go down and get value via update
 
-swapFields : Type -> String -> (a -> Updater.Msg) -> (String, String) -> (a, a) -> Msg.Msg
+swapFields : Type -> String -> (a -> Updater.Msg) -> (Id b String, Id b String) -> (a, a) -> Msg.Msg
 swapFields kind attribute setter (f_id,s_id) (f_val, s_val) =
     Msg.CRUD <|
         Msg.UpdateAll

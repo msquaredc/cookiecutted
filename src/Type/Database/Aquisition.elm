@@ -7,6 +7,7 @@ import Type.IO.Internal as Id exposing (Id)
 import Type.Database exposing (coding_questionary)
 
 
+
 type AttributeAccessor a b
     = Raw (Row a -> b)
     | Value (a -> b)
@@ -29,25 +30,30 @@ type alias SerializableStudyDatapoint =
     }
 
 
-serializableStudyDatapoint : String -> Database -> List (Aquisition SerializableStudyDatapoint Type.Database.User String)
+serializableStudyDatapoint : String -> Database -> List SerializableStudyDatapoint
 serializableStudyDatapoint id db =
     Aquisition SerializableStudyDatapoint (Id.box id)
-        |> addAttrSingle (Value .study) .events (Value .name) db
-        |> moveReferenceList (Value .study) .questionnaries (Raw Tuple.first) db
-        |> addAttrList (Value .questionary) .questions (Value .text) db
+        |> start (Value .study) db.events (Value .name)
+        |> move (Value .study) db.questionnaries (Raw Tuple.first)
+        |> add (Value .questionary) db.questions (Value .text)
         -- |> addAttrList (Value .questionary) .questions (Value .input_ty) db (\_ -> ["Implement Me!"])
-        |> moveReferenceList (Value .questionary) .questions (Raw Tuple.first) db
-        |> addAttrList (Value .question) .answers (Value .value) db
+        |> move (Value .questionary) db.questions (Raw Tuple.first)
+        |> add (Value .question) db.answers (Value .value)
         --|> moveReferenceList (Value .question) .answers (Raw Tuple.first) db
-        |> moveReferenceList (Value .question) .coding_questionnaries (Raw Tuple.first) db
-        |> addAttrList (Value .coding_questionary) .coding_questions (Value .text) db
-        |> moveReferenceList (Value .coding_questionary) .coding_questions (Raw Tuple.first) db
-        |> addAttrList (Value .coding_question) .coding_answers (Value .value) db
-        |> moveReferenceList (Value .coding_question) .coding_answers (Raw Tuple.first) db 
-        |> moveReferenceList (Raw Tuple.first ) .coding_answers (Raw (\(x,y) -> y.creator)) db
-        |> addAttrList (Raw (\(x,y) -> y.creator)) .users (Value (\x -> Maybe.withDefault "" x.name)) db
+        |> move (Value .question) db.coding_questionnaries (Raw Tuple.first)
+        |> add (Value .coding_questionary) db.coding_questions (Value .text)
+        |> move(Value .coding_questionary) db.coding_questions (Raw Tuple.first) 
+        |> add (Value .coding_question) db.coding_answers (Value .value)
+        |> move (Value .coding_question) db.coding_answers (Raw Tuple.first)
+        |> move (Raw Tuple.first ) db.coding_answers (Raw (\(x,y) -> y.creator))
+        |> add (Raw (\(x,y) -> y.creator)) db.users (Value (\x -> Maybe.withDefault "" x.name))
+        |> end
         
 
+start = addAttrSingle
+add = addAttrList
+move = moveReferenceList
+end = aquire
 
 
 {- |> addAttrList (Value .answer) .coding_question (Value .text) db identity
@@ -89,19 +95,18 @@ transformAccessor accessor =
 
 
 
-addAttrList : AttributeAccessor c (Id d e) -> (Database -> Table c) -> AttributeAccessor c a -> Database -> List (Aquisition (a -> b) d e) -> List (Aquisition b d e)
-addAttrList attr dbget selectvalue db aquisitions =
-    List.concatMap (addAttrSingle attr dbget selectvalue db) aquisitions
+addAttrList : AttributeAccessor c (Id d e) -> Table c -> AttributeAccessor c a -> List (Aquisition (a -> b) d e) -> List (Aquisition b d e)
+addAttrList attr table selectvalue aquisitions =
+    List.concatMap (addAttrSingle attr table selectvalue) aquisitions
 
 
 addAttrSingle :
     AttributeAccessor c (Id d e) 
-    -> (Database -> Table c)
+    -> Table c
     -> AttributeAccessor c a
-    -> Database
     -> Aquisition (a -> b) d e
     -> List (Aquisition b d e)
-addAttrSingle attr dbget selectvalue db aquisition =
+addAttrSingle attr table selectvalue aquisition =
     let
         attrf =
             transformAccessor attr
@@ -110,24 +115,27 @@ addAttrSingle attr dbget selectvalue db aquisition =
             transformAccessor selectvalue
 
     in
-    Match.filterBy attrf dbget db aquisition.reference
+    filterBy attrf table aquisition.reference
         |> List.map selectf
         |> List.map (updateReciever aquisition)
 
+filterBy attr table old =
+    table
+    |> Db.rows
+    |> List.filter (\x -> attr x == old)
 
-moveReferenceList : AttributeAccessor c (Id a f) -> (Database -> Table c) -> AttributeAccessor c (Id b e) -> Database -> List (Aquisition d a f) -> List (Aquisition d b e)
-moveReferenceList attr dbget selectvalue db aquisitions =
-    List.concatMap (moveReferenceSingle attr dbget selectvalue db) aquisitions
+moveReferenceList : AttributeAccessor c (Id a f) -> Table c -> AttributeAccessor c (Id b e) -> List (Aquisition d a f) -> List (Aquisition d b e)
+moveReferenceList attr table selectvalue aquisitions =
+    List.concatMap (moveReferenceSingle attr table selectvalue) aquisitions
 
 
 moveReferenceSingle :
     AttributeAccessor c (Id a f)
-    -> (Database -> Table c)
+    -> (Table c)
     -> AttributeAccessor c (Id b e)
-    -> Database
     -> Aquisition d a f
     -> List (Aquisition d b e)
-moveReferenceSingle attr dbget selectvalue db aquisition =
+moveReferenceSingle attr table selectvalue aquisition =
     let
         attrf =
             transformAccessor attr
@@ -136,7 +144,7 @@ moveReferenceSingle attr dbget selectvalue db aquisition =
             transformAccessor selectvalue
 
     in
-        Match.filterBy attrf dbget db aquisition.reference
+        filterBy attrf table aquisition.reference
         |> List.map selectf
         |> List.map (updateReference aquisition)
 

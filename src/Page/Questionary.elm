@@ -34,6 +34,7 @@ import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
 import Type.IO.Setter as Updater
+import Type.IO.Internal as Id exposing (Id, unbox)
 import Viewer exposing (detailsConfig, system)
 import Viewer.OrderAwareList exposing (OrderAware, orderAwareList)
 import DnDList
@@ -95,7 +96,7 @@ page session id focus mbquestions dndmodel =
 
             --            , update = Page.liftupdate update
             }
-        dbquestions = Dict.filter (\qid question -> question.value.questionary == id) session.db.questions
+        dbquestions = Dict.filter (\qid question -> unbox question.value.questionary == id) session.db.questions
                     |> Dict.toList
                     |> List.sortBy (\(_, question) -> question.value.index)
                     |> (List.map (\(a, b)-> Item a b))
@@ -662,7 +663,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                                 [ Select.outlined
                                     (Select.config
                                         |> Select.setLabel (Just "Question Type")
-                                        |> Select.setSelected (Just (question.input_type))
+                                        |> Select.setSelected (Just (unbox question.input_type))
                                         |> Select.setOnChange (\x -> setMsg x Nothing)
                                     )
                                     f
@@ -852,10 +853,10 @@ viewSingleInputType kind =
 type alias RelatedData =
     { id : String
     , name : String
-    , study : ( String, Maybe Db.Study )
+    , study : ( Id Db.Study String, Maybe Db.Study )
     , questions : List (OrderAware Db.Question)
     , created : Posix
-    , creator : ( String, Maybe Db.User )
+    , creator : (Id Db.User String, Maybe Db.User )
     , updated : Posix
     , max_index : Maybe Int
     }
@@ -868,7 +869,7 @@ relatedData id db =
             let
                 questions =
                     List.sortBy (\( _, y ) -> y.index) <|
-                        List.filter (\( _, y ) -> y.questionary == id) <|
+                        List.filter (\( _, y ) -> unbox y.questionary == id) <|
                             List.map (\( x, y ) -> ( x, y.value )) <|
                                 Dict.toList db.questions
 
@@ -878,7 +879,7 @@ relatedData id db =
             Just
                 { id = id
                 , name = questionary.name
-                , study = ( questionary.study, Maybe.map .value <| Dict.get questionary.study db.studies )
+                , study = ( questionary.study, Maybe.map .value <| Dict.get (unbox questionary.study) db.studies )
                 , max_index = List.maximum <| List.map (\( _, x ) -> x.index) questions
                 , questions = orderAwareList questions
                 , created = Time.millisToPosix timestampedQuestionary.created
@@ -892,10 +893,10 @@ relatedData id db =
 
 
 
-viewStudy : ( String, Maybe Db.Study ) -> Maybe String -> String
+viewStudy : ( Id Db.Study String, Maybe Db.Study ) -> Maybe String -> String
 viewStudy ( id, mbStudy ) cur =
     Maybe.map .name mbStudy
-        |> Maybe.withDefault id
+        |> Maybe.withDefault (unbox id)
 
 
 viewList : List ( String, a ) -> (String -> msg) -> Html msg
