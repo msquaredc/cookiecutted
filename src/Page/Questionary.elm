@@ -552,7 +552,7 @@ viewQuestionListItem model db { id, value, previous, next } =
     listItem
         (MLItem.config {- |> MLItem.setOnClick (Msg.Follow Db.QuestionType id)-})
     <|
-        [ MLItem.text [onClick <| Msg.Follow Db.QuestionType id]
+        [ MLItem.text [onClick <| Msg.Follow Db.QuestionType (unbox id)]
             { primary = [ Html.text value.text ]
             , secondary = [ Html.text <| Maybe.withDefault (unbox value.input_type) <| Maybe.map (\it -> IT.toString it.value) <|Dict.get (unbox value.input_type) db.input_types ]
             }
@@ -562,11 +562,11 @@ viewQuestionListItem model db { id, value, previous, next } =
                 IconButton.iconButton
                     (IconButton.config
                         |> IconButton.setOnClick
-                            (Msg.Questionary <| Msg.ContextMenu <| Just id))
+                            (Msg.Questionary <| Msg.ContextMenu <| Just <| unbox id))
                     (IconButton.icon "more_vert")
                 , Menu.menu
                 (Menu.config
-                    |> Menu.setOpen (model.menu == Just id)
+                    |> Menu.setOpen (model.menu == Just (unbox id))
                     |> Menu.setOnClose (Msg.Questionary <| Msg.ContextMenu <| Nothing)
                 )
                 [ MList.list
@@ -625,16 +625,16 @@ viewQuestionListItem model db { id, value, previous, next } =
                ) -}
 
 
-viewQuestionCard : Db.Database -> Maybe String -> OrderAware Db.Question -> Html Msg.Msg
+viewQuestionCard : Db.Database -> Maybe (Id Db.Question String) -> OrderAware Db.Question -> Html Msg.Msg
 viewQuestionCard db mbCur { id, value, previous, next } =
     let
         setMsg x callback =
-            Match.setField
+            Match.setField 
                 { kind = Db.QuestionType
                 , attribute = "input_type"
                 , setter = \y -> Updater.Custom y callback
-                , value = id
-                , id = x
+                , value = unbox id
+                , id = box x
                 }
 
         question =
@@ -645,7 +645,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
             { blocks =
                 [ block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ]
-                        [ Result.withDefault (div [] []) <| Match.forms id Db.QuestionType "text" db <| wideTextForm Nothing ]
+                        [ Result.withDefault (div [] []) <| Match.forms (unbox id) Db.QuestionType "text" db <| wideTextForm Nothing ]
                 , block <|
                     Html.div [ Html.Attributes.style "padding" "1rem" ] <|
                         let
@@ -709,7 +709,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
         Card.card Card.config
             { blocks =
                 Card.primaryAction
-                    [ Html.Events.onClick <| Msg.Questionary <| Msg.CurrentQuestionSelected <| Just id ]
+                    [ Html.Events.onClick <| Msg.Questionary <| Msg.CurrentQuestionSelected <| Just (unbox id) ]
                     [ block <|
                         div [ Html.Attributes.style "padding" "1rem", Typography.headline6 ]
                             [ text question.text ]
@@ -870,7 +870,7 @@ relatedData id db =
                 questions =
                     List.sortBy (\( _, y ) -> y.index) <|
                         List.filter (\( _, y ) -> y.questionary == id) <|
-                            List.map (\( x, y ) -> ( x, y.value )) <|
+                            List.map (\( x, y ) -> (box x, y.value )) <|
                                 Dict.toList db.questions
 
                 questionary =

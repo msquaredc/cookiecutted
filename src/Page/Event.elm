@@ -44,8 +44,8 @@ type alias Model =
 
 
 init : Msg.EventSubPage -> String -> Bool -> Model
-init =
-    Model 
+init page_ id =
+    Model page_ (box id)
 
 
 page : Session.Session -> Msg.EventSubPage -> String -> Bool -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
@@ -167,7 +167,7 @@ view (Page.Page model) =
                                 inner [][
                                 cell [LG.span8Desktop]
                                     [ Html.h1 [ Typography.headline5 ] [ text "Test Subjects" ]
-                                    , viewList infos.test_subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 x)
+                                    , viewList infos.test_subjects (Msg.Follow Db.TestSubjectType) (\(x,_) -> String.toUpper <| String.left 4 (unbox x))
                                     , unelevated
                                         (Button.config
                                             |> Button.setIcon (Just <| Button.icon "add")
@@ -327,8 +327,8 @@ relatedData id db =
                         created = Time.millisToPosix timestampedEvent.created,
                         creator = (timestampedEvent.creator, Maybe.map .value <| Dict.get (unbox timestampedEvent.creator) db.users),
                         updated = Time.millisToPosix timestampedEvent.modified,
-                        questionnaries = Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.study == event.study) db.questionnaries,
-                        test_subjects = Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.event == id) db.test_subjects
+                        questionnaries = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.study == event.study) db.questionnaries,
+                        test_subjects = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\x y -> (y.value)) <| Dict.filter (\x y -> y.value.event == id) db.test_subjects
                     }
     
         Nothing ->
@@ -360,10 +360,10 @@ viewList elements onClick =
                     )
                     []
  -}
-viewList : List ( String, a ) -> (String -> msg) -> ((String, a) -> String) -> Html msg
+viewList : List ( Id a String, a ) -> (String -> msg) -> ((Id a String, a) -> String) -> Html msg
 viewList elements onClick nameGetter =
     let
-        mlist =  List.map (\( x, y ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick x) ) [ graphic [] [ identicon "100%" x ], text <| nameGetter (x,y)]) elements
+        mlist =  List.map (\( x, y ) -> listItem (MLItem.config |> MLItem.setOnClick (onClick (unbox x)) ) [ graphic [] [ identicon "100%" (unbox x) ], text <| nameGetter (x,y)]) elements
     in
         case mlist of 
             f :: r ->

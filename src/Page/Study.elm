@@ -33,7 +33,7 @@ import Viewer.EditableText as EditableText
 
 
 type alias Model =
-    { id : String
+    { id : Id Db.Study String
     , nameFocus : Bool
     }
 
@@ -43,8 +43,8 @@ type alias Model =
 
 
 init : String -> Bool -> Model
-init =
-    Model 
+init id =
+    Model (box id)
      {-
         { active = False
         , activator = Msg.Study <| Msg.StudyNameEdit Msg.GetFocus
@@ -63,7 +63,7 @@ page session id focus=
     let
         model =
             { session = session
-            , page = Model id focus
+            , page = Model (box id) focus
             , view = view
             , toMsg = identity
             , subscriptions = Sub.none
@@ -108,7 +108,7 @@ update message (Page model) =
                         eventXIanswersXquestionsI = List.map (Tuple.mapSecond (Match.resolveAttributes (\x -> x.question) .questions model.session.db)) eventXanswers
                                                   |> List.concatMap Match.concatTupleLast
                                                   
-                        eventXIIanswersXtest_subjectsIXquestionsI = List.map (Tuple.mapSecond (Tuple.mapFirst (Match.resolveAttributes (\x -> x.test_subject) .test_subjects model.session.db))) eventXanswersXquestions
+                        eventXIIanswersXtest_subjectsIXquestionsI = List.map (Tuple.mapSecond (Tuple.mapFirst (Match.resolveAttributes (\x -> x.test_subject) .test_subjects model.session.db))) eventXIanswersXquestionsI
                                                                     |> List.map (Tuple.mapSecond Match.concatTupleFirst)
                                                                     |> List.concatMap Match.concatTupleLast
                         {- eventXIIanswersXtest_subjectsIXIquestionsXcoding_questionI -}
@@ -186,7 +186,7 @@ view (Page.Page model) =
                                                                 { kind = Db.EventType
                                                                 , attribute = "study"
                                                                 , setter = Updater.StringMsg
-                                                                , id = x
+                                                                , id = box x
                                                                 , value = infos.id
                                                                 }
                                                         ]
@@ -208,7 +208,7 @@ view (Page.Page model) =
                                                                 { kind = Db.QuestionaryType
                                                                 , attribute = "study"
                                                                 , setter = Updater.StringMsg
-                                                                , id = x
+                                                                , id = box x
                                                                 , value = infos.id
                                                                 }
                                                         ]

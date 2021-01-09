@@ -26,7 +26,7 @@ import Viewer exposing (detailsConfig)
 
 
 type alias Model =
-    { id : (Id Db.CodingQuestion String)
+    { id : (Id Db.Question String)
     , question : Maybe (Db.Timestamp Db.CodingQuestion)
     , short : Maybe (Id IT.InputType String)
     , long : Maybe (Id IT.InputType String)
@@ -245,7 +245,7 @@ view (Page.Page model) =
                                         )
                                     ]
                                         ++ viewInputTypeSelection model.page infos.input_type
-                                , cell [] <| viewSettings model.session.db model.page.id model.page infos.input_type
+                                , cell [] <| viewSettings model.session.db model.page.id model.page infos.input_type 
                                 ]
                             ]
 
@@ -261,28 +261,30 @@ toTitle _ =
 
 
 type alias RelatedData =
-    { id : String
+    { id : Id Db.Question String
     , text : String
-    , input_type : ( String, Maybe IT.InputType )
+    , input_type : ( Id IT.InputType String, Maybe IT.InputType )
 
     --, question : ( String, Maybe Db.Question)
     --, coding_questions : List (OrderAware Db.CodingQuestion)
     , created : Posix
-    , creator : ( String, Maybe Db.User )
+    , creator : ( Id Db.User String, Maybe Db.User )
     , updated : Posix
     }
 
 
-relatedData : Id Db.CodingQuestion String -> Db.Database -> Maybe RelatedData
+relatedData : Id Db.Question String -> Db.Database -> Maybe RelatedData
 relatedData id db =
     case Dict.get (unbox id) db.coding_questions of
         Just timestampedQuestion ->
             let
+                --coding_questions : List (Id Db.CodingQuestionary String, Db.CodingQuestionary)
                 coding_questions =
                     {- List.sortBy (\( _, y ) -> y.index) <| -}
-                    List.filter (\( _, y ) -> y.question == unbox id) <|
-                        List.map (\( x, y ) -> ( x, y.value )) <|
-                            Dict.toList db.coding_questionnaries
+                    Dict.toList db.coding_questionnaries
+                    |> List.filter (\( _, y ) -> y.value.question == id)
+                    |> List.map (\( x, y ) -> ( box x, y.value ))
+                            
 
                 question =
                     timestampedQuestion.value
@@ -296,7 +298,7 @@ relatedData id db =
                 --, max_index = List.maximum <| List.map (\( _, x ) -> x.index) coding_questions
                 --, coding_questions = orderAwareList coding_questions
                 , created = Time.millisToPosix timestampedQuestion.created
-                , creator = ( timestampedQuestion.creator, Maybe.map .value <| Dict.get timestampedQuestion.creator db.users )
+                , creator = ( timestampedQuestion.creator, Maybe.map .value <| Dict.get (unbox timestampedQuestion.creator) db.users )
                 , updated = Time.millisToPosix timestampedQuestion.modified
                 }
 
@@ -329,7 +331,7 @@ relatedData id db =
 -}
 
 
-viewInputTypeSelection : Model -> ( String, Maybe IT.InputType ) -> List (Html Msg.Msg)
+viewInputTypeSelection : Model -> ( Id IT.InputType String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewInputTypeSelection model ( id, _ ) =
     List.map (\x -> Html.p [] [ x ])
         [ FormField.formField
@@ -344,7 +346,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
-                                , value = short
+                                , value = unbox short
                                 }
 
                         Nothing ->
@@ -373,7 +375,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
-                                    , value = short
+                                    , value = unbox short
                                     }
 
                             Nothing ->
@@ -403,7 +405,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
-                                , value = long
+                                , value = unbox long
                                 }
 
                         Nothing ->
@@ -432,7 +434,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
-                                    , value = long
+                                    , value = unbox long
                                     }
 
                             Nothing ->
@@ -462,7 +464,7 @@ viewInputTypeSelection model ( id, _ ) =
                                 , attribute = "input_type"
                                 , setter = Updater.StringMsg
                                 , id = model.id
-                                , value = list
+                                , value = unbox list
                                 }
 
                         Nothing ->
@@ -491,7 +493,7 @@ viewInputTypeSelection model ( id, _ ) =
                                     , attribute = "input_type"
                                     , setter = Updater.StringMsg
                                     , id = model.id
-                                    , value = list
+                                    , value = unbox list
                                     }
 
                             Nothing ->
@@ -513,14 +515,14 @@ viewInputTypeSelection model ( id, _ ) =
 
 
 
-viewSettings : Db.Database -> String -> Model -> ( String, Maybe IT.InputType ) -> List (Html Msg.Msg)
+viewSettings : Db.Database -> Id Db.Question String -> Model -> ( Id IT.InputType String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewSettings db id model ( itid, mbit ) =
     let
         umessage attribute setter value =
             Msg.CRUD <|
                 Msg.Update <|
                     Updater.AttributeMsg "questions" <|
-                        Updater.DictKeyMsg id <|
+                        Updater.DictKeyMsg (unbox id) <|
                             Updater.AttributeMsg "value" <|
                                 Updater.AttributeMsg "input_type" <|
                                     Updater.AttributeMsg attribute <|
@@ -533,7 +535,7 @@ viewSettings db id model ( itid, mbit ) =
                 |> Maybe.withDefault ""
     in
     if model.short == Just itid then
-        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get x db.input_types) model.short of
+        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.short of
             Just (IT.ShortAnswer short) ->
                 [ TextField.filled
                     (TextField.config
@@ -623,7 +625,7 @@ viewSettings db id model ( itid, mbit ) =
 
     else
         if model.long == Just itid then
-            case Maybe.map .value <| Maybe.andThen (\x -> Dict.get x db.input_types) model.long of
+            case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.long of
             Just (IT.LongAnswer long) ->
                 [ TextField.filled
                     (TextField.config
@@ -712,7 +714,7 @@ viewSettings db id model ( itid, mbit ) =
                 [ text "No Config found" ]
         else
             if model.list == Just itid then
-                case Maybe.map .value <| Maybe.andThen (\x -> Dict.get x db.input_types) model.list of
+                case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.list of
                     Just (IT.List list) ->
                         [ text "Boxes or Radio?"
                         , FormField.formField
