@@ -9,6 +9,7 @@ import Test exposing (..)
 import Type.Database exposing (..)
 import Type.IO exposing (..)
 import Type.IO.Setter as Set exposing (Msg(..))
+import Type.IO.Internal exposing (box)
 
 
 suite : Test
@@ -131,22 +132,22 @@ suite =
             [ fuzz2 answer.fuzzer string.fuzzer "Answer: Question" <|
                 \answ question ->
                     Expect.equal
-                        (Ok { answ | question = question })
+                        (Ok { answ | question = box question })
                         (answer.updater (AttributeMsg "question" <| StringMsg question) answ)
             , fuzz2 answer.fuzzer string.fuzzer "Answer: User" <|
                 \answ test_subject ->
                     Expect.equal
-                        (Ok { answ | test_subject = test_subject })
+                        (Ok { answ | test_subject = box test_subject })
                         (answer.updater (AttributeMsg "user" <| StringMsg test_subject) answ)
             , fuzz2 answer.fuzzer string.fuzzer "Answer: Value" <|
                 \answ question ->
                     Expect.equal
-                        (Ok { answ | question = question })
+                        (Ok { answ | question = box question })
                         (answer.updater (AttributeMsg "question" <| StringMsg question) answ)
             , fuzz2 coder.fuzzer string.fuzzer "Coder: User" <|
                 \cod user ->
                     Expect.equal
-                        (Ok { cod | user = user })
+                        (Ok { cod | user = box user })
                         (coder.updater (AttributeMsg "user" <| StringMsg user) cod)
             , fuzz2 (table answer).fuzzer string.fuzzer "Pathlength 2" <|
                 \a q ->
@@ -159,7 +160,7 @@ suite =
                                             tablerow.value
 
                                         newanswer =
-                                            { oldanswer | question = q }
+                                            { oldanswer | question = box q }
 
                                         newtablerow =
                                             { tablerow | value = newanswer }
