@@ -138,7 +138,7 @@ suite =
                 \answ test_subject ->
                     Expect.equal
                         (Ok { answ | test_subject = box test_subject })
-                        (answer.updater (AttributeMsg "user" <| StringMsg test_subject) answ)
+                        (answer.updater (AttributeMsg "test_subject" <| StringMsg test_subject) answ)
             , fuzz2 answer.fuzzer string.fuzzer "Answer: Value" <|
                 \answ question ->
                     Expect.equal
