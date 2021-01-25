@@ -149,7 +149,7 @@ suite =
                     Expect.equal
                         (Ok { cod | user = box user })
                         (coder.updater (AttributeMsg "user" <| StringMsg user) cod)
-            , fuzz (table answer).fuzzer string.fuzzer "Pathlength 2" <|
+            , fuzz2 (table answer).fuzzer Fuzz.string "Pathlength 2" <|
                 \a q ->
                     case List.head <| Dict.keys a of
                         Just id ->

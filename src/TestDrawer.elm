@@ -21,6 +21,7 @@ import Material.List
         , listItemConfig
         )
 
+main : Html.Html msg
 main =
     Html.div []
     [ modalDrawer

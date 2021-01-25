@@ -20,6 +20,7 @@ type alias Aquisition a b c =
     }
 
 
+start : AttributeAccessor c (Id d e) -> Table c -> AttributeAccessor c a -> Aquisition (a -> b) d e -> List (Aquisition b d e)
 start = addAttrSingle
 add = addAttrList
 move = moveReferenceList
