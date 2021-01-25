@@ -33,7 +33,7 @@ suite =
                 |> \x -> {x | answers = Dict.insert "myspecialkey" a x.answers}
                 |> aquireQuestion (box "myspecialkey")
                 |> Expect.equal q.value.text
-        , fuzz (Fuzz.tuple (
+        , skip <| fuzz (Fuzz.tuple (
             (Fuzz.tuple3 (database.fuzzer, Fuzz.tuple (Fuzz.string, (timestamp study).fuzzer), Fuzz.tuple (Fuzz.string, (timestamp event).fuzzer))),
             (Fuzz.list <| 
                 Fuzz.tuple3 
