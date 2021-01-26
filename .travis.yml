@@ -6,11 +6,12 @@ node_js:
   - '8'
 
 install:
-  - npm i create-elm-app -g
   - npm i elm-coverage -g
-  - sudo ln -s /usr/lib/node_modules/elm-coverage/bin /usr/lib/node_modules/elm-coverage/unpacked_bin
-  
+  - npm i elm-test -g
+  - npm i create-elm-app -g
+  #- sudo ln -s /usr/lib/node_modules/elm-coverage/bin /usr/lib/node_modules/elm-coverage/unpacked_bin
+
 script: 
   # - elm-test --verbose
-  - elm-coverage --elm-test ./node_modules/.bin/elm-test
+  - elm-coverage
   # - npm run coveralls
