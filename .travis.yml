@@ -7,7 +7,7 @@ node_js:
 
 install:
   - npm i create-elm-app -g
-  # - npm i elm-coverage -g
+  - npm i elm-coverage -g
 
 script: 
   # - elm-test --verbose
