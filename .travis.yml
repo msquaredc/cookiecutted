@@ -11,5 +11,5 @@ install:
 
 script: 
   # - elm-test --verbose
-  - elm-coverage
+  - elm-coverage --elm-test ./node_modules/.bin/elm-test
   # - npm run coveralls
