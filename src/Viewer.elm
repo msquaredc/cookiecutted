@@ -11,7 +11,7 @@ import Html exposing (Html, a, div, h1, h3, p, text)
 import Html.Attributes exposing (class, href, style)
 import Identicon exposing (identicon)
 import Material.Button as Button exposing (text, unelevated)
-import Material.Dialog as Dialog exposing (config, dialog)
+import Material.Dialog as Dialog exposing (config, simple)
 import Material.Drawer.Dismissible exposing (config, header)
 import Material.Icon as Icon exposing (icon)
 import Material.IconButton as IconButton exposing (config, customIcon, iconButton)
@@ -524,7 +524,7 @@ wideTextForm label value callback =
             |> TextField.setOnInput callback
             |> TextField.setLabel label
             --|> TextField.outlined True TODO: Uncomment
-            |> TextField.setFullwidth True
+            --|> TextField.setFullwidth True
         )
 
 
@@ -608,11 +608,11 @@ userDialog open users new_username time =
                 List.reverse <|
                     List.sortBy (\( _, b ) -> b.last_login) users
     in
-    Dialog.dialog
+    Dialog.simple
         (Dialog.config
             |> Dialog.setOpen open
         )
-        { title = Just "Select an account"
+        { title = "Select an account"
         , content =
             case uList of
                 f :: rest ->
@@ -625,7 +625,7 @@ userDialog open users new_username time =
                     []
         , actions =
             [ list
-                (MList.config |> MList.setNonInteractive True)
+                (MList.config |> MList.setInteractive False)
                 (MLItem.listItem
                     (MLItem.config
                         |> MLItem.setAttributes
