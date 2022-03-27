@@ -64,5 +64,6 @@ view model =
 -- HELPERS
 
 
+toTitle : String
 toTitle =
     "Page One"

@@ -623,6 +623,7 @@ userDialog open users new_username time =
 
                 _ ->
                     []
+        {- TODO: Comment out/reimplement           
         , actions =
             [ list
                 (MList.config |> MList.setInteractive False)
@@ -650,7 +651,7 @@ userDialog open users new_username time =
                     ]
                 )
                 []
-            ]
+            ]-}
         }
 
 

@@ -83,5 +83,6 @@ view (Page.Page model) =
 -- HELPERS
 
 
+toTitle : { a | subpage : String } -> String
 toTitle model =
     "Page With Subpage - " ++ model.subpage

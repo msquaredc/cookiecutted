@@ -509,7 +509,7 @@ ghostView dnd items =
             list
                 (MList.config
                     |> MList.setTwoLine True
-                    |> MList.setNonInteractive True
+                    |> MList.setInteractive False
                 )
             (listItem
                 (MLItem.config |> MLItem.setAttributes  (system.ghostStyles dnd)
@@ -569,15 +569,14 @@ viewQuestionListItem model db { id, value, previous, next } =
                     |> Menu.setOpen (model.menu == Just (unbox id))
                     |> Menu.setOnClose (Msg.Questionary <| Msg.ContextMenu <| Nothing)
                 )
-                [ MList.list
-                    (MList.config |> MList.setWrapFocus True)
+               
                     (MLItem.listItem MLItem.config
                         [ text "Menu item" ]
                     )
                     [ MLItem.listItem MLItem.config
                         [ text "Menu item" ]
                     ]
-                ]
+                
             ]
         ]]
             {- ++ (case ( previous, next ) of
@@ -654,7 +653,7 @@ viewQuestionCard db mbCur { id, value, previous, next } =
                                     (\x ->
                                         SelectItem.selectItem
                                             (SelectItem.config { value = IT.toString x })
-                                            [ text <| IT.toString x ]
+                                            (IT.toString x )
                                     )
                                     IT.inputTypes
                         in
@@ -784,7 +783,7 @@ viewInputTypeActive kind callback =
             in
             case mlist of
                 f :: r ->
-                    list (MList.config |> MList.setNonInteractive True) f r
+                    list (MList.config |> MList.setInteractive False) f r
 
                 _ ->
                     Html.text "No entry"
@@ -818,7 +817,7 @@ viewInputTypePassive kind =
             in
             case tlist of
                 f :: r ->
-                    list (MList.config |> MList.setNonInteractive True) f r
+                    list (MList.config |> MList.setInteractive False) f r
 
                 _ ->
                     Html.text "List is empty"
@@ -907,7 +906,7 @@ viewList elements onClick =
     in
     case mlist of
         f :: r ->
-            list (MList.config |> MList.setNonInteractive True) f r
+            list (MList.config |> MList.setInteractive False) f r
 
         _ ->
             list MList.config
@@ -938,6 +937,6 @@ wideTextForm label value callback =
             |> TextField.setValue (Just value)
             |> TextField.setOnInput callback
             |> TextField.setLabel label
-            |> TextField.setFullwidth True
+            --|> TextField.setFullwidth True TODO:Uncomment or reimplement
          --|> TextField.setOutlined
         )

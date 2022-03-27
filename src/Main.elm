@@ -740,6 +740,7 @@ updateDbSession model session db =
 
 -- ROUTING
 -- The following functions create the client-side router. Update "parser" and "paths" for each page you add/remove
+testMethod : Maybe String
 testMethod =
     case Url.fromString "http://localhost:3000/event/oLFlGAGBkkaZDCTsnmOA/answer?tsid=a" of 
         Nothing ->
@@ -854,6 +855,7 @@ parser model session =
 --  This holds the paths for each page. Update as needed for each page you add/remove
 
 
+paths : { top : String, users : String, pageOne : String, pageWithSubpage : String, admin : String, study : String, event : String, questionary : String, question : String, coding_question : String }
 paths =
     { top = ""
     , users = "user"

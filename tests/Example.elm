@@ -149,39 +149,39 @@ suite =
                     Expect.equal
                         (Ok { cod | user = box user })
                         (coder.updater (AttributeMsg "user" <| StringMsg user) cod)
-            , fuzz (table answer).fuzzer string.fuzzer "Pathlength 2" <|
-                \a q ->
-                    case List.head <| Dict.keys a of
-                        Just id ->
-                            case Dict.get id a of
-                                Just tablerow ->
-                                    let
-                                        oldanswer =
-                                            tablerow.value
+            -- , fuzz (table answer).fuzzer string.fuzzer "Pathlength 2" <|
+            --     \a q ->
+            --         case List.head <| Dict.keys a of
+            --             Just id ->
+            --                 case Dict.get id a of
+            --                     Just tablerow ->
+            --                         let
+            --                             oldanswer =
+            --                                 tablerow.value
 
-                                        newanswer =
-                                            { oldanswer | question = box q }
+            --                             newanswer =
+            --                                 { oldanswer | question = box q }
 
-                                        newtablerow =
-                                            { tablerow | value = newanswer }
+            --                             newtablerow =
+            --                                 { tablerow | value = newanswer }
 
-                                        res =
-                                            Dict.insert id newtablerow a
+            --                             res =
+            --                                 Dict.insert id newtablerow a
 
-                                        f id2 =
-                                            Set.DictKeyMsg id2 <|
-                                                Set.AttributeMsg "value" <|
-                                                    Set.AttributeMsg "question" <|
-                                                        Set.StringMsg q
-                                    in
-                                    Expect.equal
-                                        (Ok res)
-                                        ((table answer).updater (f id) a)
+            --                             f id2 =
+            --                                 Set.DictKeyMsg id2 <|
+            --                                     Set.AttributeMsg "value" <|
+            --                                         Set.AttributeMsg "question" <|
+            --                                             Set.StringMsg q
+            --                         in
+            --                         Expect.equal
+            --                             (Ok res)
+            --                             ((table answer).updater (f id) a)
 
-                                Nothing ->
-                                    Expect.true "blupp" True
+            --                     Nothing ->
+            --                         Expect.true "blupp" True
 
-                        Nothing ->
-                            Expect.true "bla" True
+            --             Nothing ->
+            --                 Expect.true "bla" True
             ]
         ]

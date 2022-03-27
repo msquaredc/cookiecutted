@@ -30,8 +30,8 @@ type SingleInputType
 type alias ShortAnswerConfig =
     { label : Maybe String
     , placeholder : Maybe String
-    , minLength : Maybe Int
-    , maxLength : Maybe Int
+    , minLength : Int
+    , maxLength : Int
     , pattern : Maybe String
     }
 
@@ -41,15 +41,15 @@ shortAnswerConfig =
     entity ShortAnswerConfig ShortAnswerConfig
         |> attribute "label" (maybe string) .label
         |> attribute "placeholder" (maybe string) .placeholder
-        |> attribute "minLength" (maybe int) .minLength
-        |> attribute "maxLength" (maybe int) .maxLength
+        |> attribute "minLength" (int) .minLength
+        |> attribute "maxLength" (int) .maxLength
         |> attribute "pattern" (maybe string) .pattern
 
 type alias LongAnswerConfig =
     { label : Maybe String
     , placeholder : Maybe String
-    , minLength : Maybe Int
-    , maxLength : Maybe Int
+    , minLength : Int
+    , maxLength : Int
     , pattern : Maybe String
     , rows : Maybe Int
     , cols : Maybe Int
@@ -61,8 +61,8 @@ longAnswerConfig =
     entity LongAnswerConfig LongAnswerConfig
         |> attribute "label" (maybe string) .label
         |> attribute "placeholder" (maybe string) .placeholder
-        |> attribute "minLength" (maybe int) .minLength
-        |> attribute "maxLength" (maybe int) .maxLength
+        |> attribute "minLength" (int) .minLength
+        |> attribute "maxLength" (int) .maxLength
         |> attribute "pattern" (maybe string) .pattern
         |> attribute "rows" (maybe int) .rows
         |> attribute "cols" (maybe int) .cols
