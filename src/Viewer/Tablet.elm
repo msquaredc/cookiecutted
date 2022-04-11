@@ -7,7 +7,8 @@ import Material.Drawer.Modal as MDrawer
 import Material.TopAppBar as TopAppBar
 import Viewer.Internal as I
 
-
+{-| Display the interface in landscape mode.
+-}
 viewLandscape : I.ViewerConfig msg -> List (Html msg)
 viewLandscape config =
     [ I.viewTopAppBar
@@ -42,7 +43,8 @@ viewLandscape config =
         ]
     ]
 
-
+{-| Display the interface in portrait mode.
+-}
 viewPortrait : I.ViewerConfig msg -> List (Html msg)
 viewPortrait config =
     -- [ topAppBar topAppBarConfig
