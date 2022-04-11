@@ -8,7 +8,7 @@ install:
   - npm i elm-coverage -g
   #- npm i coveralls -g
 script: 
-  - elm-format --verify
+  - elm-format --validate
   - elm-review
   - elm-app test
   - elm-coverage
