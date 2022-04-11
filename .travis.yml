@@ -10,4 +10,4 @@ install:
 script: 
   - elm-app test
   - elm-coverage
-  - npm run coveralls
+  #- npm run coveralls
