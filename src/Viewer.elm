@@ -79,6 +79,8 @@ update msg model =
 
         NewUsername text ->
             { model | new_username = text }
+        
+        OpenDialog -> model
 
 
 
@@ -608,50 +610,59 @@ userDialog open users new_username time =
                 List.reverse <|
                     List.sortBy (\( _, b ) -> b.last_login) users
     in
-    Dialog.simple
-        (Dialog.config
-            |> Dialog.setOpen open
+    Html.div [][
+        (Button.text
+        (Button.config 
+        |> Button.setOnClick (Msg.Viewer OpenDrawer)
         )
-        { title = "Select an account"
-        , content =
-            case uList of
-                f :: rest ->
-                    [ list (MList.config |> MList.setAvatarList True)
-                        f
-                        rest
-                    ]
+        "Login")
+        , Dialog.fullscreen
+            (Dialog.config
+                |> Dialog.setOpen open
+                |> Dialog.setScrimCloses False
+            )
+            { 
+            title = "Select an account"
+            , content =
+                case uList of
+                    f :: rest ->
+                        [ list (MList.config |> MList.setAvatarList True)
+                            f
+                            rest
+                        ]
 
-                _ ->
+                    _ ->
+                        []
+            , actions =
+                [ list
+                    (MList.config |> MList.setInteractive True)
+                    (MLItem.listItem
+                        (MLItem.config
+                            |> MLItem.setAttributes
+                                [ Html.Attributes.tabindex 0
+
+                                --    , Html.Events.onClick Close
+                                ]
+                        )
+                        [ TextField.filled
+                            (TextField.config
+                                |> TextField.setOnInput (Msg.Viewer << NewUsername)
+                                |> TextField.setLabel (Just "Add new User")
+                                |> TextField.setOnChange addUserWithName
+                                |> TextField.setValue (Just new_username)
+                            )
+                        , Button.unelevated
+                            (Button.config
+                                |> Button.setAttributes [ Html.Attributes.style "margin-left" "16px" ]
+                                |> Button.setIcon (Just <| Button.icon "add")
+                            )
+                            "add"
+                        ]
+                    )
                     []
-        -- , actions =
-        --     [ list
-        --         (MList.config |> MList.setInteractive False)
-        --         (MLItem.listItem
-        --             (MLItem.config
-        --                 |> MLItem.setAttributes
-        --                     [ Html.Attributes.tabindex 0
-
-        --                     --    , Html.Events.onClick Close
-        --                     ]
-        --             )
-        --             [ TextField.filled
-        --                 (TextField.config
-        --                     |> TextField.setOnInput (Msg.Viewer << NewUsername)
-        --                     |> TextField.setLabel (Just "Add new User")
-        --                     |> TextField.setOnChange addUserWithName
-        --                     |> TextField.setValue (Just new_username)
-        --                 )
-        --             , Button.unelevated
-        --                 (Button.config
-        --                     |> Button.setAttributes [ Html.Attributes.style "margin-left" "16px" ]
-        --                     |> Button.setIcon (Just <| Button.icon "add")
-        --                 )
-        --                 "add"
-        --             ]
-        --         )
-        --         []
-        --     ]
-        }
+                ]
+            }
+        ]
 
 
 type alias HtmlElement msg =
