@@ -15,17 +15,17 @@ import NoAlways
 import NoBooleanCase
 import NoDebug.Log
 import NoDebug.TodoOrToString
-import NoDuplicatePorts
-import NoUnsafePorts
-import NoEmptyText
-import NoUnusedPorts
 import NoDeprecated
+import NoDuplicatePorts
+import NoEmptyText
 import NoExposingEverything
 import NoImportingEverything
 import NoMissingTypeAnnotation
 import NoMissingTypeAnnotationInLetIn
 import NoMissingTypeExpose
 import NoPrematureLetComputation
+import NoUnsafePorts
+import NoUnusedPorts
 import Review.Rule exposing (Rule)
 
 
@@ -42,10 +42,11 @@ config =
     , NoExposingEverything.rule
     , NoDeprecated.rule NoDeprecated.defaults
     , NoImportingEverything.rule []
-        |> Review.Rule.ignoreErrorsForDirectories [ "tests/"]
+        |> Review.Rule.ignoreErrorsForDirectories [ "tests/" ]
     , NoMissingTypeAnnotation.rule
     , NoMissingTypeAnnotationInLetIn.rule
-        |> Review.Rule.ignoreErrorsForDirectories [ "tests/"]
+        |> Review.Rule.ignoreErrorsForDirectories [ "tests/" ]
+        |> Review.Rule.ignoreErrorsForFiles [ "src/Type/Database/TypeMatching.elm" ]
     , NoMissingTypeExpose.rule
     , NoPrematureLetComputation.rule
     ]

@@ -275,9 +275,11 @@ match_model : (flag -> mediator -> Maybe a) -> (flag -> mediator -> Maybe (a -> 
 match_model getter old_model =
     \flag mediator ->
         let
+            value : Maybe a
             value =
                 getter flag mediator
 
+            func : Maybe (a -> model)
             func =
                 old_model flag mediator
         in

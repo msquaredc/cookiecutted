@@ -20,6 +20,7 @@ import Material.List
 import Material.List.Item exposing (config, listItem)
 
 
+main : Html.Html msg
 main =
     Html.div []
         [ drawer ModalDrawer.config

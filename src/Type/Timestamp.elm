@@ -5,7 +5,7 @@ import Json.Decode as Decode
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode exposing (Value)
 import Time
-import Type.IO exposing (..)
+import Type.IO exposing (IO, attribute, entity, int, substruct)
 
 
 type alias Timestamp a =

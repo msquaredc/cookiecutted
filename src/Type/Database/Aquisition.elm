@@ -17,18 +17,27 @@ type alias Aquisition a b c =
     }
 
 
+start :
+    AttributeAccessor c (Id d e)
+    -> Table c
+    -> AttributeAccessor c a
+    -> Aquisition (a -> b) d e
+    -> List (Aquisition b d e)
 start =
     addAttrSingle
 
 
+add : AttributeAccessor c (Id d e) -> Table c -> AttributeAccessor c a -> List (Aquisition (a -> b) d e) -> List (Aquisition b d e)
 add =
     addAttrList
 
 
+move : AttributeAccessor c (Id a f) -> Table c -> AttributeAccessor c (Id b e) -> List (Aquisition d a f) -> List (Aquisition d b e)
 move =
     moveReferenceList
 
 
+end : List (Aquisition a b c) -> List a
 end =
     aquire
 
@@ -85,9 +94,11 @@ addAttrSingle :
     -> List (Aquisition b d e)
 addAttrSingle attr table selectvalue aquisition =
     let
+        attrf : Row c -> Id d e
         attrf =
             transformAccessor attr
 
+        selectf : Row c -> a
         selectf =
             transformAccessor selectvalue
     in
@@ -96,6 +107,7 @@ addAttrSingle attr table selectvalue aquisition =
         |> List.map (updateReciever aquisition)
 
 
+filterBy : (Row a -> Id b c) -> Table a -> Id b c -> List (Row a)
 filterBy attr table old =
     table
         |> Db.rows
@@ -115,9 +127,11 @@ moveReferenceSingle :
     -> List (Aquisition d b e)
 moveReferenceSingle attr table selectvalue aquisition =
     let
+        attrf : Row c -> Id a f
         attrf =
             transformAccessor attr
 
+        selectf : Row c -> Id b e
         selectf =
             transformAccessor selectvalue
     in

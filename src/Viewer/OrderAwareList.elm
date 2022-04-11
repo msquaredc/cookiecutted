@@ -35,7 +35,7 @@ prePost prev xs =
 orderAwareList : List ( Id a String, a ) -> List (OrderAware a)
 orderAwareList old =
     let
-        mapToValue : Maybe (Id a String, a) -> Maybe { id : Id a String, value:a}
+        mapToValue : Maybe ( Id a String, a ) -> Maybe { id : Id a String, value : a }
         mapToValue a =
             case a of
                 Just ( id, val ) ->

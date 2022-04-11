@@ -138,6 +138,7 @@ float name callback kind label f =
 bool : Form Bool msg
 bool _ callback kind _ f =
     let
+        bool2state : Maybe Bool -> Checkbox.State
         bool2state state =
             case state of
                 Just True ->
@@ -191,6 +192,7 @@ bool _ callback kind _ f =
 maybe : Form a msg -> Form (Maybe a) msg
 maybe old name callback kind acc f =
     let
+        new : Maybe (Result Error (Html msg))
         new =
             Maybe.map (\x -> old name (callback << MaybeMsg) x acc f) kind
     in
@@ -212,8 +214,10 @@ maybe old name callback kind acc f =
 list : Form a msg -> Form (List a) msg
 list old name callback kind acc f =
     let
-        new =
+        getnew : Int -> Maybe (Result Error (Html msg))
+        getnew my =
             List.indexedMap (\index instance -> old name (callback << ListMsg index) instance rest f) kind
+                |> List.Extra.getAt my
 
         ( parsedIndex, rest ) =
             parseHeadTail acc
@@ -223,7 +227,7 @@ list old name callback kind acc f =
     --     |> List.concat
     -- else
     String.toInt parsedIndex
-        |> Maybe.andThen (\x -> List.Extra.getAt x new)
+        |> Maybe.andThen getnew
         |> Maybe.withDefault (Err ListError)
 
 
@@ -262,6 +266,7 @@ list old name callback kind acc f =
 dict : (comparable -> Maybe String) -> Form a msg -> Form (Dict comparable a) msg
 dict keySerializer old name callback kind acc f =
     let
+        new : Dict comparable (Result Error (Html msg))
         new =
             Dict.map (\key instance -> old name (callback << DictMsg (keySerializer key)) instance rest f) kind
 
@@ -387,8 +392,10 @@ result err val name callback kind acc =
 array : Form a msg -> Form (Array a) msg
 array old name callback kind acc f =
     let
-        new =
+        getnew : Int -> Maybe (Result Error (Html.Html msg))
+        getnew my =
             Array.indexedMap (\index instance -> old name (callback << ArrayMsg index) instance rest f) kind
+                |> Array.get my
 
         ( parsedIndex, rest ) =
             parseHeadTail acc
@@ -399,7 +406,7 @@ array old name callback kind acc f =
     --     |> List.concat
     -- else
     String.toInt parsedIndex
-        |> Maybe.andThen (\x -> Array.get x new)
+        |> Maybe.andThen getnew
         |> Maybe.withDefault (Err ArrayError)
 
 
@@ -416,6 +423,7 @@ attribute name getter childform parentform label callback kind acc =
     in
     if name == head then
         let
+            newname : String
             newname =
                 label ++ "." ++ name
         in
@@ -444,6 +452,7 @@ reference name getter childform parentform label callback kind acc =
     in
     if name == head then
         let
+            newname : String
             newname =
                 label ++ "." ++ name
         in
@@ -462,6 +471,7 @@ references name getter childform parentform label callback kind acc =
         ( head, tail ) =
             parseHeadTail acc
 
+        newname : String
         newname =
             label ++ "." ++ name
     in
@@ -480,6 +490,7 @@ substruct name getter childform parentform label callback kind acc =
     in
     if name == head then
         let
+            newname : String
             newname =
                 label ++ "." ++ name
         in
@@ -495,11 +506,13 @@ substruct name getter childform parentform label callback kind acc =
 parseHeadTail : String -> ( String, String )
 parseHeadTail accessor =
     let
+        index : String
         index =
             String.split "." accessor
                 |> List.head
                 |> Maybe.withDefault ""
 
+        rest : String
         rest =
             String.split "." accessor
                 |> List.tail

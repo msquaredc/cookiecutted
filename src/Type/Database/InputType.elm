@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Fuzz
 import Json.Decode
 import Json.Encode
-import Type.IO exposing (..)
+import Type.IO exposing (IO, attribute, entity, int, list, maybe, string, substruct)
 import Type.IO.Encoder as Encoder exposing (Encoder(..))
 import Type.IO.Form as Form exposing (Form)
 import Type.IO.Setter as Updater exposing (Updater)
@@ -88,6 +88,7 @@ singleInputType =
 singleInputTypeDecoder : Json.Decode.Decoder SingleInputType
 singleInputTypeDecoder =
     let
+        helper : String -> Json.Decode.Decoder SingleInputType
         helper name =
             case name of
                 "radio" ->

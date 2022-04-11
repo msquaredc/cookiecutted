@@ -1,12 +1,13 @@
 module Type.Database.TypeMatching exposing (DispatchType(..), FieldConfig, FieldUpdateConfig, concatTupleFirst, concatTupleLast, delete, dispatchDb, fields, filterBy, forms, fromString, getField, getTimestampUpdaterMsg, join, keys, new, resolveAttributes, setField, setFieldRaw, setManyFields, setTimestamp, swapFields, toString, toStringPlural, types, updateField)
 
-import Dict exposing (..)
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Msg
 import Task exposing (perform)
 import Time exposing (Posix, now, posixToMillis)
-import Type.Database as Db exposing (..)
+import Type.Database as Db exposing (Database, InputTypeKind(..), Row, Table, Type(..), answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, question, questionary, study, test_subject, timestamp, user)
 import Type.Database.InputType as IT exposing (InputType, input_type)
+import Type.IO exposing (IO)
 import Type.IO.Form as Form exposing (UpdateMsg(..))
 import Type.IO.Internal as Id exposing (Id, unbox)
 import Type.IO.Setter as Updater
@@ -222,6 +223,7 @@ fields kind =
 keys : Type -> Database -> List String
 keys kind db =
     let
+        g : Dict comparable b -> List comparable
         g =
             Dict.keys
     in
@@ -280,6 +282,7 @@ forms id kind acc db f =
                         Form.DictMsg (Just id) <|
                             Form.AttrMsg "value" x
 
+        --g : IO a Database c Msg.Msg -> Table a -> Result Form.Error (Html.Html Msg.Msg)
         g def table =
             Dict.get id table
                 |> Maybe.map (\x -> def.form id m x.value acc f)
@@ -347,11 +350,13 @@ delete =
 dispatchDb : DispatchType -> Id a String -> Type -> Database -> Database
 dispatchDb dt id kind db =
     let
+        --g : Table a -> IO a Database c msg -> (Database -> Table a -> Database) -> Database
         g table def update =
             update db <|
                 case dt of
                     New u ->
                         let
+                            --config : Timestamp a
                             config =
                                 (timestamp def).empty
                         in
@@ -454,6 +459,7 @@ filterBy attr dbgetter db old =
 resolveAttributes : (a -> Id b String) -> (Database -> Table b) -> Database -> Row a -> List ( Row a, Row b )
 resolveAttributes attr dbgetter db ( oldid, fullold ) =
     let
+        f : Id b String -> List (Row b)
         f id =
             dbgetter db
                 |> Db.rows
@@ -467,6 +473,7 @@ resolveAttributes attr dbgetter db ( oldid, fullold ) =
 join : (Row b -> Id a String) -> (Database -> Table b) -> Database -> List (Row a) -> List ( Row a, Row b )
 join attr dbgetter db old =
     let
+        k : List (Id a String)
         k =
             List.map (\( id, value ) -> id) old
     in

@@ -1,7 +1,7 @@
 module Utils exposing (genericTitle, logo, viewLink)
 
 import Html exposing (Html, a, li, text)
-import Html.Attributes exposing (..)
+import Html.Attributes exposing (href)
 import Svg
 import Svg.Attributes as SA
 

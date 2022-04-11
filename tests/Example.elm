@@ -5,7 +5,7 @@ import Expect
 import Fuzz
 import Json.Decode
 import Json.Encode
-import Test exposing (describe, Test, fuzz, fuzz2)
+import Test exposing (Test, describe, fuzz, fuzz2)
 import Type.Database exposing (..)
 import Type.IO exposing (..)
 import Type.IO.Internal exposing (box)

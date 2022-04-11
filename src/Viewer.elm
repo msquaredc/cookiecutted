@@ -116,9 +116,11 @@ view session msg details h time =
             :: (case session.user of
                     Just userid ->
                         let
+                            device : Device.DeviceConfig
                             device =
                                 Device.fromPixel session.windowSize.width session.windowSize.height
 
+                            username : Maybe String
                             username =
                                 Dict.get (unbox userid) session.db.users
                                     |> Maybe.map .value
@@ -230,6 +232,7 @@ view session msg details h time =
 viewDrawerContent : Int -> Html Msg.Msg
 viewDrawerContent selectedIndex =
     let
+        listItemConfig_ : Int -> MLItem.Config Msg.Msg
         listItemConfig_ index =
             MLItem.config
                 |> MLItem.setSelected
@@ -542,6 +545,7 @@ selectUser users =
             [ Html.h2 [ Typography.headline6 ] [ Html.text "Please choose your account:" ]
             , LayoutGrid.cell [] <|
                 let
+                    sList : List (MLItem.ListItem Msg.Msg)
                     sList =
                         List.map (\user -> MLItem.listItem (MLItem.config |> MLItem.setOnClick (Msg.SetUser (box user))) [ MLItem.graphic [] [ identicon "100%" user ], Html.text user ]) users
                 in
@@ -571,7 +575,9 @@ selectUser users =
 userDialog : Bool -> List ( String, Db.User ) -> String -> Maybe Posix -> Html Msg.Msg
 userDialog open users new_username time =
     let
+        addUserWithName : String -> Msg.Msg
         addUserWithName username =
+            --\username ->
             Msg.CRUD
                 (Msg.CreateRandom Db.UserType
                     [ \x ->
@@ -584,6 +590,7 @@ userDialog open users new_username time =
                             }
                     ]
                 )
+
         uList : List (MLItem.ListItem Msg.Msg)
         uList =
             List.indexedMap

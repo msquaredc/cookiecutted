@@ -309,6 +309,7 @@ attribute name getter def parent msg car =
 reference : String -> (car -> Id a comparable) -> Updater comparable -> PartialUpdater car (Id a comparable -> b) -> PartialUpdater car b
 reference name getter def parent msg car =
     let
+        iddef : Msg -> Id a comparable -> Result Error (Id a comparable)
         iddef msg_ car_ =
             def msg_ (Id.unbox car_)
                 |> Result.map Id.box

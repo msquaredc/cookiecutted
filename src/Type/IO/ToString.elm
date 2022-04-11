@@ -102,6 +102,7 @@ dict keys values name dictionary =
         ( head, rest ) =
             parseHeadTail name
 
+        lkey : List comparable
         lkey =
             Dict.keys dictionary
                 |> List.filter
@@ -268,12 +269,14 @@ parseHeadTail accessor =
 
     else
         let
+            rest : String
             rest =
                 String.split "." accessor
                     |> List.tail
                     |> Maybe.map (String.join ".")
                     |> Maybe.withDefault ""
 
+            index : String
             index =
                 String.split "." accessor
                     |> List.head
