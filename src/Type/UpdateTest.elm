@@ -110,7 +110,7 @@ type alias ChefBuilder =
     PersonBuilder -> String -> List String -> Chef
 
 
-chef : PartialUpdater Chef ChefBuilder
+chef : PartialUpdater Chef ChefBuilder Chef
 chef =
     entity Chef
         |> substruct "person" person .person
@@ -146,7 +146,7 @@ type alias Timestamp a =
     , value : a
     }
 
-timestamp : PartialUpdater a b -> PartialUpdater (Timestamp a) (b -> Timestamp a)
+timestamp : PartialUpdater a b a -> PartialUpdater (Timestamp a) (b -> Timestamp a) (Timestamp a)
 timestamp other = 
     let
         t = 

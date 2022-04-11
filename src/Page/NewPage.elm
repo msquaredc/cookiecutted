@@ -47,7 +47,7 @@ update msg model =
 view : Model -> Viewer.Details Msg
 view model =
     { title = toTitle
-    , body =
+    , body = \_->
         [ h1 [] [ text "elm-spa-boilerplate - New Page" ]
         , div [] [ text "A new page." ]
         ]

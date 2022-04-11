@@ -4,9 +4,10 @@ sudo: required
 
 install:
   - npm i create-elm-app -g
-  # - npm i elm-coverage -g
+  - npm i elm-coverage -g
+  - npm i coveralls -g
 
 script: 
   - elm-app test
-  # - elm-coverage
-  # - npm run coveralls
+  - elm-coverage
+  #- npm run coveralls

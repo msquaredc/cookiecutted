@@ -2,33 +2,31 @@ module TestDrawer exposing (..)
 
 import Html exposing (text)
 import Html.Attributes exposing (style)
-import Material.Drawer
+import Material.Drawer.Modal as ModalDrawer
     exposing
-        ( drawerContent
-        , permanentDrawer
-        , permanentDrawerConfig
-        , modalDrawer
-        , modalDrawerConfig
-        , dismissibleDrawer
-        , dismissibleDrawerConfig
-        , drawerScrim
+        ( content
+        --, permanentDrawer
+        --, permanentDrawerConfig
+        --, modalDrawer
+        --, modalDrawerConfig
+        , drawer
+        --, drawerScrim
         )
+
 import Material.List
     exposing
         ( list
-        , listConfig
-        , listItem
-        , listItemConfig
+        , config
         )
-
+import Material.List.Item exposing (listItem, config)
 main =
     Html.div []
-    [ modalDrawer
-        { modalDrawerConfig
-            | open = True
-            , onClose = Nothing
-        }
-        [ drawerContent [] [] ]
-    , drawerScrim [] []
+    [ drawer ModalDrawer.config
+        -- { 
+        --     | open = True
+        --     , onClose = Nothing
+        -- }
+        [ content [] [] ]
+    , ModalDrawer.scrim [] []
     , Html.div [] [ text "Main Content" ]
     ]

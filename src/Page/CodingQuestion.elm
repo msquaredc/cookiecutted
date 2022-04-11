@@ -231,7 +231,7 @@ view (Page.Page model) =
                                         (TextField.config
                                             |> TextField.setLabel (Just "Coding Question text")
                                             |> TextField.setValue (Just infos.text)
-                                            |> TextField.setFullwidth True
+                                            --|> TextField.setFullwidth True
                                             |> TextField.setOnInput
                                                 (\x ->
                                                     Match.setField
@@ -586,7 +586,10 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt short.minLength)
                     , Slider.slider
                         (Slider.config
-                            |> Slider.setValue (Maybe.map toFloat short.minLength)
+                            |> (\x -> 
+                                case (Maybe.map toFloat short.minLength) of
+                                    Just length -> Slider.setValue length x
+                                    Nothing -> x)
                             --                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -604,7 +607,10 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt short.maxLength)
                     , Slider.slider
                         (Slider.config
-                            |> Slider.setValue (Maybe.map toFloat short.maxLength)
+                            |> (\x -> 
+                                case (Maybe.map toFloat short.maxLength) of
+                                    Just length -> Slider.setValue length x
+                                    Nothing -> x)
                             --                        |> Slider.setMin (Maybe.map toFloat short.minLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -676,7 +682,11 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt long.minLength)
                     , Slider.slider
                         (Slider.config
-                            |> Slider.setValue (Maybe.map toFloat long.minLength)
+                            |> (\x -> 
+                                case (Maybe.map toFloat long.minLength) of
+                                    Just length -> Slider.setValue length x
+                                    Nothing -> x)
+                            
                             --                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -694,7 +704,10 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt long.maxLength)
                     , Slider.slider
                         (Slider.config
-                            |> Slider.setValue (Maybe.map toFloat long.maxLength)
+                            |> (\x -> 
+                                case (Maybe.map toFloat long.maxLength) of
+                                    Just length -> Slider.setValue length x
+                                    Nothing -> x)
                             --                        |> Slider.setMin (Maybe.map toFloat short.minLength)
                             |> Slider.setOnInput
                                 (\x ->
