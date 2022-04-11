@@ -60,8 +60,8 @@ config =
     , NoMissingTypeExpose.rule
     , NoPrematureLetComputation.rule
     , NoMissingTypeConstructor.rule
-    , NoMissingDocumentation.rule
-        |> Review.Rule.ignoreErrorsForDirectories [ "tests/" ]
+    -- , NoMissingDocumentation.rule
+    --     |> Review.Rule.ignoreErrorsForDirectories [ "tests/" ]
     , NoUnused.CustomTypeConstructors.rule []
         |> Review.Rule.ignoreErrorsForDirectories [ "src/Type/IO/" ]
     , NoUnused.CustomTypeConstructorArgs.rule
