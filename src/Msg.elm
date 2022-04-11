@@ -67,6 +67,7 @@ type Msg
 type ViewerMsg
     = OpenDrawer
     | CloseDrawer
+    | OpenDialog
     | NewUsername String
 
 

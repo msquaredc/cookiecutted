@@ -21,7 +21,8 @@ viewLandscape config =
         , user = config.user
         , actions = config.actions
         }
-    , div [TopAppBar.prominentFixedAdjust] 
+    , div [TopAppBar.prominentFixedAdjust, style "display" "flex"
+        , style "flex-flow" "row nowrap"] 
         [I.viewDrawer
             {drawer = Drawer.drawer 
                 (Drawer.config |> Drawer.setAttributes [ style "z-index" "1" ])
@@ -29,8 +30,9 @@ viewLandscape config =
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
             } 
+        , div [][config.body]
         ]
-    , Drawer.content [][ config.body ]
+    --, Drawer.content [][ config.body ]
     ]
     
 
