@@ -3,13 +3,13 @@ language: elm
 sudo: required
 
 install:
-  - travis_wait npm i elm-review -g
-  - npm i create-elm-app -g
+  - npm i elm-review -g
+  #- npm i create-elm-app -g
   - npm i elm-coverage -g
   #- npm i coveralls -g
 script: 
   - elm-format src/ --validate
   - elm-review
-  - elm-app test
+  #- elm-app test
   - elm-coverage
   #- cat ./.coverage/lcov.info | coveralls
