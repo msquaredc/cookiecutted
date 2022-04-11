@@ -1,8 +1,8 @@
 module Page.User exposing (Model, init, page, update, view)
 
 import Browser
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (div,text, h1, h3, a)
+import Html.Attributes exposing (href, class)
 import Msg exposing (UserMsg)
 import Page exposing (Page(..))
 import Session
@@ -33,6 +33,7 @@ init user_id =
 page : Session.Session -> Maybe Int -> ( Page.Page Model UserMsg, Cmd UserMsg )
 page session user_id =
     let
+        model : Page.Config Model UserMsg
         model =
             { session = session
             , page = init user_id
@@ -87,5 +88,6 @@ view (Page model) =
 -- HELPERS
 
 
+toTitle : Model -> String
 toTitle model =
     "Page With Subpage - " ++ String.fromInt (Maybe.withDefault -1 model.user_id)

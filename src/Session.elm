@@ -39,15 +39,18 @@ init flags =
     let
         --        localStorage =
         --            Json.Decode.decodeValue Type.LocalStorage.decode flags.localStorage
+        db : Result Json.Decode.Error Db.Database
         db =
             Json.Decode.decodeValue Db.database.decoder flags.db
 
+        posixTime : Time.Posix
         posixTime =
             Time.millisToPosix flags.timeAppStarted
     in
     case db of
         Ok storage ->
             let
+                user : Maybe String
                 user =
                     Match.keys Db.UserType storage
                         |> (\x ->

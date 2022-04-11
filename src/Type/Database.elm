@@ -1,9 +1,9 @@
 module Type.Database exposing (Answer, AnswerView, Coder, CoderView, Coding, CodingAnswer, CodingAnswerView, CodingFrame, CodingFrameView, CodingQuestion, CodingQuestionView, CodingQuestionary, CodingQuestionaryView, CodingView, Database, DatabaseView, Event, EventView, InputTypeKind(..), Place, Question, QuestionView, Questionary, QuestionaryView, Row, Study, StudyView, Table, TableView, TestSubject, TestSubjectView, Timestamp, TimestampView, Type(..), User, answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, place, question, questionary, rows, study, table, test_subject, timestamp, updateEmpty, user)
 
-import Dict exposing (..)
+import Dict exposing (Dict)
 import Tuple
 import Type.Database.InputType as IT
-import Type.IO exposing (..)
+import Type.IO exposing (IO, dict, string, entity, substruct, reference, attribute, bool, maybe, int, float)
 import Type.IO.Encoder exposing (Encoder(..))
 import Type.IO.Internal as Id exposing (Id)
 
@@ -403,17 +403,14 @@ type alias TimestampView a =
 
 timestamp : IO a Database b msg -> IO (Timestamp a) Database (TimestampView b) msg
 timestamp other =
-    let
-        t =
-            entity Timestamp TimestampView
-                |> reference "creator" string .creator .users Dict.get .value
-                |> attribute "created" int .created
-                |> attribute "modified" int .modified
-                |> attribute "accessed" int .accessed
-                |> attribute "deleted" (maybe int) .deleted
-                |> substruct "value" other .value
-    in
-    t
+    entity Timestamp TimestampView
+    |> reference "creator" string .creator .users Dict.get .value
+    |> attribute "created" int .created
+    |> attribute "modified" int .modified
+    |> attribute "accessed" int .accessed
+    |> attribute "deleted" (maybe int) .deleted
+    |> substruct "value" other .value
+    
 
 
 

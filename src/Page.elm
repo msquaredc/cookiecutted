@@ -1,4 +1,4 @@
-module Page exposing (Page(..), liftupdate, liftview, update, view)
+module Page exposing (Page(..), Config, liftupdate, liftview, update, view)
 
 import Browser exposing (Document)
 import Msg
@@ -8,7 +8,9 @@ import Viewer
 
 
 type Page a msg
-    = Page
+    = Page (Config a msg)
+
+type alias Config a msg=
         { session : Session.Session
         , page : a
         , view : Page a msg -> Viewer.Details Msg.Msg

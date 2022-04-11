@@ -20,12 +20,22 @@ import NoDuplicatePorts
 import NoEmptyText
 import NoExposingEverything
 import NoImportingEverything
+import NoMissingDocumentation
 import NoMissingTypeAnnotation
 import NoMissingTypeAnnotationInLetIn
 import NoMissingTypeExpose
+import NoMissingTypeConstructor
 import NoPrematureLetComputation
 import NoUnsafePorts
 import NoUnusedPorts
+import NoUnused.CustomTypeConstructorArgs
+import NoUnused.CustomTypeConstructors
+import NoUnused.Dependencies
+import NoUnused.Exports
+import NoUnused.Modules
+import NoUnused.Parameters
+import NoUnused.Patterns
+import NoUnused.Variables
 import Review.Rule exposing (Rule)
 
 
@@ -36,7 +46,7 @@ config =
     , NoDebug.Log.rule
     , NoDebug.TodoOrToString.rule
     , NoDuplicatePorts.rule
-    , NoUnsafePorts.rule NoUnsafePorts.any
+    --, NoUnsafePorts.rule NoUnsafePorts.any
     , NoUnusedPorts.rule
     , NoEmptyText.rule
     , NoExposingEverything.rule
@@ -49,4 +59,15 @@ config =
         |> Review.Rule.ignoreErrorsForFiles [ "src/Type/Database/TypeMatching.elm" ]
     , NoMissingTypeExpose.rule
     , NoPrematureLetComputation.rule
+    , NoMissingTypeConstructor.rule
+    , NoMissingDocumentation.rule
+        |> Review.Rule.ignoreErrorsForDirectories [ "tests/" ]
+    , NoUnused.CustomTypeConstructors.rule []
+    , NoUnused.CustomTypeConstructorArgs.rule
+    , NoUnused.Dependencies.rule
+    , NoUnused.Exports.rule
+    , NoUnused.Modules.rule
+    , NoUnused.Parameters.rule
+    , NoUnused.Patterns.rule
+    , NoUnused.Variables.rule
     ]
