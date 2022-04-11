@@ -14,7 +14,7 @@ type alias Timestamp a =
     , value : a
     }
 
-timestamp : IO a db b -> IO (Timestamp a) db (Timestamp b)
+timestamp : IO a db b msg -> IO (Timestamp a) db (Timestamp b) msg
 timestamp other = 
     entity Timestamp Timestamp
     |> attribute "created" int .created
