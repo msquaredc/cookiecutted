@@ -1,8 +1,8 @@
-port module Ports exposing (clearLocalStorage, onLocalStorageChange, toLocalStorage, onDbChange, toDb)
+port module Ports exposing (clearLocalStorage, onDbChange, onLocalStorageChange, toDb, toLocalStorage)
 
 import Json.Encode
-import Type.LocalStorage
 import Type.Database
+import Type.LocalStorage
 
 
 
@@ -14,6 +14,8 @@ import Type.Database
 
 
 port onLocalStorageChange : (Json.Encode.Value -> msg) -> Sub msg
+
+
 port onDbChange : (Json.Encode.Value -> msg) -> Sub msg
 
 
@@ -22,7 +24,9 @@ port onDbChange : (Json.Encode.Value -> msg) -> Sub msg
 
 
 port toLocalStorage : Type.LocalStorage.LocalStorage -> Cmd msg
-port toDb : (Json.Encode.Value) -> Cmd msg
+
+
+port toDb : Json.Encode.Value -> Cmd msg
 
 
 

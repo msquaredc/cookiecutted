@@ -1,4 +1,4 @@
-module Type.Entity exposing (..)
+module Type.Entity exposing (Encoder, Entity(..), IO, Parser, RecordBuilder, RecordEncoder, TypeBuilder, View, adapt_encoder, adapt_toString, encode, finish, int, int_io, match_encoder, match_model, maybe, new, string)
 
 import Dict exposing (Dict)
 import Html exposing (Html)
@@ -35,11 +35,9 @@ int_io =
 -- int_view =
 --     {
 --         entity= Type {
-
 --         },
 --         translate = {}
 --     }
-
 
 
 type alias Encoder a =

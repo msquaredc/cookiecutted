@@ -1,4 +1,4 @@
-module Type.IOTest exposing (..)
+module Type.IOTest exposing (Car, CarView, Chef, ChefView, Db, DbView, Person, PersonView, Timestamp, car, chef, db1, flip, person, timestamp)
 
 import Dict exposing (Dict)
 import Type.IO exposing (..)
@@ -15,34 +15,40 @@ type alias CarView =
     , name : String
     }
 
+
 flip : (a -> b -> c) -> b -> a -> c
-flip f second first = f first second
+flip f second first =
+    f first second
+
+
 
 {- timestapedlense : Db -> String -> Maybe (Person)
-timestapedlense = \db arg -> Dict.get arg (.people db)
---                   |> Maybe.map .value
+   timestapedlense = \db arg -> Dict.get arg (.people db)
+   --                   |> Maybe.map .value
 
-dictlense : Db -> String -> Maybe ( Person)
-dictlense = \db arg -> Dict.get arg (.people db) -}
-
+   dictlense : Db -> String -> Maybe ( Person)
+   dictlense = \db arg -> Dict.get arg (.people db)
+-}
 {- genericlense : (Db -> Dict String a) -> (Db -> String -> Maybe a)
-genericlense mapper = \db arg -> Dict.get arg (mapper db)
+   genericlense mapper = \db arg -> Dict.get arg (mapper db)
 
-evermoregenericlense : (Db -> b) -> (comparable -> b -> Maybe a) -> (Db -> comparable -> Maybe a)
-evermoregenericlense fromDb toValue = \db arg -> toValue arg (fromDb db)
+   evermoregenericlense : (Db -> b) -> (comparable -> b -> Maybe a) -> (Db -> comparable -> Maybe a)
+   evermoregenericlense fromDb toValue = \db arg -> toValue arg (fromDb db)
 
-mostgenericlense : (Db -> b) -> (b -> comparable -> Maybe a) -> (a -> c) -> (Db -> comparable -> Maybe c)
-mostgenericlense fromDb toFlag toValue = \db arg -> toFlag (fromDb db) arg
-                                                    |> Maybe.map toValue -}
-
+   mostgenericlense : (Db -> b) -> (b -> comparable -> Maybe a) -> (a -> c) -> (Db -> comparable -> Maybe c)
+   mostgenericlense fromDb toFlag toValue = \db arg -> toFlag (fromDb db) arg
+                                                       |> Maybe.map toValue
+-}
 {- dict2lense : Db -> String -> Maybe ( Person)
-dict2lense = evermoregenericlense .people Dict.get
+   dict2lense = evermoregenericlense .people Dict.get
 
-timpestaped2lense : Db -> String -> Maybe Person
-timpestaped2lense = mostgenericlense .people (flip Dict.get) identity -}
-
+   timpestaped2lense : Db -> String -> Maybe Person
+   timpestaped2lense = mostgenericlense .people (flip Dict.get) identity
+-}
 {- l : (Db -> b) -> (b -> comparable -> Maybe a) -> (a -> c) -> (Db -> comparable -> Maybe c)
-l = mostgenericlense -}
+   l = mostgenericlense
+-}
+
 
 car : IO Car Db CarView
 car =
@@ -94,17 +100,19 @@ type alias Db =
     , cars : Dict String (Timestamp Car)
     }
 
+
 type alias DbView =
-    {
-        people : Dict String PersonView,
-        cars : Dict String CarView
+    { people : Dict String PersonView
+    , cars : Dict String CarView
     }
 
+
 db1 : IO Db Db DbView
-db1 = 
+db1 =
     entity Db DbView
-    |> substruct "people" (dict string (timestamp person)) .people
-    |> substruct "cars" (dict string (timestamp car)) .cars
+        |> substruct "people" (dict string (timestamp person)) .people
+        |> substruct "cars" (dict string (timestamp car)) .cars
+
 
 type alias Timestamp a =
     { created : Int
@@ -113,21 +121,21 @@ type alias Timestamp a =
     , value : a
     }
 
+
 timestamp : IO a db b -> IO (Timestamp a) db b
-timestamp other = 
+timestamp other =
     let
-        t = 
+        t =
             entity Timestamp Timestamp
-            |> attribute "created" int .created
-            |> attribute "modified" int .modified
-            |> attribute "accessed" int .accessed
-            |> substruct "value" other .value
-    in 
-        {
-            decoder = t.decoder,
-            encoder = t.encoder,
-            fuzzer = t.fuzzer,
-            toString = t.toString,
-            empty = t.empty,
-            viewer = \db full -> Maybe.map (\x -> x.value ) (t.viewer db full)
-        }
+                |> attribute "created" int .created
+                |> attribute "modified" int .modified
+                |> attribute "accessed" int .accessed
+                |> substruct "value" other .value
+    in
+    { decoder = t.decoder
+    , encoder = t.encoder
+    , fuzzer = t.fuzzer
+    , toString = t.toString
+    , empty = t.empty
+    , viewer = \db full -> Maybe.map (\x -> x.value) (t.viewer db full)
+    }

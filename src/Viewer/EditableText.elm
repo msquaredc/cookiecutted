@@ -1,11 +1,10 @@
-module Viewer.EditableText exposing (..)
+module Viewer.EditableText exposing (Config, text)
 
-import Html exposing (Html, Attribute)
+import Html exposing (Attribute, Html, div)
+import Html.Events exposing (onBlur, onClick)
 import Material.TextField as TextField
-import Html exposing (div)
-import Html.Events exposing (onClick)
 import Msg exposing (EditableTextMsg)
-import Html.Events exposing (onBlur)
+
 
 type alias Config msg =
     { active : Bool
@@ -25,7 +24,6 @@ text c attributes value =
             (TextField.config
                 |> TextField.setValue (Just value)
                 |> TextField.setOnInput c.callback
-                
                 |> TextField.setOnChange c.deactivator
                 |> TextField.setLabel Nothing
                 -- , fullwidth = True

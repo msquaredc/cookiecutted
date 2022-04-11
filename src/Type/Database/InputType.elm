@@ -1,4 +1,4 @@
-module Type.Database.InputType exposing (..)
+module Type.Database.InputType exposing (InputType(..), ListConfig, LongAnswerConfig, ShortAnswerConfig, SingleInputType(..), fromString, inputTypeDecoder, inputTypeEncoder, inputTypeForm, inputTypeFuzzer, inputTypeToString, inputTypeUpdater, inputTypes, input_type, listConfig, longAnswerConfig, shortAnswerConfig, singleInputType, singleInputTypeDecoder, singleInputTypeEncoder, singleInputTypeForm, singleInputTypeToString, singleInputTypeUpdater, toString, updateEmpty)
 
 import Dict exposing (Dict)
 import Fuzz
@@ -7,24 +7,25 @@ import Json.Encode
 import Type.IO exposing (..)
 import Type.IO.Encoder as Encoder exposing (Encoder(..))
 import Type.IO.Form as Form exposing (Form)
-import Type.IO.ToString as ToString exposing (ToString)
 import Type.IO.Setter as Updater exposing (Updater)
-
-
+import Type.IO.ToString as ToString exposing (ToString)
 
 
 type InputType
     = ShortAnswer ShortAnswerConfig
     | LongAnswer LongAnswerConfig
     | List ListConfig
-    -- | DropDown (List String)
-    -- | LinearScale (Dict Int String)
-    -- | Matrix SingleInputType (List String) (List String)
+
+
+
+-- | DropDown (List String)
+-- | LinearScale (Dict Int String)
+-- | Matrix SingleInputType (List String) (List String)
 
 
 type SingleInputType
-    = Radio 
-    | Box 
+    = Radio
+    | Box
 
 
 type alias ShortAnswerConfig =
@@ -44,6 +45,7 @@ shortAnswerConfig =
         |> attribute "minLength" (maybe int) .minLength
         |> attribute "maxLength" (maybe int) .maxLength
         |> attribute "pattern" (maybe string) .pattern
+
 
 type alias LongAnswerConfig =
     { label : Maybe String
@@ -67,12 +69,13 @@ longAnswerConfig =
         |> attribute "rows" (maybe int) .rows
         |> attribute "cols" (maybe int) .cols
 
+
 singleInputType : IO SingleInputType db SingleInputType msg
 singleInputType =
     { decoder = singleInputTypeDecoder
     , strDecoder = \_ -> singleInputTypeDecoder
     , encoder = singleInputTypeEncoder
-    , fuzzer = Fuzz.oneOf [Fuzz.constant Box, Fuzz.constant Radio]
+    , fuzzer = Fuzz.oneOf [ Fuzz.constant Box, Fuzz.constant Radio ]
     , toString = singleInputTypeToString
     , viewer = \_ full -> Just full
     , empty = Box
@@ -81,20 +84,24 @@ singleInputType =
     , updater = singleInputTypeUpdater
     }
 
+
 singleInputTypeDecoder : Json.Decode.Decoder SingleInputType
 singleInputTypeDecoder =
     let
-        helper name = case name of
-                        "radio" ->
-                            Json.Decode.succeed Radio
-                    
-                        "box" ->
-                            Json.Decode.succeed Box
-                        _ -> 
-                            Json.Decode.fail <| "I need either radio or box, but i got" ++ name
+        helper name =
+            case name of
+                "radio" ->
+                    Json.Decode.succeed Radio
+
+                "box" ->
+                    Json.Decode.succeed Box
+
+                _ ->
+                    Json.Decode.fail <| "I need either radio or box, but i got" ++ name
     in
-        Json.Decode.string 
+    Json.Decode.string
         |> Json.Decode.andThen helper
+
 
 singleInputTypeEncoder : Encoder SingleInputType
 singleInputTypeEncoder =
@@ -103,53 +110,56 @@ singleInputTypeEncoder =
             case value of
                 Box ->
                     Json.Encode.string "box"
+
                 Radio ->
                     Json.Encode.string "radio"
 
+
 singleInputTypeToString : ToString SingleInputType
-singleInputTypeToString name value = 
+singleInputTypeToString name value =
     case value of
         Box ->
             Ok "box"
-    
+
         Radio ->
             Ok "radio"
+
 
 singleInputTypeForm : Form SingleInputType msg
 singleInputTypeForm name callback kind label f =
     case kind of
         Box ->
             Ok <| f "box" (callback << Form.StringMsg << Just)
+
         Radio ->
             Ok <| f "radio" (callback << Form.StringMsg << Just)
+
 
 singleInputTypeUpdater : Updater SingleInputType
 singleInputTypeUpdater msg val =
     case msg of
         Updater.StringMsg "box" ->
             Ok Box
+
         Updater.StringMsg "radio" ->
             Ok Radio
+
         _ ->
             Err Updater.InvalidValue
-    
-        
 
 
 type alias ListConfig =
-    {
-        singleInput : SingleInputType,
-        choices : List String
+    { singleInput : SingleInputType
+    , choices : List String
     }
 
 
 listConfig : IO ListConfig db ListConfig msg
-listConfig = 
+listConfig =
     entity ListConfig ListConfig
-    |> substruct "singleInput" singleInputType .singleInput
-    |> attribute "choices" (list string) .choices
-    |> updateEmpty (\x -> {x | choices = ["Unnamed Choice"]})
-    
+        |> substruct "singleInput" singleInputType .singleInput
+        |> attribute "choices" (list string) .choices
+        |> updateEmpty (\x -> { x | choices = [ "Unnamed Choice" ] })
 
 
 inputTypes : List InputType
@@ -158,6 +168,7 @@ inputTypes =
     , LongAnswer longAnswerConfig.empty
     , List <| ListConfig Radio []
     , List <| ListConfig Box []
+
     -- , DropDown []
     -- , LinearScale Dict.empty
     -- , Matrix Radio [] []
@@ -174,24 +185,24 @@ toString kind =
         LongAnswer _ ->
             "Long Answer"
 
-        List {singleInput, choices} ->
+        List { singleInput, choices } ->
             case singleInput of
                 Radio ->
                     "Multiple Choice"
+
                 Box ->
                     "Boxes"
 
-        -- DropDown _ ->
-        --     "DropDown Menu"
 
-        -- LinearScale _ ->
-        --     "Linear Scale"
 
-        -- Matrix Radio _ _ ->
-        --     "Grid of Multiple Choices"
-
-        -- Matrix Box _ _ ->
-        --     "Grid of Boxes"
+-- DropDown _ ->
+--     "DropDown Menu"
+-- LinearScale _ ->
+--     "Linear Scale"
+-- Matrix Radio _ _ ->
+--     "Grid of Multiple Choices"
+-- Matrix Box _ _ ->
+--     "Grid of Boxes"
 
 
 fromString : String -> Maybe InputType
@@ -204,23 +215,19 @@ fromString name =
             Just (LongAnswer longAnswerConfig.empty)
 
         "Multiple Choice" ->
-            Just <| List <| ListConfig Radio ["Unnamed Choice"]
+            Just <| List <| ListConfig Radio [ "Unnamed Choice" ]
 
         "Boxes" ->
-            Just <| List <| ListConfig Box ["Unnamed Choice"]
+            Just <| List <| ListConfig Box [ "Unnamed Choice" ]
 
         -- "DropDown Menu" ->
         --     Just <| DropDown []
-
         -- "Linear Scale" ->
         --     Just <| LinearScale Dict.empty
-
         -- "Grid of Multiple Choices" ->
         --     Just <| Matrix Radio [] []
-
         -- "Grid of Boxes" ->
         --     Just <| Matrix Box [] []
-
         _ ->
             Nothing
 
@@ -244,121 +251,135 @@ input_type =
     , updater = inputTypeUpdater
     }
 
+
 inputTypeDecoder : Json.Decode.Decoder InputType
 inputTypeDecoder =
     Json.Decode.oneOf
-        [
-            Json.Decode.map LongAnswer longAnswerConfig.decoder,
-            Json.Decode.map ShortAnswer shortAnswerConfig.decoder,
-            Json.Decode.map List listConfig.decoder
+        [ Json.Decode.map LongAnswer longAnswerConfig.decoder
+        , Json.Decode.map ShortAnswer shortAnswerConfig.decoder
+        , Json.Decode.map List listConfig.decoder
         ]
 
+
 inputTypeEncoder : Encoder InputType
-inputTypeEncoder = 
+inputTypeEncoder =
     SingleEncoder <|
-        \value -> 
+        \value ->
             case value of
                 ShortAnswer v ->
                     Encoder.collapseEncoder shortAnswerConfig.encoder v
+
                 LongAnswer v ->
                     Encoder.collapseEncoder longAnswerConfig.encoder v
+
                 List v ->
                     Encoder.collapseEncoder listConfig.encoder v
-                
 
-inputTypeFuzzer : Fuzz.Fuzzer InputType       
+
+inputTypeFuzzer : Fuzz.Fuzzer InputType
 inputTypeFuzzer =
     Fuzz.oneOf
-        [
-            Fuzz.map ShortAnswer shortAnswerConfig.fuzzer,
-            Fuzz.map LongAnswer longAnswerConfig.fuzzer,
-            Fuzz.map List listConfig.fuzzer
-        ]             
-            
+        [ Fuzz.map ShortAnswer shortAnswerConfig.fuzzer
+        , Fuzz.map LongAnswer longAnswerConfig.fuzzer
+        , Fuzz.map List listConfig.fuzzer
+        ]
+
+
 inputTypeToString : ToString InputType
 inputTypeToString name value =
     case value of
         ShortAnswer v ->
             shortAnswerConfig.toString name v
+
         LongAnswer v ->
             longAnswerConfig.toString name v
+
         List v ->
             listConfig.toString name v
+
 
 inputTypeForm : Form InputType msg
 inputTypeForm name callback kind =
     case kind of
         ShortAnswer v ->
             shortAnswerConfig.form name callback v
-    
+
         LongAnswer v ->
             longAnswerConfig.form name callback v
-        
+
         List v ->
             listConfig.form name callback v
-            
+
+
 inputTypeUpdater : Updater InputType
 inputTypeUpdater msg val =
     case msg of
         Updater.Custom kind mbMsg ->
             case kind of
                 "Short Answer" ->
-                    case (val, mbMsg) of
-                        (ShortAnswer v, Just msg_) ->
+                    case ( val, mbMsg ) of
+                        ( ShortAnswer v, Just msg_ ) ->
                             Result.map ShortAnswer <| shortAnswerConfig.updater msg_ v
-                        (ShortAnswer _, Nothing) ->
+
+                        ( ShortAnswer _, Nothing ) ->
                             Ok val
-                        (_, Just msg_) ->
+
+                        ( _, Just msg_ ) ->
                             Result.map ShortAnswer <| shortAnswerConfig.updater msg_ shortAnswerConfig.empty
-                        (_, Nothing) ->
+
+                        ( _, Nothing ) ->
                             Ok <| ShortAnswer shortAnswerConfig.empty
+
                 "Long Answer" ->
-                    case (val, mbMsg) of
-                        (LongAnswer v, Just msg_) ->
+                    case ( val, mbMsg ) of
+                        ( LongAnswer v, Just msg_ ) ->
                             Result.map LongAnswer <| longAnswerConfig.updater msg_ v
-                        (LongAnswer _, Nothing) ->
+
+                        ( LongAnswer _, Nothing ) ->
                             Ok val
-                        (_, Just msg_) ->
+
+                        ( _, Just msg_ ) ->
                             Result.map LongAnswer <| longAnswerConfig.updater msg_ longAnswerConfig.empty
-                        (_, Nothing) ->
+
+                        ( _, Nothing ) ->
                             Ok <| LongAnswer longAnswerConfig.empty
+
                 s ->
                     Err <| Updater.CustomError <| "Incorrect string: " ++ s
 
-            {- case (kind, val, mbMsg) of 
-                ("Multiple Choice", List v, Just msg_) ->
-                    Result.map List <| listConfig.updater msg_ {v | singleInput = Radio}
-                ("Multiple Choice", List v, Nothing) ->
-                    Ok <| List {v | singleInput = Radio}
-                ("Multiple Choice", _, Just msg_) ->
-                    Result.map List <| listConfig.updater msg_ <| ListConfig Radio ["Unnamed Choice"]
-                ("Multiple Choice", _, Nothing) ->
-                    Ok <| List <| ListConfig Radio ["Unnamed Choice"]
-                ("Boxes", List v, Just msg_) ->
-                    Result.map List <| listConfig.updater msg_ {v | singleInput = Box}
-                ("Boxes", List v, Nothing) ->
-                    Ok <| List <| {v |singleInput = Box}
-                ("Boxes", _, Just msg_) ->
-                    Result.map List <| listConfig.updater msg_ <| ListConfig Box ["Unnamed Choice"]
-                ("Boxes", _, Nothing) ->
-                    Ok <| List <| ListConfig Box ["Unnamed Choice"]
-                _ ->
-                    Err Updater.InvalidValue -}
+        {- case (kind, val, mbMsg) of
+           ("Multiple Choice", List v, Just msg_) ->
+               Result.map List <| listConfig.updater msg_ {v | singleInput = Radio}
+           ("Multiple Choice", List v, Nothing) ->
+               Ok <| List {v | singleInput = Radio}
+           ("Multiple Choice", _, Just msg_) ->
+               Result.map List <| listConfig.updater msg_ <| ListConfig Radio ["Unnamed Choice"]
+           ("Multiple Choice", _, Nothing) ->
+               Ok <| List <| ListConfig Radio ["Unnamed Choice"]
+           ("Boxes", List v, Just msg_) ->
+               Result.map List <| listConfig.updater msg_ {v | singleInput = Box}
+           ("Boxes", List v, Nothing) ->
+               Ok <| List <| {v |singleInput = Box}
+           ("Boxes", _, Just msg_) ->
+               Result.map List <| listConfig.updater msg_ <| ListConfig Box ["Unnamed Choice"]
+           ("Boxes", _, Nothing) ->
+               Ok <| List <| ListConfig Box ["Unnamed Choice"]
+           _ ->
+               Err Updater.InvalidValue
+        -}
         Updater.AttributeMsg name msg_ ->
             case val of
                 ShortAnswer v ->
                     Result.map ShortAnswer <| shortAnswerConfig.updater msg v
+
                 LongAnswer v ->
                     Result.map LongAnswer <| longAnswerConfig.updater msg v
+
                 List v ->
                     Result.map List <| listConfig.updater msg v
-                
 
         _ ->
             Err <| Updater.CustomError <| "Tried to update an InputType without using Custom"
-            
-
-        
 
 
 updateEmpty : (a -> a) -> IO a b c msg -> IO a b c msg

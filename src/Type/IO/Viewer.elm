@@ -1,4 +1,4 @@
-module Type.IO.Viewer exposing (..)
+module Type.IO.Viewer exposing (Basic, Viewer, array, attribute, basic, bool, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)

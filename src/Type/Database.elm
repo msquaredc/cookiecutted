@@ -1,11 +1,11 @@
-module Type.Database exposing (..)
+module Type.Database exposing (Answer, AnswerView, Coder, CoderView, Coding, CodingAnswer, CodingAnswerView, CodingFrame, CodingFrameView, CodingQuestion, CodingQuestionView, CodingQuestionary, CodingQuestionaryView, CodingView, Database, DatabaseView, Event, EventView, InputTypeKind(..), Place, Question, QuestionView, Questionary, QuestionaryView, Row, Study, StudyView, Table, TableView, TestSubject, TestSubjectView, Timestamp, TimestampView, Type(..), User, answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, place, question, questionary, rows, study, table, test_subject, timestamp, updateEmpty, user)
 
 import Dict exposing (..)
+import Tuple
 import Type.Database.InputType as IT
 import Type.IO exposing (..)
 import Type.IO.Encoder exposing (Encoder(..))
 import Type.IO.Internal as Id exposing (Id)
-import Tuple
 
 
 
@@ -16,8 +16,10 @@ import Tuple
 type alias Table a =
     Dict String (Timestamp a)
 
-type alias Row a = 
-    (Id a String, Timestamp a)
+
+type alias Row a =
+    ( Id a String, Timestamp a )
+
 
 type alias TableView a =
     Dict String (TimestampView a)
@@ -124,7 +126,7 @@ type alias CoderView =
 coder : IO Coder Database CoderView msg
 coder =
     entity Coder CoderView
-    |> reference "user" string .user .users Dict.get .value
+        |> reference "user" string .user .users Dict.get .value
 
 
 type alias Coding =
@@ -145,6 +147,7 @@ coding =
 
 type alias CodingAnswer =
     { coding_question : Id CodingQuestion String
+
     --, coding_frame : String
     , answer : Id Answer String
     , value : String
@@ -153,6 +156,7 @@ type alias CodingAnswer =
 
 type alias CodingAnswerView =
     { coding_question : CodingQuestion
+
     --, coding_frame : CodingFrame
     , answer : Answer
     , value : String
@@ -346,6 +350,7 @@ type alias TestSubject =
     , infos : Dict String String
     }
 
+
 type alias TestSubjectView =
     { id : String
     , event : Event
@@ -442,8 +447,9 @@ type Type
     | TestSubjectType
     | InputTypeType InputTypeKind
 
-type InputTypeKind = 
-    ShortKind
+
+type InputTypeKind
+    = ShortKind
     | LongKind
     | ListKind
 
@@ -452,7 +458,8 @@ updateEmpty : (a -> a) -> IO a b c msg -> IO a b c msg
 updateEmpty f prev =
     { prev | empty = f prev.empty }
 
+
 rows : Table a -> List (Row a)
-rows old = 
+rows old =
     Dict.toList old
-    |> List.map (Tuple.mapFirst Id.box)
+        |> List.map (Tuple.mapFirst Id.box)

@@ -1,9 +1,9 @@
-module Type.IO.Update exposing (..)
+module Type.IO.Update exposing (Car, Msg(..), PartialUpdater, Person, Updater, array, attribute, bool, carUpdater2, dict, entity, float, int, list, maybe, person_str_updater, reference, references, result, string, substruct, updateWithLong)
 
-import List.Extra
-import Dict exposing (Dict)
 import Array exposing (Array)
 import Array.Extra
+import Dict exposing (Dict)
+import List.Extra
 
 
 type alias Person =
@@ -21,6 +21,7 @@ type alias Car =
     , age : Int
     }
 
+
 type Msg a
     = IntMsg (Int -> Int)
     | StringMsg (String -> String)
@@ -36,60 +37,67 @@ type Msg a
     | ArrayMsg Int (Msg a)
 
 
-
-updateWithLong : (car -> string) -> String -> Updater string a -> Msg a -> car  ->  string
+updateWithLong : (car -> string) -> String -> Updater string a -> Msg a -> car -> string
 updateWithLong getter name def message car =
     case message of
         AttributeMsg searched msg_ ->
             if name == searched then
                 def msg_ (getter car)
-            else 
+
+            else
                 getter car
+
         _ ->
             getter car
 
 
 type alias PartialUpdater car string a =
-    (Msg a -> car -> string)
+    Msg a -> car -> string
 
-type alias Updater a b = 
+
+type alias Updater a b =
     PartialUpdater a a b
 
+
 int : Updater Int a
-int msg val = 
+int msg val =
     case msg of
         IntMsg f ->
             f val
-            
+
         _ ->
             val
 
+
 string : Updater String a
-string msg val = 
+string msg val =
     case msg of
         StringMsg f ->
             f val
-            
+
         _ ->
             val
 
+
 float : Updater Float a
-float msg val = 
+float msg val =
     case msg of
         FloatMsg f ->
             f val
-            
+
         _ ->
             val
-            
+
+
 bool : Updater Bool a
-bool msg val = 
+bool msg val =
     case msg of
         BoolMsg f ->
             f val
-            
+
         _ ->
             val
+
 
 maybe : Updater a a -> Updater (Maybe a) a
 maybe old msg val =
@@ -98,18 +106,23 @@ maybe old msg val =
             case val of
                 Just v ->
                     Just (old msg_ v)
-            
+
                 Nothing ->
                     Nothing
+
         MaybeSetMsg msg_ default ->
             case msg_ of
                 Just msg__ ->
                     Just (old msg__ default)
-                    
+
                 Nothing ->
                     Nothing
+
         _ ->
             val
+
+
+
 -- TODO: Allow to Set
 
 
@@ -118,8 +131,10 @@ list old msg val =
     case msg of
         ListMsg index msg_ ->
             List.Extra.updateAt index (old msg_) val
+
         _ ->
             val
+
 
 dict : (comparable -> Maybe String) -> Updater comparable b -> Updater a b -> Updater (Dict comparable a) b
 dict keySerializer keys values msg val =
@@ -128,79 +143,88 @@ dict keySerializer keys values msg val =
             Dict.keys val
                 |> List.filter
                     (\x ->
-                            keySerializer x
+                        keySerializer x
                             |> Maybe.map (\y -> y == parsedkey)
                             |> Maybe.withDefault False
                     )
-                |> List.map (\x -> (x, Dict.get x val))
-                |> List.filterMap (\(x,y) -> case y of
-                    Just v->
-                        (Just (x,v))
-                
-                    _ ->
-                        Nothing
-                )
-                |> List.map (\(x,y) ->(x, values msg_ y))
+                |> List.map (\x -> ( x, Dict.get x val ))
+                |> List.filterMap
+                    (\( x, y ) ->
+                        case y of
+                            Just v ->
+                                Just ( x, v )
+
+                            _ ->
+                                Nothing
+                    )
+                |> List.map (\( x, y ) -> ( x, values msg_ y ))
                 |> Dict.fromList
                 |> (\x -> Dict.union x val)
+
         --TODO: Map keys
         _ ->
             val
 
+
 result : Updater err b -> Updater a b -> Updater (Result err a) b
 result err ok msg val =
-    case (msg, val) of
-        (ResultErrMsg msg_, Err error) ->
+    case ( msg, val ) of
+        ( ResultErrMsg msg_, Err error ) ->
             Err (err msg_ error)
-        (ResultOkMsg msg_, Ok value ) ->
+
+        ( ResultOkMsg msg_, Ok value ) ->
             Ok (ok msg_ value)
-        _ -> val
-            
+
+        _ ->
+            val
+
+
 array : Updater a b -> Updater (Array a) b
 array old msg val =
     case msg of
         ArrayMsg index msg_ ->
             Array.Extra.update index (old msg_) val
-    
+
         _ ->
             val
-    
 
 
-entity:  a -> PartialUpdater car a b
-entity toChange msg car = toChange
+entity : a -> PartialUpdater car a b
+entity toChange msg car =
+    toChange
 
 
-attribute : String -> (car -> string) -> Updater string c-> PartialUpdater car (string -> b) c -> PartialUpdater car b c
+attribute : String -> (car -> string) -> Updater string c -> PartialUpdater car (string -> b) c -> PartialUpdater car b c
 attribute name getter def parent msg car =
-    (parent msg car) (updateWithLong getter name def msg car)
+    parent msg car (updateWithLong getter name def msg car)
 
-reference : String -> (car -> comparable) ->  Updater comparable a -> PartialUpdater car (comparable -> b) a -> PartialUpdater car b a
-reference = attribute
 
-references : String -> (car -> (List comparable)) -> Updater comparable a -> PartialUpdater car ((List comparable) -> b) a -> PartialUpdater car b a
+reference : String -> (car -> comparable) -> Updater comparable a -> PartialUpdater car (comparable -> b) a -> PartialUpdater car b a
+reference =
+    attribute
+
+
+references : String -> (car -> List comparable) -> Updater comparable a -> PartialUpdater car (List comparable -> b) a -> PartialUpdater car b a
 references name getter def =
     attribute name getter (list def)
 
+
 substruct : String -> (car -> string) -> Updater string a -> PartialUpdater car (string -> b) a -> PartialUpdater car b a
-substruct = attribute
+substruct =
+    attribute
 
 
 carUpdater2 : Updater Car a
 carUpdater2 =
     entity Car
-    |> attribute "brand" .brand string
-    |> reference "model" .model string
-    |> attribute "age" .age int
+        |> attribute "brand" .brand string
+        |> reference "model" .model string
+        |> attribute "age" .age int
 
 
 
 -- first = (updateWith )
-
 -- carUpdater : Msg -> Car -> Car
 -- carUpdater msg car =
-
-
 -- -- Car = (String -> String -> Int -> Car)
-
--- attribute : (car -> string) -> (string -> other) -> 
+-- attribute : (car -> string) -> (string -> other) ->

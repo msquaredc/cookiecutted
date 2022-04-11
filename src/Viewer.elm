@@ -31,13 +31,12 @@ import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO.Form as Form
-import Type.IO.Internal exposing (box, unbox)
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Updater
 import Utils
 import Viewer.Desktop as Desktop
 import Viewer.Handset as Handset
 import Viewer.Tablet as Tablet
-import Type.IO.Internal exposing (Id, box, unbox)
 
 
 
@@ -79,8 +78,9 @@ update msg model =
 
         NewUsername text ->
             { model | new_username = text }
-        
-        OpenDialog -> model
+
+        OpenDialog ->
+            model
 
 
 
@@ -113,13 +113,12 @@ view session msg details h time =
     { title = details.title ++ Utils.genericTitle
     , body =
         viewSnackbar h
-            :: (let
-                    device =
-                        Device.fromPixel session.windowSize.width session.windowSize.height
-                in
-                case session.user of
+            :: (case session.user of
                     Just userid ->
                         let
+                            device =
+                                Device.fromPixel session.windowSize.width session.windowSize.height
+
                             username =
                                 Dict.get (unbox userid) session.db.users
                                     |> Maybe.map .value
@@ -525,8 +524,8 @@ wideTextForm label value callback =
             |> TextField.setValue (Just value)
             |> TextField.setOnInput callback
             |> TextField.setLabel label
-            --|> TextField.outlined True TODO: Uncomment
-            --|> TextField.setFullwidth True
+         --|> TextField.outlined True TODO: Uncomment
+         --|> TextField.setFullwidth True
         )
 
 
@@ -585,7 +584,7 @@ userDialog open users new_username time =
                             }
                     ]
                 )
-
+        uList : List (MLItem.ListItem Msg.Msg)
         uList =
             List.indexedMap
                 (\index ( id, user ) ->
@@ -606,23 +605,22 @@ userDialog open users new_username time =
                         ]
                 )
             <|
-            List.map (Tuple.mapFirst box) <|
-                List.reverse <|
-                    List.sortBy (\( _, b ) -> b.last_login) users
+                List.map (Tuple.mapFirst box) <|
+                    List.reverse <|
+                        List.sortBy (\( _, b ) -> b.last_login) users
     in
-    Html.div [][
-        (Button.text
-        (Button.config 
-        |> Button.setOnClick (Msg.Viewer OpenDrawer)
-        )
-        "Login")
+    Html.div []
+        [ Button.text
+            (Button.config
+                |> Button.setOnClick (Msg.Viewer OpenDrawer)
+            )
+            "Login"
         , Dialog.fullscreen
             (Dialog.config
                 |> Dialog.setOpen open
                 |> Dialog.setScrimCloses False
             )
-            { 
-            title = "Select an account"
+            { title = "Select an account"
             , content =
                 case uList of
                     f :: rest ->

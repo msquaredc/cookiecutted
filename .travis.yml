@@ -3,11 +3,12 @@ language: elm
 sudo: required
 
 install:
+  - npm i elm-review
   - npm i create-elm-app -g
   - npm i elm-coverage -g
-  - npm i coveralls -g
-
+  #- npm i coveralls -g
 script: 
+  - elm-review
   - elm-app test
   - elm-coverage
   #- cat ./.coverage/lcov.info | coveralls

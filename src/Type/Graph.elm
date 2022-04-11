@@ -1,14 +1,16 @@
-module Type.Graph exposing (..)
+module Type.Graph exposing (DataView, Decoder)
 
 import Dict exposing (Dict)
 import Json.Decode
 
-type alias Decoder container decoded
-    = {
-        container | decode : Json.Decode.Decoder decoded
+
+type alias Decoder container decoded =
+    { container
+        | decode : Json.Decode.Decoder decoded
     }
-            
-type alias DataView container source mediator target
-    = {
-        container | view : (source -> mediator -> target)
+
+
+type alias DataView container source mediator target =
+    { container
+        | view : source -> mediator -> target
     }

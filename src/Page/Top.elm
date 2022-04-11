@@ -10,23 +10,23 @@ import Html.Events
 import Identicon exposing (identicon)
 import Json.Decode
 import Material.Button as Button
-import Material.Card as Card exposing (card, actions, block)
+import Material.Card as Card exposing (actions, block, card)
+import Material.Icon as Icon
 import Material.IconButton as IconButton
-import Material.LayoutGrid as LG exposing (layoutGrid, cell)
+import Material.LayoutGrid as LG exposing (cell, layoutGrid)
 import Material.List as MList
 import Material.List.Item as MLItem
 import Material.TabBar as TabBar
 import Material.Theme as Theme
 import Material.Typography as Typography
-import Material.Icon as Icon
 import Msg
 import Page
 import Ports
 import Session
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
-import Type.IO.Setter as Updater
 import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Setter as Updater
 import Url.Builder
 import Utils exposing (..)
 import Viewer exposing (detailsConfig)
@@ -63,8 +63,8 @@ page session =
             , view = view
             , toMsg = identity
             , -- header = Viewer.header,
-            subscriptions = Sub.none,
-              update = update
+              subscriptions = Sub.none
+            , update = update
             }
     in
     ( Page.Page model, Cmd.none )
@@ -76,12 +76,12 @@ page session =
 
 update : Msg.Msg -> Page.Page Model Msg.Msg -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 update message (Page.Page model) =
-    let
-        session =
-            model.session
-    in
     case message of
         Msg.Top msg ->
+            let
+                session =
+                    model.session
+            in
             case msg of
                 Msg.NoOp ->
                     ( Page.Page model, Cmd.none )
@@ -125,8 +125,6 @@ update message (Page.Page model) =
                     in
                     ( Page.Page { model | session = newSession }, Ports.clearLocalStorage () )
 
-                
-
         -- Msg.ChooseTab tab ->
         --     let
         --         oldPage =
@@ -156,24 +154,26 @@ view (Page.Page model) =
     { detailsConfig
         | title = toTitle
         , top = True
-        , body = \_ -> 
-            case model.session.user of
-                Just user ->
-                    let
-                        studies =
-                            studyOverview user (Page.Page model)
-                    in
-                    if List.length studies > 0 then
-                        [ layoutGrid [] <| [LG.inner [] <|
-                            List.map (\x -> cell [] [ x ]) studies
-                        ]]
+        , body =
+            \_ ->
+                case model.session.user of
+                    Just user ->
+                        let
+                            studies =
+                                studyOverview user (Page.Page model)
+                        in
+                        if List.length studies > 0 then
+                            [ layoutGrid [] <|
+                                [ LG.inner [] <|
+                                    List.map (\x -> cell [] [ x ]) studies
+                                ]
+                            ]
 
-                    else
-                        [ text "Create"
-                        , Button.text
-                            (Button.config 
-                                |> Button.setOnClick (
-                                    
+                        else
+                            [ text "Create"
+                            , Button.text
+                                (Button.config
+                                    |> Button.setOnClick
                                         (Msg.CRUD
                                             (Msg.CreateRandom Db.StudyType
                                                 [ \x ->
@@ -189,26 +189,24 @@ view (Page.Page model) =
                                             )
                                         )
                                 )
-                            )
-                            
-                            "Create"
-                        ]
+                                "Create"
+                            ]
 
-                -- [tabbedView model.page]
-                -- let
-                --     relevant_codings = Db.database
-                -- in
-                -- [
-                -- layoutGrid []
-                -- [ Html.h2 [Typography.headline6] [text "Please choose your Coding:"]
-                --     , layoutGridCell [ LG.span4 ] [ viewCodingCard user model.session.db ] ]
-                -- ]
-                --[ layoutGridCell [][]
-                --]
-                Nothing ->
-                    [ layoutGrid [] <|
-                        [text "ye should not get here"]
-                    ]
+                    -- [tabbedView model.page]
+                    -- let
+                    --     relevant_codings = Db.database
+                    -- in
+                    -- [
+                    -- layoutGrid []
+                    -- [ Html.h2 [Typography.headline6] [text "Please choose your Coding:"]
+                    --     , layoutGridCell [ LG.span4 ] [ viewCodingCard user model.session.db ] ]
+                    -- ]
+                    --[ layoutGridCell [][]
+                    --]
+                    Nothing ->
+                        [ layoutGrid [] <|
+                            [ text "ye should not get here" ]
+                        ]
         , user = model.session.user
     }
 
@@ -256,8 +254,6 @@ studyCard id study =
 --         ]
 
 
-
-
 viewCodingCard : String -> Db.Database -> Html Msg.Msg
 viewCodingCard user db =
     card Card.config
@@ -301,8 +297,8 @@ viewCodingCard user db =
                             "Visit"
                         ]
                     , icons =
-                        [ Card.icon IconButton.config
-                            <| IconButton.icon "favorite"
+                        [ Card.icon IconButton.config <|
+                            IconButton.icon "favorite"
                         ]
                     }
         }

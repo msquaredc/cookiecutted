@@ -1,15 +1,15 @@
-module Example exposing (..)
+module Example exposing (suite)
 
 import Dict
 import Expect
 import Fuzz
 import Json.Decode
 import Json.Encode
-import Test exposing (..)
+import Test exposing (describe, Test, fuzz, fuzz2)
 import Type.Database exposing (..)
 import Type.IO exposing (..)
-import Type.IO.Setter as Set exposing (Msg(..))
 import Type.IO.Internal exposing (box)
+import Type.IO.Setter as Set exposing (Msg(..))
 
 
 suite : Test
@@ -120,14 +120,13 @@ suite =
                         |> Json.Decode.decodeValue question.decoder
                         |> Expect.equal (Ok val)
             ]
-        , 
-            describe "FullTest"
-                [ fuzz database.fuzzer "Database" <|
-                    \db ->
-                        encode database.encoder db
-                            |> Json.Decode.decodeValue database.decoder
-                            |> Expect.equal (Ok db)
-                ]
+        , describe "FullTest"
+            [ fuzz database.fuzzer "Database" <|
+                \db ->
+                    encode database.encoder db
+                        |> Json.Decode.decodeValue database.decoder
+                        |> Expect.equal (Ok db)
+            ]
         , describe "SetterTest"
             [ fuzz2 answer.fuzzer string.fuzzer "Answer: Question" <|
                 \answ question ->

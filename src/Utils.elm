@@ -1,6 +1,6 @@
 module Utils exposing (genericTitle, logo, viewLink)
 
-import Html exposing (Html, a, li, text )
+import Html exposing (Html, a, li, text)
 import Html.Attributes exposing (..)
 import Svg
 import Svg.Attributes as SA
@@ -11,6 +11,7 @@ import Svg.Attributes as SA
    Miscellaneous functions and helpers
 -}
 -- Title that is appended to every page.
+
 
 genericTitle : String
 genericTitle =

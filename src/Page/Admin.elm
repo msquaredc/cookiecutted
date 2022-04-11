@@ -1,4 +1,4 @@
-module Page.Admin exposing (Model, init, page, parser, update, url, view)
+module Page.Admin exposing (Model, SubPage, init, page, parser, update, url, view)
 
 --import Browser
 
@@ -8,9 +8,9 @@ import Html.Attributes exposing (class, href)
 import Material.Button as Button exposing (config)
 import Material.DataTable as DataTable
     exposing
-        ( dataTable
-        , cell
+        ( cell
         , config
+        , dataTable
         , row
         )
 import Msg exposing (AdminMsg)
@@ -23,9 +23,9 @@ import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO exposing (form2update)
 import Type.IO.Form as Form
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Update
 import Type.IO.ToString as ToString
-import Type.IO.Internal exposing (Id, box, unbox)
 import Url.Parser as Parser exposing ((</>), (<?>))
 import Url.Parser.Query as Query
 import Viewer exposing (detailsConfig)
@@ -69,6 +69,7 @@ page session table =
             , view = view
             , toMsg = identity
             , subscriptions = Sub.none
+
             -- , header = Viewer.header
             , update = update
 
@@ -172,41 +173,42 @@ view : Page Model Msg.Msg -> Viewer.Details Msg.Msg
 view (Page.Page model) =
     { detailsConfig
         | title = toTitle model.page
-        , body = \_ ->
-            [ h1 [] [ text "Admin Panel" ]
-            , div [ class "content" ] <|
-                case model.page.subpage of
-                    Home ->
-                        [ h3 [] [ text "This is a page that can handle sbpaths in its routing." ]
-                        , div
-                            []
-                            (Dict.toList model.session.db.users
-                                |> List.map (\( x, _ ) -> text x)
-                            )
+        , body =
+            \_ ->
+                [ h1 [] [ text "Admin Panel" ]
+                , div [ class "content" ] <|
+                    case model.page.subpage of
+                        Home ->
+                            [ h3 [] [ text "This is a page that can handle sbpaths in its routing." ]
+                            , div
+                                []
+                                (Dict.toList model.session.db.users
+                                    |> List.map (\( x, _ ) -> text x)
+                                )
 
-                        --                        , newEntry "answer"
-                        --    , h3 [] [ text <| "The current subpath is : /" ++ String.fromInt (Maybe.withDefault -1 model.page.user_id) ]
-                        -- , div [] [ text "The subpath could be anything, or a specific type, like a string or integer. You can have many levels of subpaths if you wanted!" ]
-                        -- , div []
-                        --     [ text " This demo accepts a single level subpath that can be any string. For example, "
-                        --     , a [ href "/pagewithsubpage/xyz" ] [ text "/pagewithsubpage/xyz" ]
-                        --     ]
-                        -- , div [] [ a [ href "/pagewithsubpage/a-wonderful-subpath" ] [ text "click here to go to a subpath" ] ]
-                        -- , div [] [ a [ href "/pagewithsubpage/i-love-elm" ] [ text "click here to go to another subpath" ] ]
-                        , viewTables (Page model)
-                        ]
+                            --                        , newEntry "answer"
+                            --    , h3 [] [ text <| "The current subpath is : /" ++ String.fromInt (Maybe.withDefault -1 model.page.user_id) ]
+                            -- , div [] [ text "The subpath could be anything, or a specific type, like a string or integer. You can have many levels of subpaths if you wanted!" ]
+                            -- , div []
+                            --     [ text " This demo accepts a single level subpath that can be any string. For example, "
+                            --     , a [ href "/pagewithsubpage/xyz" ] [ text "/pagewithsubpage/xyz" ]
+                            --     ]
+                            -- , div [] [ a [ href "/pagewithsubpage/a-wonderful-subpath" ] [ text "click here to go to a subpath" ] ]
+                            -- , div [] [ a [ href "/pagewithsubpage/i-love-elm" ] [ text "click here to go to another subpath" ] ]
+                            , viewTables (Page model)
+                            ]
 
-                    Query kind id ->
-                        [ p [] [ text <| "Querying " ++ Maybe.withDefault "" id ]
-                        , toTable (filterKeys id kind model.session.db) kind model.session.db
-                        ]
+                        Query kind id ->
+                            [ p [] [ text <| "Querying " ++ Maybe.withDefault "" id ]
+                            , toTable (filterKeys id kind model.session.db) kind model.session.db
+                            ]
 
-                    Edit kind id ->
-                        [ div [] <| edit model.session.db kind id
-                        , Maybe.map (\x -> Html.h4 [] [ text ("Error: " ++ x) ]) model.page.error
-                            |> Maybe.withDefault (div [] [])
-                        ]
-            ]
+                        Edit kind id ->
+                            [ div [] <| edit model.session.db kind id
+                            , Maybe.map (\x -> Html.h4 [] [ text ("Error: " ++ x) ]) model.page.error
+                                |> Maybe.withDefault (div [] [])
+                            ]
+                ]
         , search =
             case model.page.subpage of
                 Query _ id ->
@@ -247,8 +249,8 @@ toTable keys kind db =
         values =
             List.map (\id -> id :: List.map (\fname -> Match.getField id fname kind db |> Maybe.withDefault "") (Match.fields kind)) keys
     in
-    DataTable.dataTable 
-        (DataTable.config)
+    DataTable.dataTable
+        DataTable.config
         { thead =
             [ row [] <|
                 List.map
@@ -291,14 +293,16 @@ edit db kind id =
                     Ok form ->
                         [ form
                         , Button.text
-                            (Button.config |> Button.setOnClick 
-                                        (Msg.Form <|
-                                            Form.AttrMsg (Match.toStringPlural kind) <|
-                                                Form.DictMsg (Just id) <|
-                                                    Form.AttrMsg "value" <|
-                                                        Form.AttrMsg x <|
-                                                            Form.StringMsg (Just "Value")
-                                        ))
+                            (Button.config
+                                |> Button.setOnClick
+                                    (Msg.Form <|
+                                        Form.AttrMsg (Match.toStringPlural kind) <|
+                                            Form.DictMsg (Just id) <|
+                                                Form.AttrMsg "value" <|
+                                                    Form.AttrMsg x <|
+                                                        Form.StringMsg (Just "Value")
+                                    )
+                            )
                             "SetValue!"
                         , case
                             Db.database.toString
@@ -414,7 +418,7 @@ viewValue id kind db =
     else
         div []
             [ text "No result found! Create One?"
-            , Button.text (Button.config |> Button.setOnClick (Msg.AdminDb <| Msg.Create kind id []) )
+            , Button.text (Button.config |> Button.setOnClick (Msg.AdminDb <| Msg.Create kind id []))
                 "Create!"
             ]
 

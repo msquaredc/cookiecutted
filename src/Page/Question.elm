@@ -1,17 +1,17 @@
-module Page.Question exposing (..)
+module Page.Question exposing (Model, RelatedData, init, page, relatedData, toTitle, update, view, viewCodingQuestion, viewCodingQuestions, viewInputTypeSelection, viewSettings)
 
 import Dict
 import Html exposing (Html, p, text)
+import Material.Button as Button
 import Material.FormField as FormField
 import Material.LayoutGrid exposing (cell, inner, layoutGrid)
-import Material.Radio as Radio
-import Material.Slider as Slider
-import Material.TextField as TextField
-import Material.Switch as Switch
-import Material.Typography as Typography exposing (typography)
 import Material.List as List
 import Material.List.Item as ListItem exposing (ListItem)
-import Material.Button as Button
+import Material.Radio as Radio
+import Material.Slider as Slider
+import Material.Switch as Switch
+import Material.TextField as TextField
+import Material.Typography as Typography exposing (typography)
 import Maybe.Extra
 import Msg
 import Page exposing (Page(..))
@@ -20,8 +20,8 @@ import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
-import Type.IO.Setter as Updater
 import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Setter as Updater
 import Viewer exposing (detailsConfig)
 
 
@@ -33,7 +33,7 @@ type alias Model =
     , list : Maybe (Id IT.InputType String)
     , codingQuestionaryID : Maybe (Id Db.CodingQuestionary String)
     , codingQuestionary : Maybe (Db.Timestamp Db.CodingQuestionary)
-    , codingQuestions : List (String, Db.Timestamp Db.CodingQuestion)
+    , codingQuestions : List ( String, Db.Timestamp Db.CodingQuestion )
     }
 
 
@@ -51,14 +51,20 @@ init db id =
                 (Maybe.map box cid)
                 (Maybe.map Tuple.second coding_questionary)
                 coding_questions
-        
-        cid = (Maybe.map Tuple.first coding_questionary)
-        coding_questionary =  (Dict.filter (\cqid cq -> cq.value.question == id) db.coding_questionnaries)
-                              |> Dict.toList
-                              |> List.sortBy (\(cqid, cq) -> cq.created)
-                              |> List.head
-        coding_questions = Dict.filter (\cqqid cqq -> Just cqq.value.coding_questionary == Maybe.map box cid ) db.coding_questions
-                            |> Dict.toList
+
+        cid =
+            Maybe.map Tuple.first coding_questionary
+
+        coding_questionary =
+            Dict.filter (\cqid cq -> cq.value.question == id) db.coding_questionnaries
+                |> Dict.toList
+                |> List.sortBy (\( cqid, cq ) -> cq.created)
+                |> List.head
+
+        coding_questions =
+            Dict.filter (\cqqid cqq -> Just cqq.value.coding_questionary == Maybe.map box cid) db.coding_questions
+                |> Dict.toList
+
         q =
             Dict.get (unbox id) db.questions
                 |> Maybe.map .value
@@ -94,6 +100,7 @@ page session id =
             , view = view
             , toMsg = identity
             , subscriptions = Sub.none
+
             -- , header = Viewer.header
             , update = update
 
@@ -527,26 +534,28 @@ viewInputTypeSelection model ( id, _ ) =
             ]
         ]
 
+
 viewCodingQuestions : Model -> List (Html Msg.Msg)
 viewCodingQuestions model =
     let
-        enabled = case model.codingQuestionary of
-                        Just cq ->
-                            cq.value.enabled == True
-                        _ ->
-                            False
-        
+        enabled =
+            case model.codingQuestionary of
+                Just cq ->
+                    cq.value.enabled == True
+
+                _ ->
+                    False
     in
-    [FormField.formField
+    [ FormField.formField
         (FormField.config
             |> FormField.setLabel (Just "Enable Coding")
         )
         [ Switch.switch
             (Switch.config
-                |> Switch.setChecked (enabled)
-                |> Switch.setOnChange (
-                    case (model.codingQuestionaryID, model.codingQuestionary) of
-                        (Just cqid, Just cq) ->
+                |> Switch.setChecked enabled
+                |> Switch.setOnChange
+                    (case ( model.codingQuestionaryID, model.codingQuestionary ) of
+                        ( Just cqid, Just cq ) ->
                             Match.setField
                                 { kind = Db.CodingQuestionaryType
                                 , attribute = "enabled"
@@ -554,7 +563,8 @@ viewCodingQuestions model =
                                 , id = cqid
                                 , value = not cq.value.enabled
                                 }
-                        _ -> 
+
+                        _ ->
                             Msg.CRUD <|
                                 Msg.CreateRandom Db.CodingQuestionaryType
                                     [ \x ->
@@ -565,7 +575,8 @@ viewCodingQuestions model =
                                             , id = box x
                                             , value = unbox model.id
                                             }
-                                    , \x -> Match.setField
+                                    , \x ->
+                                        Match.setField
                                             { kind = Db.CodingQuestionaryType
                                             , attribute = "enabled"
                                             , setter = Updater.BoolMsg
@@ -573,28 +584,30 @@ viewCodingQuestions model =
                                             , value = True
                                             }
                                     ]
-                        
-                )
-            ) ] 
+                    )
+            )
+        ]
     , case List.map viewCodingQuestion model.codingQuestions of
         first :: rest ->
             List.list List.config
-            first
-            rest
+                first
+                rest
+
         _ ->
-            case model.codingQuestionaryID of 
+            case model.codingQuestionaryID of
                 Just _ ->
                     text "No Question yet!"
+
                 Nothing ->
-                    Html.div [][]
+                    Html.div [] []
     , case model.codingQuestionaryID of
         Just cid ->
             Button.unelevated
-            (Button.config
-                |> Button.setIcon (Just <| Button.icon "add")
-                |> Button.setOnClick (
-                    --Just <|
-                        Msg.CRUD <|
+                (Button.config
+                    |> Button.setIcon (Just <| Button.icon "add")
+                    |> Button.setOnClick
+                        --Just <|
+                        (Msg.CRUD <|
                             Msg.CreateRandom Db.CodingQuestionType
                                 [ \x ->
                                     Match.setField
@@ -605,17 +618,20 @@ viewCodingQuestions model =
                                         , value = unbox cid
                                         }
                                 ]
-                ))
-            "Add"
-        Nothing -> 
-            Html.div [][]
+                        )
+                )
+                "Add"
+
+        Nothing ->
+            Html.div [] []
     ]
 
-viewCodingQuestion : (String, Db.Timestamp Db.CodingQuestion) -> ListItem Msg.Msg
-viewCodingQuestion (id, cquestion) =
-    (ListItem.listItem (ListItem.config |> ListItem.setOnClick (Msg.Follow Db.CodingQuestionType id))
+
+viewCodingQuestion : ( String, Db.Timestamp Db.CodingQuestion ) -> ListItem Msg.Msg
+viewCodingQuestion ( id, cquestion ) =
+    ListItem.listItem (ListItem.config |> ListItem.setOnClick (Msg.Follow Db.CodingQuestionType id))
         [ text cquestion.value.text ]
-            )
+
 
 viewSettings : Db.Database -> Id Db.Question String -> Model -> ( Id IT.InputType String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewSettings db id model ( itid, mbit ) =
@@ -688,11 +704,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt short.minLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat short.minLength) of
-                                    Just minLength -> Slider.setValue minLength x
-                                    Nothing -> x
-                            )
+                            |> (\x ->
+                                    case Maybe.map toFloat short.minLength of
+                                        Just minLength ->
+                                            Slider.setValue minLength x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -710,11 +729,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt short.maxLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat short.maxLength) of
-                                    Just minLength -> Slider.setValue minLength x
-                                    Nothing -> x
-                            )
+                            |> (\x ->
+                                    case Maybe.map toFloat short.maxLength of
+                                        Just minLength ->
+                                            Slider.setValue minLength x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMin (Maybe.map toFloat short.minLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -733,9 +755,8 @@ viewSettings db id model ( itid, mbit ) =
             _ ->
                 [ text "No Config found" ]
 
-    else
-        if model.long == Just itid then
-            case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.long of
+    else if model.long == Just itid then
+        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.long of
             Just (IT.LongAnswer long) ->
                 [ TextField.filled
                     (TextField.config
@@ -786,11 +807,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt long.minLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat long.minLength) of
-                                    Just minLength -> Slider.setValue minLength x
-                                    Nothing -> x
-                            )
+                            |> (\x ->
+                                    case Maybe.map toFloat long.minLength of
+                                        Just minLength ->
+                                            Slider.setValue minLength x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -808,11 +832,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt long.maxLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat long.maxLength) of
-                                    Just minLength -> Slider.setValue minLength x
-                                    Nothing -> x
-                            )
+                            |> (\x ->
+                                    case Maybe.map toFloat long.maxLength of
+                                        Just minLength ->
+                                            Slider.setValue minLength x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMin (Maybe.map toFloat short.minLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -830,24 +857,25 @@ viewSettings db id model ( itid, mbit ) =
 
             _ ->
                 [ text "No Config found" ]
-        else
-            if model.list == Just itid then
-                case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.list of
-                    Just (IT.List list) ->
-                        [ text "Boxes or Radio?"
-                        , FormField.formField
-                            (FormField.config
-                            |> FormField.setLabel (Just "Radio Button")
-                            )
-                            [ Radio.radio Radio.config ]
-                        , FormField.formField
-                            (FormField.config
-                            |> FormField.setLabel (Just "Checkbox")
-                            )
-                            [ Radio.radio Radio.config ]
-                        ]
 
-                    _ ->
-                        [ text "No Config found"]
-            else
-                [text "You have not selected an Input type yet." ]
+    else if model.list == Just itid then
+        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.list of
+            Just (IT.List list) ->
+                [ text "Boxes or Radio?"
+                , FormField.formField
+                    (FormField.config
+                        |> FormField.setLabel (Just "Radio Button")
+                    )
+                    [ Radio.radio Radio.config ]
+                , FormField.formField
+                    (FormField.config
+                        |> FormField.setLabel (Just "Checkbox")
+                    )
+                    [ Radio.radio Radio.config ]
+                ]
+
+            _ ->
+                [ text "No Config found" ]
+
+    else
+        [ text "You have not selected an Input type yet." ]
