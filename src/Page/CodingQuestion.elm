@@ -1,18 +1,13 @@
-module Page.CodingQuestion exposing (Model, RelatedData, init, page, relatedData, toTitle, update, view, viewInputTypeSelection, viewSettings)
+module Page.CodingQuestion exposing (Model, RelatedData, page)
 
 import Dict
 import Html exposing (Html, p, text)
-import Material.Button as Button
 import Material.FormField as FormField
 import Material.LayoutGrid exposing (cell, inner, layoutGrid)
-import Material.List as List
-import Material.List.Item as ListItem exposing (ListItem)
 import Material.Radio as Radio
 import Material.Slider as Slider
-import Material.Switch as Switch
 import Material.TextField as TextField
-import Material.Typography as Typography exposing (typography)
-import Maybe.Extra
+import Material.Typography as Typography
 import Msg
 import Page exposing (Page(..))
 import Session
@@ -20,7 +15,7 @@ import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
-import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Internal exposing (Id, unbox)
 import Type.IO.Setter as Updater
 import Viewer exposing (detailsConfig)
 
@@ -93,47 +88,6 @@ page session id =
 
 update : Msg.Msg -> Page.Page Model Msg.Msg -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 update message (Page model) =
-    let
-        oldmodel =
-            model.page
-
-        updatePage x =
-            Page { model | page = x }
-
-        setInputTypeDb it =
-            let
-                oldsession =
-                    model.session
-
-                newdb n =
-                    { oldsession | db = n }
-
-                olddb =
-                    oldsession.db
-
-                newq n =
-                    newdb { olddb | questions = n }
-            in
-            newq <|
-                Dict.update
-                    (unbox oldmodel.id)
-                    (Maybe.map
-                        (\i ->
-                            let
-                                oldvalue =
-                                    i.value
-
-                                newvalue n =
-                                    { i | value = n }
-
-                                newquestion =
-                                    { oldvalue | input_type = it }
-                            in
-                            newvalue newquestion
-                        )
-                    )
-                    model.session.db.questions
-    in
     case message of
         Msg.Question _ ->
             ( Page model, Cmd.none )
@@ -275,12 +229,6 @@ relatedData id db =
         Just timestampedQuestion ->
             let
                 --coding_questions : List (Id Db.CodingQuestionary String, Db.CodingQuestionary)
-                coding_questions =
-                    {- List.sortBy (\( _, y ) -> y.index) <| -}
-                    Dict.toList db.coding_questionnaries
-                        |> List.filter (\( _, y ) -> y.value.question == id)
-                        |> List.map (\( x, y ) -> ( box x, y.value ))
-
                 question =
                     timestampedQuestion.value
             in
@@ -511,23 +459,6 @@ viewInputTypeSelection model ( id, _ ) =
 
 viewSettings : Db.Database -> Id Db.Question String -> Model -> ( Id IT.InputType String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewSettings db id model ( itid, mbit ) =
-    let
-        umessage attribute setter value =
-            Msg.CRUD <|
-                Msg.Update <|
-                    Updater.AttributeMsg "questions" <|
-                        Updater.DictKeyMsg (unbox id) <|
-                            Updater.AttributeMsg "value" <|
-                                Updater.AttributeMsg "input_type" <|
-                                    Updater.AttributeMsg attribute <|
-                                        setter value
-
-        moreInfo : String
-        moreInfo =
-            Maybe.map (IT.input_type.toString "*") mbit
-                |> Maybe.andThen Result.toMaybe
-                |> Maybe.withDefault ""
-    in
     if model.short == Just itid then
         case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.short of
             Just (IT.ShortAnswer short) ->
@@ -736,7 +667,7 @@ viewSettings db id model ( itid, mbit ) =
 
     else if model.list == Just itid then
         case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.list of
-            Just (IT.List list) ->
+            Just (IT.List _) ->
                 [ text "Boxes or Radio?"
                 , FormField.formField
                     (FormField.config

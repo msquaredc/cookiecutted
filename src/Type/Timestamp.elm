@@ -1,9 +1,5 @@
 module Type.Timestamp exposing (Msg(..), Timestamp)
 
-import Fuzz
-import Json.Decode as Decode
-import Json.Decode.Pipeline exposing (required)
-import Json.Encode as Encode exposing (Value)
 import Time
 import Type.IO exposing (IO, attribute, entity, int, substruct)
 
@@ -44,7 +40,5 @@ timestamp other =
 
 
 type Msg
-    = All Time.Posix
-    | Created Time.Posix
+    = Created Time.Posix
     | Modified Time.Posix
-    | Accessed Time.Posix

@@ -1,6 +1,5 @@
-module Page.PageWithSubpage exposing (Model, init, page, update, view)
+module Page.PageWithSubpage exposing (Model, page)
 
-import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Msg exposing (PageWithSubpageMsg)

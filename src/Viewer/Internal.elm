@@ -1,20 +1,18 @@
-module Viewer.Internal exposing (CardConfig, DrawerConfig, NavButtonConfig, SearchConfig, TopAppBarConfig, ViewerConfig, defaultCardConfig, navButton, viewCard, viewDrawer, viewTopAppBar)
+module Viewer.Internal exposing (CardConfig, DrawerConfig, NavButtonConfig, SearchConfig, TopAppBarConfig, ViewerConfig, defaultCardConfig, viewCard, viewDrawer, viewTopAppBar)
 
 import Html exposing (Html, div, text)
 import Html.Attributes
 import Html.Events
 import Identicon exposing (identicon)
-import Material.Button as Button exposing (config)
-import Material.Card as Card exposing (config, primaryAction)
+import Material.Button as Button
+import Material.Card as Card
 import Material.Drawer.Modal as Drawer
-import Material.Icon as Icon exposing (icon)
-import Material.IconButton as IconButton exposing (config, customIcon, iconButton)
-import Material.TextField as TextField exposing (config)
+import Material.IconButton as IconButton
+import Material.TextField as TextField
 import Material.TextField.Icon as TextFieldIcon
 import Material.Theme as Theme
-import Material.TopAppBar as TopAppBar exposing (config)
+import Material.TopAppBar as TopAppBar
 import Material.Typography as Typography
-import Time exposing (Posix)
 
 
 

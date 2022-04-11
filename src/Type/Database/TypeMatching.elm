@@ -1,15 +1,14 @@
-module Type.Database.TypeMatching exposing (DispatchType(..), FieldConfig, FieldUpdateConfig, concatTupleFirst, concatTupleLast, delete, dispatchDb, fields, filterBy, forms, fromString, getField, getTimestampUpdaterMsg, join, keys, new, resolveAttributes, setField, setFieldRaw, setManyFields, setTimestamp, swapFields, toString, toStringPlural, types, updateField)
+module Type.Database.TypeMatching exposing (DispatchType(..), FieldConfig, delete, fields, forms, getField, keys, new, setField, setTimestamp, toString, toStringPlural, types)
 
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Msg
 import Task exposing (perform)
 import Time exposing (Posix, now, posixToMillis)
-import Type.Database as Db exposing (Database, InputTypeKind(..), Row, Table, Type(..), answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, question, questionary, study, test_subject, timestamp, user)
-import Type.Database.InputType as IT exposing (InputType, input_type)
-import Type.IO exposing (IO)
-import Type.IO.Form as Form exposing (UpdateMsg(..))
-import Type.IO.Internal as Id exposing (Id, unbox)
+import Type.Database as Db exposing (Database, InputTypeKind(..), Type(..), answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, question, questionary, study, test_subject, timestamp, user)
+import Type.Database.InputType as IT exposing (input_type)
+import Type.IO.Form as Form exposing (UpdateMsg)
+import Type.IO.Internal exposing (Id, unbox)
 import Type.IO.Setter as Updater
 
 
@@ -31,55 +30,6 @@ types =
     , InputTypeType ListKind
     , InputTypeType LongKind
     ]
-
-
-fromString : String -> Maybe Type
-fromString name =
-    case name of
-        "answer" ->
-            Just AnswerType
-
-        "coder" ->
-            Just CoderType
-
-        "coding" ->
-            Just CodingType
-
-        "coding_answer" ->
-            Just CodingAnswerType
-
-        "coding_frame" ->
-            Just CodingFrameType
-
-        "coding_question" ->
-            Just CodingQuestionType
-
-        "coding_questionary" ->
-            Just CodingQuestionaryType
-
-        "event" ->
-            Just EventType
-
-        "question" ->
-            Just QuestionType
-
-        "questionary" ->
-            Just QuestionaryType
-
-        "study" ->
-            Just StudyType
-
-        "user" ->
-            Just UserType
-
-        "input_type" ->
-            Just (InputTypeType ShortKind)
-
-        "test_subject" ->
-            Just TestSubjectType
-
-        _ ->
-            Nothing
 
 
 toString : Type -> String
@@ -449,50 +399,6 @@ setTimestamp kind id attribute =
         |> (\x -> perform x now)
 
 
-filterBy : (Row b -> Id a c) -> (Database -> Table b) -> Database -> Id a c -> List (Row b)
-filterBy attr dbgetter db old =
-    dbgetter db
-        |> Db.rows
-        |> List.filter (\x -> attr x == old)
-
-
-resolveAttributes : (a -> Id b String) -> (Database -> Table b) -> Database -> Row a -> List ( Row a, Row b )
-resolveAttributes attr dbgetter db ( oldid, fullold ) =
-    let
-        f : Id b String -> List (Row b)
-        f id =
-            dbgetter db
-                |> Db.rows
-                |> List.filter (\( cid, _ ) -> cid == id)
-    in
-    ( oldid, fullold )
-        |> (\( id, value ) -> ( ( id, value ), f (attr value.value) ))
-        |> (\( oldval, list ) -> List.map (\newval -> ( oldval, newval )) list)
-
-
-join : (Row b -> Id a String) -> (Database -> Table b) -> Database -> List (Row a) -> List ( Row a, Row b )
-join attr dbgetter db old =
-    let
-        k : List (Id a String)
-        k =
-            List.map (\( id, value ) -> id) old
-    in
-    old
-        |> List.map (\( id, value ) -> ( ( id, value ), filterBy attr dbgetter db id ))
-        |> List.map (\( oldval, list ) -> List.map (\newval -> ( oldval, newval )) list)
-        |> List.concat
-
-
-concatTupleFirst : ( List a, b ) -> List ( a, b )
-concatTupleFirst ( l, elem ) =
-    List.map (\x -> ( x, elem )) l
-
-
-concatTupleLast : ( a, List b ) -> List ( a, b )
-concatTupleLast ( elem, l ) =
-    List.map (\x -> ( elem, x )) l
-
-
 type alias FieldConfig a b =
     { kind : Type
     , attribute : String
@@ -513,55 +419,8 @@ setField { kind, attribute, setter, id, value } =
                             setter value
 
 
-setManyFields : List (FieldConfig a b) -> Msg.Msg
-setManyFields f =
-    List.map setFieldRaw f
-        |> Msg.UpdateAll
-        |> Msg.CRUD
-
-
-setFieldRaw : FieldConfig a b -> Updater.Msg
-setFieldRaw { kind, attribute, setter, id, value } =
-    Updater.AttributeMsg (toStringPlural kind) <|
-        Updater.DictKeyMsg (unbox id) <|
-            Updater.AttributeMsg "value" <|
-                Updater.AttributeMsg attribute <|
-                    setter value
-
-
-type alias FieldUpdateConfig a =
-    { kind : Type
-    , attribute : String
-    , setter : (a -> a) -> Updater.Msg
-    , id : String
-    }
-
-
-updateField : FieldUpdateConfig a -> (a -> a) -> Updater.Msg
-updateField config updater =
-    Updater.AttributeMsg (toStringPlural config.kind) <|
-        Updater.DictKeyMsg config.id <|
-            Updater.AttributeMsg "value" <|
-                Updater.AttributeMsg config.attribute <|
-                    config.setter updater
-
-
 
 -- go down and get value via update
-
-
-swapFields : Type -> String -> (a -> Updater.Msg) -> ( Id b String, Id b String ) -> ( a, a ) -> Msg.Msg
-swapFields kind attribute setter ( f_id, s_id ) ( f_val, s_val ) =
-    Msg.CRUD <|
-        Msg.UpdateAll
-            [ setFieldRaw
-                { kind = kind, attribute = attribute, setter = setter, id = f_id, value = s_val }
-            , setFieldRaw
-                { kind = kind, attribute = attribute, setter = setter, id = s_id, value = f_val }
-            ]
-
-
-
 -- swapFields : FieldUpdateConfig a -> FieldUpdateConfig a -> Database -> Database
 -- swapFields first second db =
 --     let

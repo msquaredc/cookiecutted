@@ -1,15 +1,9 @@
-module Type.IO.Form exposing (Error(..), Form, FormAcc, FormFunctor, ResultState(..), UpdateMsg(..), array, attribute, bool, combine_tuple, dict, entity, float, int, list, maybe, parseHeadTail, reference, references, result, string, substruct)
+module Type.IO.Form exposing (Error(..), Form, FormFunctor, ResultState(..), UpdateMsg(..), array, attribute, bool, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Html exposing (Html)
-import Html.Attributes
-import Html.Events
-import Json.Decode exposing (map)
 import List.Extra
-import Material.Checkbox as Checkbox exposing (config)
-import Material.TextField as TextField exposing (config)
-import Maybe.Extra
 import Type.IO.Internal as Id exposing (Id)
 
 
@@ -38,11 +32,6 @@ type Error
     | ArrayError
     | AttributeNotFound
     | NotFound
-
-
-type alias FormAcc full msg =
-    { forms : full -> List (Html.Html msg)
-    }
 
 
 type alias FormFunctor msg =
@@ -137,19 +126,6 @@ float name callback kind label f =
 
 bool : Form Bool msg
 bool _ callback kind _ f =
-    let
-        bool2state : Maybe Bool -> Checkbox.State
-        bool2state state =
-            case state of
-                Just True ->
-                    Checkbox.checked
-
-                Just False ->
-                    Checkbox.unchecked
-
-                Nothing ->
-                    Checkbox.indeterminate
-    in
     Ok <|
         f
             (if kind then
@@ -311,19 +287,6 @@ dict keySerializer old name callback kind acc f =
    |> (\(a, b)-> (Dict.fromList a, Dict.fromList b))
    |> (\(a, b) -> {config=Just a, view = b})
 -}
-
-
-combine_tuple : ( Maybe a, Maybe b ) -> Maybe ( a, b )
-combine_tuple old =
-    case old of
-        ( Just a, Just b ) ->
-            Just ( a, b )
-
-        _ ->
-            Nothing
-
-
-
 {- Dict.toList kind
    |> List.map (\(key,value) -> (Just key, old.config (callback << DictMsg (keySerializer key)) value))
    |> Maybe.Extra.traverse combine_tuple

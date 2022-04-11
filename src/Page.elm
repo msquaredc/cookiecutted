@@ -1,4 +1,4 @@
-module Page exposing (Page(..), Config, liftupdate, liftview, update, view)
+module Page exposing (Config, Page(..), liftupdate, update, view)
 
 import Browser exposing (Document)
 import Msg
@@ -10,25 +10,21 @@ import Viewer
 type Page a msg
     = Page (Config a msg)
 
-type alias Config a msg=
-        { session : Session.Session
-        , page : a
-        , view : Page a msg -> Viewer.Details Msg.Msg
-        , toMsg : msg -> Msg.Msg
-        , subscriptions : Sub msg
-        , -- header : Viewer.Header,
-          update : msg -> Page a msg -> ( Page a msg, Cmd msg )
-        }
+
+type alias Config a msg =
+    { session : Session.Session
+    , page : a
+    , view : Page a msg -> Viewer.Details Msg.Msg
+    , toMsg : msg -> Msg.Msg
+    , subscriptions : Sub msg
+    , -- header : Viewer.Header,
+      update : msg -> Page a msg -> ( Page a msg, Cmd msg )
+    }
 
 
 view : Page a msg -> Viewer.Header -> Maybe Posix -> Document Msg.Msg
 view (Page model) header =
     Viewer.view model.session model.toMsg (model.view (Page model)) header
-
-
-liftview : (a -> Viewer.Details msg) -> Page a msg -> Viewer.Details msg
-liftview pview (Page a) =
-    pview a.page
 
 
 update : msg -> Page a msg -> ( Page a msg, Cmd msg )

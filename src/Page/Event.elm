@@ -1,18 +1,15 @@
-module Page.Event exposing (Model, init, page, update, view)
+module Page.Event exposing (Model, page)
 
 --import Browser
 
-import Dict exposing (Dict)
-import Html exposing (Html, div, p, text)
+import Dict
+import Html exposing (Html, p, text)
 import Identicon exposing (identicon)
 import Material.Button as Button exposing (unelevated)
 import Material.DataTable as DataTable
-import Material.Icon as Icon
 import Material.LayoutGrid as LG exposing (cell, inner, layoutGrid)
 import Material.List as MList exposing (list)
 import Material.List.Item as MLItem exposing (graphic, listItem)
-import Material.Tab as Tab
-import Material.TabBar as TabBar
 import Material.Typography as Typography
 import Msg
 import Page exposing (Page(..))
@@ -20,11 +17,9 @@ import Session
 import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
-import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Updater
 import Url.Builder
-import Url.Parser as Parser exposing ((</>))
-import Url.Parser.Query as Query
 import Viewer exposing (detailsConfig)
 import Viewer.EditableText as EditableText
 
@@ -110,7 +105,7 @@ update message (Page model) =
                             in
                             ( Page { model | page = new_page }, Cmd.none )
 
-                Msg.AnswerQuestions { questionary, test_subject, event } ->
+                Msg.AnswerQuestions _ ->
                     ( Page model, Cmd.none )
 
                 Msg.EventSwitchTo _ ->
@@ -353,8 +348,8 @@ relatedData id db =
                 , created = Time.millisToPosix timestampedEvent.created
                 , creator = ( timestampedEvent.creator, Maybe.map .value <| Dict.get (unbox timestampedEvent.creator) db.users )
                 , updated = Time.millisToPosix timestampedEvent.modified
-                , questionnaries = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\x y -> y.value) <| Dict.filter (\x y -> y.value.study == event.study) db.questionnaries
-                , test_subjects = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\x y -> y.value) <| Dict.filter (\x y -> y.value.event == id) db.test_subjects
+                , questionnaries = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\_ y -> y.value) <| Dict.filter (\_ y -> y.value.study == event.study) db.questionnaries
+                , test_subjects = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\_ y -> y.value) <| Dict.filter (\_ y -> y.value.event == id) db.test_subjects
                 }
 
         Nothing ->
@@ -414,26 +409,26 @@ viewTable db questionnaries test_subjects event_id =
         { thead =
             [ DataTable.row [] <|
                 DataTable.cell [] [ text "Subject" ]
-                    :: List.map (\( x, y ) -> DataTable.cell [] [ text y.name ]) questionnaries
+                    :: List.map (\( _, y ) -> DataTable.cell [] [ text y.name ]) questionnaries
 
             --[ DataTable.cell [] [ text "Desert" ] ]
             ]
         , tbody =
             List.map
-                (\( test_subject_id, test_subject_value ) ->
+                (\( test_subject_id, _ ) ->
                     DataTable.row [] <|
                         DataTable.cell [] [ text <| String.toUpper <| String.left 4 (unbox test_subject_id) ]
                             :: List.map
-                                (\( questionary_id, questionary_value ) ->
+                                (\( questionary_id, _ ) ->
                                     DataTable.cell []
                                         [ let
                                             answers =
-                                                Dict.filter (\answer_id answer_table -> List.member (unbox answer_table.value.question) q_ids) db.answers
-                                                    |> Dict.filter (\answer_id answer_table -> answer_table.value.test_subject == test_subject_id)
+                                                Dict.filter (\_ answer_table -> List.member (unbox answer_table.value.question) q_ids) db.answers
+                                                    |> Dict.filter (\_ answer_table -> answer_table.value.test_subject == test_subject_id)
                                                     |> Dict.toList
 
                                             questions =
-                                                Dict.filter (\question_id question_table -> question_table.value.questionary == questionary_id) db.questions
+                                                Dict.filter (\_ question_table -> question_table.value.questionary == questionary_id) db.questions
                                                     |> Dict.toList
 
                                             q_ids =

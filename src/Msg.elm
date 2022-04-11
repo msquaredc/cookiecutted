@@ -25,7 +25,7 @@ import Material.Snackbar as Snackbar
 import Time exposing (Posix)
 import Type.Database as Db exposing (Type)
 import Type.Database.InputType as IT
-import Type.IO.Form exposing (UpdateMsg(..))
+import Type.IO.Form exposing (UpdateMsg)
 import Type.IO.Internal exposing (Id)
 import Type.IO.Setter as Updater
 import Url
@@ -111,15 +111,11 @@ type QuestionaryMsg
 
 
 type QuestionMsg
-    = SetInputType String
-    | Short ShortMsg
-    | Long LongMsg
-    | List ListMsg
+    = Short ShortMsg
 
 
 type ShortMsg
-    = ShortLabel String
-    | ShortPlaceholder String
+    = ShortPlaceholder String
 
 
 type LongMsg

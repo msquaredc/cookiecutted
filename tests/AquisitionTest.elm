@@ -1,11 +1,10 @@
-module AquisitionTest exposing (aquireQuestion, suite)
+module AquisitionTest exposing (suite)
 
-import Dict exposing (Dict)
+import Dict
 import Expect
 import Test exposing (..)
 import Type.Database exposing (..)
-import Type.Database.Aquisition as Aq exposing (..)
-import Type.Database.TypeMatching as Match
+import Type.Database.Aquisition exposing (..)
 import Type.IO exposing (..)
 import Type.IO.Internal exposing (Id, box, unbox)
 

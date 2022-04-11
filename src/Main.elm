@@ -1,4 +1,4 @@
-module Main exposing (Model, Page, init, main, subscriptions, update, view)
+module Main exposing (Model, Page, main)
 
 -- import Page.NewPage as NewPage
 --import Html exposing (..)
@@ -25,7 +25,7 @@ import Page.Study as Study
 import Page.Top as Top
 import Page.User as User
 import Ports
-import Random exposing (generate)
+import Random
 import Random.Char exposing (latin)
 import Random.String exposing (string)
 import Session
@@ -35,12 +35,11 @@ import Type.Database as Db exposing (database)
 import Type.Database.TypeMatching as Match
 import Type.Flags
 import Type.IO exposing (form2update)
-import Type.IO.Internal exposing (Id, box, unbox)
+import Type.IO.Internal exposing (box)
 import Type.IO.Setter as Updater
 import Url
 import Url.Builder
-import Url.Parser as Parser exposing ((</>), (<?>), query)
-import Url.Parser.Query as Query
+import Url.Parser as Parser exposing ((</>))
 import Viewer
 
 
@@ -90,9 +89,6 @@ init flags url key =
     let
         localStorage =
             Json.Decode.decodeValue Db.database.decoder flags.localStorage
-
-        db =
-            Json.Decode.decodeValue Db.database.decoder flags.db
 
         ( model, cmds ) =
             routeUrl (urlAdaptHash url) <| Model key (NotFound <| Session.init flags) Viewer.header Nothing
@@ -380,11 +376,6 @@ defaultUpdate message ( model, effect ) =
 
             _ ->
                 ( model, Cmd.none )
-
-
-updateAll : List Msg.Msg -> Model -> ( Model, Cmd Msg.Msg )
-updateAll messages model =
-    chainedUpdateAll messages ( model, Cmd.none )
 
 
 chainedUpdateAll : List Msg.Msg -> ( Model, Cmd Msg.Msg ) -> ( Model, Cmd Msg.Msg )
@@ -761,25 +752,6 @@ updateDbSession model session db =
 
 -- ROUTING
 -- The following functions create the client-side router. Update "parser" and "paths" for each page you add/remove
-
-
-testMethod =
-    case Url.fromString "http://localhost:3000/event/oLFlGAGBkkaZDCTsnmOA/answer?tsid=a" of
-        Nothing ->
-            Nothing
-
-        Just oldUrl ->
-            let
-                hashUrl =
-                    { oldUrl | path = Maybe.withDefault "" oldUrl.fragment, fragment = Nothing }
-
-                func x y =
-                    "yes"
-            in
-            Parser.parse (Parser.map func (Parser.s paths.event </> Parser.string </> Parser.s "answer" <?> Query.custom "tsid" identity)) oldUrl
-
-
-
 --Parser.parse (Parser.s paths.event </> Parser.string </> Answer.parser )
 
 

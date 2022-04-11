@@ -1,4 +1,4 @@
-module Type.IO exposing (DatatypeIO, IO, PartialIO, Reference(..), array, attribute, bool, dict, encode, entity, float, form2update, int, list, map_decoder_maybe, map_maybe_func, maybe, reference, reference_fuzzer, references, result, string, substruct)
+module Type.IO exposing (DatatypeIO, IO, PartialIO, Reference(..), array, attribute, bool, dict, encode, entity, float, form2update, int, list, maybe, reference, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
@@ -187,7 +187,7 @@ array old =
 entity : b -> c -> PartialIO b a db c msg
 entity new view =
     { decoder = Decoder.entity new
-    , strDecoder = \a -> Decoder.entity new
+    , strDecoder = \_ -> Decoder.entity new
     , toString = ToString.entity new
     , encoder = Encoder.entity
     , fuzzer = Fuzz.constant new
@@ -281,17 +281,6 @@ reference_fuzzer =
         |> Fuzz.map (\x -> Reference x)
 
 
-map_decoder_maybe : (Decoder (delta -> target) -> Decoder target) -> Decoder (Maybe delta -> target) -> Decoder target
-map_decoder_maybe olddecoder newhandle =
-    Json.Decode.map map_maybe_func newhandle
-        |> olddecoder
-
-
-map_maybe_func : (Maybe delta -> target) -> delta -> target
-map_maybe_func func val =
-    func (Just val)
-
-
 form2update : Form.UpdateMsg -> Maybe Update.Msg
 form2update fmsg =
     case fmsg of
@@ -340,7 +329,7 @@ form2update fmsg =
                 ( Just msg_, Just key_ ) ->
                     Just (Update.DictKeyMsg key_ msg_)
 
-                ( _, _ ) ->
+                _ ->
                     Nothing
 
         Form.ResultMsg state msg ->

@@ -1,12 +1,10 @@
 module Viewer.Handset exposing (viewLandscape, viewPortrait)
 
 import Html exposing (Html, div, text)
-import Html.Attributes exposing (style)
-import Material.Drawer.Modal as Drawer exposing (config, scrim)
-import Material.List as MList exposing (config)
-import Material.List.Item as MLItem exposing (config)
-import Material.TopAppBar as TopAppBar exposing (config, short)
-import Material.Typography as Typography
+import Material.Drawer.Modal as Drawer exposing (scrim)
+import Material.List as MList
+import Material.List.Item as MLItem
+import Material.TopAppBar as TopAppBar
 import Viewer.Internal as I
 
 

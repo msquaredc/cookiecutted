@@ -1,10 +1,10 @@
-module Type.IO.ToString exposing (Error(..), ToString, array, attribute, bool, dict, entity, float, int, l2s, list, map_array_toString, map_dict_toString, map_list_toString, maybe, parseHeadTail, reference, references, result, string, substruct)
+module Type.IO.ToString exposing (Error(..), ToString, array, attribute, bool, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
 import List.Extra
 import Result.Extra
-import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Internal as Id exposing (Id)
 
 
 type Error
@@ -251,17 +251,6 @@ array old name arr =
 -- map_array_toString old
 
 
-map_list_toString : (String -> kind -> Maybe String) -> String -> List kind -> Maybe String
-map_list_toString old s l =
-    let
-        ( head, rest ) =
-            parseHeadTail s
-    in
-    String.toInt head
-        |> Maybe.andThen (\x -> List.Extra.getAt x l)
-        |> Maybe.andThen (old rest)
-
-
 parseHeadTail : String -> ( String, String )
 parseHeadTail accessor =
     if accessor == "*" then
@@ -285,29 +274,7 @@ parseHeadTail accessor =
         ( index, rest )
 
 
-map_dict_toString : (String -> Maybe comparable) -> (String -> value -> Maybe String) -> String -> Dict comparable value -> Maybe String
-map_dict_toString key_parser value s d =
-    let
-        ( head, rest ) =
-            parseHeadTail s
-    in
-    key_parser head
-        |> Maybe.andThen (\x -> Dict.get x d)
-        |> Maybe.andThen (value rest)
-
-
 
 -- map_result_toString : (String -> kind -> Maybe String) -> String -> Result error kind -> Maybe String
 -- map_result_toString old s r =
 --     Debug.todo ""
-
-
-map_array_toString : (String -> kind -> Maybe String) -> String -> Array kind -> Maybe String
-map_array_toString old s a =
-    let
-        ( head, rest ) =
-            parseHeadTail s
-    in
-    String.toInt head
-        |> Maybe.andThen (\x -> Array.get x a)
-        |> Maybe.andThen (old rest)

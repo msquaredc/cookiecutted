@@ -1,4 +1,4 @@
-module Viewer exposing (Details, Header, detailsConfig, header, notFound, system, textForm, update, view, wideTextForm)
+module Viewer exposing (Details, Header, detailsConfig, header, notFound, system, textForm, update, view)
 
 --import Url.Builder
 
@@ -7,24 +7,17 @@ import DateFormat.Relative exposing (relativeTime)
 import Device
 import Dict
 import DnDList
-import Html exposing (Html, a, div, h1, h3, p, text)
+import Html exposing (Html, a, div, h1, h3)
 import Html.Attributes exposing (class, href, style)
 import Identicon exposing (identicon)
-import Material.Button as Button exposing (text, unelevated)
-import Material.Dialog as Dialog exposing (config, simple)
-import Material.Drawer.Dismissible exposing (config, header)
+import Material.Button as Button
+import Material.Dialog as Dialog
 import Material.Icon as Icon exposing (icon)
-import Material.IconButton as IconButton exposing (config, customIcon, iconButton)
-import Material.LayoutGrid as LayoutGrid exposing (cell)
-import Material.List as MList exposing (config, list)
-import Material.List.Divider as MLDivider exposing (config, listItem)
-import Material.List.Item as MLItem exposing (config, graphic, listItem, text)
+import Material.List as MList exposing (list)
+import Material.List.Divider as MLDivider
+import Material.List.Item as MLItem
 import Material.Snackbar as Snackbar
-import Material.TextField as TextField exposing (config)
-import Material.TextField.Icon as TextFieldIcon
-import Material.Theme as Theme
-import Material.TopAppBar as TopAppBar exposing (config, regular)
-import Material.Typography as Typography
+import Material.TextField as TextField
 import Msg exposing (ViewerMsg(..))
 import Session
 import Time exposing (Posix)
@@ -291,73 +284,8 @@ viewDrawerContent selectedIndex =
         ]
 
 
-viewHeader2 : Header -> Details Msg.Msg -> Html Msg.Msg
-viewHeader2 config details =
-    regular
-        (TopAppBar.config
-            |> TopAppBar.setFixed True
-        )
-        [ TopAppBar.row []
-            [ TopAppBar.section [ TopAppBar.alignStart ]
-                [ iconButton
-                    (IconButton.config
-                        |> IconButton.setAttributes [ TopAppBar.navigationIcon ]
-                        |> IconButton.setOnClick (toggleDrawer config.drawerOpen)
-                    )
-                  <|
-                    IconButton.icon "menu"
-                , Html.span
-                    [ TopAppBar.title
-
-                    --, Html.Attributes.style "text-transform" "uppercase"
-                    --, Html.Attributes.style "font-weight" "400"
-                    --, Typography.headline5
-                    ]
-                    [ Html.text details.title ]
-                ]
-            , TopAppBar.section [ TopAppBar.alignEnd ]
-                [ case details.search of
-                    Nothing ->
-                        div [] []
-
-                    Just s ->
-                        TextField.filled
-                            (TextField.config
-                                |> TextField.setTrailingIcon (Just <| TextFieldIcon.icon "search")
-                                |> TextField.setValue (Just s)
-                                |> TextField.setAttributes [ Theme.surface ]
-                                |> TextField.setOnInput Msg.Search
-                            )
-                , case details.user of
-                    Nothing ->
-                        div [] []
-
-                    Just s ->
-                        IconButton.iconButton
-                            (IconButton.config |> IconButton.setAttributes [ TopAppBar.actionItem ])
-                        <|
-                            IconButton.customIcon Html.i
-                                []
-                                [ identicon "100%" (unbox s) ]
-                ]
-            ]
-        ]
-
-
 
 -- FOOTER
-
-
-viewFooter : Html msg
-viewFooter =
-    div [ class "footer", class "container" ]
-        [ Html.text "A simple, no-frills boilerplate for creating delightful Single Page Applications (SPAs) in Elm."
-        , a [ href "https://github.com/jzxhuang/elm-spa-boilerplate" ] [ Html.text "Check it out on Github!" ]
-        , Html.text "© 2018 - present Jeffrey Huang."
-        ]
-
-
-
 -- 404 PAGE (NotFound)
 
 
@@ -438,72 +366,6 @@ header =
 -- viewLogo =
 --     a [ href "/", style "text-decoration" "none" ] [ Utils.logo 32 ]
 -- STYLING HELPERS (lazy, hard-coded styling)
-
-
-headerHeight : Int
-headerHeight =
-    60
-
-
-footerHeight : Int
-footerHeight =
-    60
-
-
-catalogPageContainer : List (Html.Attribute msg)
-catalogPageContainer =
-    [ Html.Attributes.style "position" "relative"
-    , Typography.typography
-    ]
-
-
-demoPanel : List (Html.Attribute msg)
-demoPanel =
-    [ Html.Attributes.style "display" "-ms-flexbox"
-    , Html.Attributes.style "display" "flex"
-    , Html.Attributes.style "position" "relative"
-    , Html.Attributes.style "height" "100vh"
-    , Html.Attributes.style "overflow" "hidden"
-    ]
-
-
-demoContent : List (Html.Attribute msg)
-demoContent =
-    [ Html.Attributes.id "demo-content"
-    , Html.Attributes.style "height" "100%"
-    , Html.Attributes.style "-webkit-box-sizing" "border-box"
-    , Html.Attributes.style "box-sizing" "border-box"
-    , Html.Attributes.style "max-width" "100%"
-    , Html.Attributes.style "padding-left" "16px"
-    , Html.Attributes.style "padding-right" "16px"
-    , Html.Attributes.style "padding-bottom" "100px"
-    , Html.Attributes.style "width" "100%"
-    , Html.Attributes.style "overflow" "auto"
-    , Html.Attributes.style "display" "-ms-flexbox"
-    , Html.Attributes.style "display" "flex"
-    , Html.Attributes.style "-ms-flex-direction" "column"
-    , Html.Attributes.style "flex-direction" "column"
-    , Html.Attributes.style "-ms-flex-align" "center"
-    , Html.Attributes.style "align-items" "center"
-    , Html.Attributes.style "-ms-flex-pack" "start"
-    , Html.Attributes.style "justify-content" "flex-start"
-    ]
-
-
-demoContentTransition : List (Html.Attribute msg)
-demoContentTransition =
-    [ Html.Attributes.style "max-width" "900px"
-    , Html.Attributes.style "width" "100%"
-    ]
-
-
-demoTitle : List (Html.Attribute msg)
-demoTitle =
-    [ Html.Attributes.style "border-bottom" "1px solid rgba(0,0,0,.87)"
-    ]
-
-
-
 --
 -- FORM FUNCTORS
 --
@@ -518,58 +380,6 @@ textForm label value callback =
             |> TextField.setLabel label
          --|> TextField.outlined True TODO: Uncomment
         )
-
-
-wideTextForm : Maybe String -> Form.FormFunctor msg
-wideTextForm label value callback =
-    TextField.filled
-        (TextField.config
-            |> TextField.setValue (Just value)
-            |> TextField.setOnInput callback
-            |> TextField.setLabel label
-         --|> TextField.outlined True TODO: Uncomment
-         --|> TextField.setFullwidth True
-        )
-
-
-selectUser : List String -> List (Html Msg.Msg)
-selectUser users =
-    if List.length users > 0 then
-        if List.length users == 1 then
-            [ List.head users
-                |> Maybe.withDefault ""
-                |> (\x -> LayoutGrid.cell [] [ Html.text <| "i have a user: " ++ x ])
-            ]
-
-        else
-            [ Html.h2 [ Typography.headline6 ] [ Html.text "Please choose your account:" ]
-            , LayoutGrid.cell [] <|
-                let
-                    sList : List (MLItem.ListItem Msg.Msg)
-                    sList =
-                        List.map (\user -> MLItem.listItem (MLItem.config |> MLItem.setOnClick (Msg.SetUser (box user))) [ MLItem.graphic [] [ identicon "100%" user ], Html.text user ]) users
-                in
-                case sList of
-                    fir :: res ->
-                        [ MList.list MList.config
-                            fir
-                            res
-                        ]
-
-                    _ ->
-                        []
-            ]
-
-    else
-        [ LayoutGrid.cell []
-            [ p []
-                [ Html.text "Looks like this is the first time you're using msquaredc!"
-                ]
-            , Button.text
-                (Button.config |> Button.setOnClick (Msg.CRUD (Msg.CreateRandom Db.UserType [])))
-                "Let's go!"
-            ]
-        ]
 
 
 userDialog : Bool -> List ( String, Db.User ) -> String -> Maybe Posix -> Html Msg.Msg
@@ -594,7 +404,7 @@ userDialog open users new_username time =
         uList : List (MLItem.ListItem Msg.Msg)
         uList =
             List.indexedMap
-                (\index ( id, user ) ->
+                (\_ ( id, user ) ->
                     MLItem.listItem
                         (MLItem.config
                             |> MLItem.setOnClick (Msg.SetUser id)

@@ -1,16 +1,15 @@
-module Page.Code exposing (CodingAnswerTemplate, Model, demoContent, init, page, toTitle, update, view, viewCodingQuestion)
+module Page.Code exposing (CodingAnswerTemplate, Model, page)
 
 --import Html.Keyed as Keyed
 
 import Dict
 import Element exposing (fill, height, padding, px, width)
-import Element.Background as Background
 import Element.Font as Font
 import Element.Keyed as Keyed
 import Html exposing (text)
 import Html.Attributes exposing (style)
 import List.Extra
-import Material.Button as Button exposing (config)
+import Material.Button as Button
 import Material.TextArea as TextArea
 import Material.TextField as TextField
 import Msg
@@ -19,10 +18,8 @@ import Session
 import Type.Database as Db exposing (Answer)
 import Type.Database.InputType exposing (InputType(..))
 import Type.Database.TypeMatching as Match
-import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Updater
-import Url.Parser as Parser exposing ((</>))
-import Url.Parser.Query as Query
 import Viewer exposing (detailsConfig)
 
 
@@ -56,31 +53,31 @@ init id db =
     let
         question2codingQuestionary : ( Id Db.Question String, Db.Timestamp Db.Question ) -> List ( Id Db.CodingQuestionary String, Db.Timestamp Db.CodingQuestionary )
         question2codingQuestionary ( qid, value ) =
-            Dict.filter (\cid cq -> cq.value.question == qid) db.coding_questionnaries
+            Dict.filter (\_ cq -> cq.value.question == qid) db.coding_questionnaries
                 |> Dict.toList
                 |> List.map (\( cid, other ) -> ( box cid, other ))
 
         codingQuestionary2codingQuestion : ( Id Db.CodingQuestionary String, Db.Timestamp Db.CodingQuestionary ) -> List ( Id Db.CodingQuestion String, Db.Timestamp Db.CodingQuestion )
         codingQuestionary2codingQuestion ( qid, value ) =
-            Dict.filter (\cid cq -> cq.value.coding_questionary == qid) db.coding_questions
+            Dict.filter (\_ cq -> cq.value.coding_questionary == qid) db.coding_questions
                 |> Dict.toList
                 |> List.map (\( cid, other ) -> ( box cid, other ))
 
         codingQuestion2input_type ( qid, value ) =
-            Dict.filter (\itid it -> value.value.input_type == box itid) db.input_types
+            Dict.filter (\itid _ -> value.value.input_type == box itid) db.input_types
                 |> Dict.toList
                 |> List.map (\( itid, other ) -> ( box itid, other ))
 
         answers =
-            Dict.filter (\eid event -> event.value.study == id) db.events
+            Dict.filter (\_ event -> event.value.study == id) db.events
                 |> Dict.toList
                 |> List.map (\( eid, event ) -> ( box eid, event ))
-                |> List.map (\( eid, event ) -> Dict.filter (\aid answer -> answer.value.event == eid) db.answers)
+                |> List.map (\( eid, _ ) -> Dict.filter (\_ answer -> answer.value.event == eid) db.answers)
                 |> List.map Dict.toList
                 |> List.concat
 
         all_coding_answers =
-            List.map (\( answer_id, answer ) -> ( ( box answer_id, answer ), Dict.filter (\question_id question -> answer.value.question == box question_id) db.questions )) answers
+            List.map (\( answer_id, answer ) -> ( ( box answer_id, answer ), Dict.filter (\question_id _ -> answer.value.question == box question_id) db.questions )) answers
                 |> List.map (\( answer, questiondict ) -> ( answer, Dict.toList questiondict ))
                 |> List.map (\( answer, questions ) -> List.map (\question -> ( answer, question )) questions)
                 |> List.concat
@@ -111,7 +108,7 @@ init id db =
 
         present_coding_answers : List ( Id Db.CodingAnswer String, Db.Timestamp Db.CodingAnswer )
         present_coding_answers =
-            Dict.filter (\cai cav -> List.member ( cav.value.answer, cav.value.coding_question ) all_relevant_keys) db.coding_answers
+            Dict.filter (\_ cav -> List.member ( cav.value.answer, cav.value.coding_question ) all_relevant_keys) db.coding_answers
                 |> Dict.toList
                 |> List.sortBy (\( _, cav ) -> cav.accessed)
                 |> List.map (\( cai, cav ) -> ( box cai, cav ))
@@ -146,7 +143,7 @@ init id db =
         currentQuestion : Maybe CodingAnswerTemplate
         currentQuestion =
             case currentAnswer of
-                Just ( caid, cav ) ->
+                Just ( _, cav ) ->
                     templates
                         |> List.filter (\{ coding_questionId } -> coding_questionId == cav.value.coding_question)
                         |> List.filter (\{ answerId } -> answerId == cav.value.answer)
@@ -297,7 +294,7 @@ view (Page.Page pageM) =
                                         Dict.get (unbox answerid) db.answers
                                 in
                                 case ( mbinput_type, mbanswer, mbcoding_question ) of
-                                    ( Just input_type, Just answer, Just coding_question ) ->
+                                    ( Just _, Just answer, Just coding_question ) ->
                                         Element.layout [ height <| px <| viewportHeight - 48, padding 24 ] <|
                                             Element.column [ height fill, width fill ]
                                                 [ Element.el [ height fill, width fill ] <| viewCodingQuestion db coding_questionid coding_question Nothing answerid model answer

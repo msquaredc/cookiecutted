@@ -1,8 +1,6 @@
-module Page.PageOne exposing (Model, init, page, update, view)
+module Page.PageOne exposing (Model, page)
 
-import Browser
 import Html exposing (..)
-import Html.Attributes exposing (..)
 import Msg
 import Page
 import Session

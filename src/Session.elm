@@ -3,7 +3,6 @@ module Session exposing (Session, init)
 import Json.Decode
 import Time
 import Type.Database as Db
-import Type.Database.TypeMatching as Match
 import Type.Flags
 import Type.IO.Internal exposing (Id)
 
@@ -49,19 +48,6 @@ init flags =
     in
     case db of
         Ok storage ->
-            let
-                user : Maybe String
-                user =
-                    Match.keys Db.UserType storage
-                        |> (\x ->
-                                case List.length x of
-                                    1 ->
-                                        List.head x
-
-                                    _ ->
-                                        Nothing
-                           )
-            in
             Session posixTime flags.windowSize Nothing storage
 
         Err _ ->

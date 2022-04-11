@@ -1,6 +1,5 @@
-module Type.Database.InputType exposing (InputType(..), ListConfig, LongAnswerConfig, ShortAnswerConfig, SingleInputType(..), fromString, inputTypeDecoder, inputTypeEncoder, inputTypeForm, inputTypeFuzzer, inputTypeToString, inputTypeUpdater, inputTypes, input_type, listConfig, longAnswerConfig, shortAnswerConfig, singleInputType, singleInputTypeDecoder, singleInputTypeEncoder, singleInputTypeForm, singleInputTypeToString, singleInputTypeUpdater, toString, updateEmpty)
+module Type.Database.InputType exposing (InputType(..), ListConfig, LongAnswerConfig, ShortAnswerConfig, SingleInputType(..), input_type, listConfig, longAnswerConfig, toString)
 
-import Dict exposing (Dict)
 import Fuzz
 import Json.Decode
 import Json.Encode
@@ -8,7 +7,7 @@ import Type.IO exposing (IO, attribute, entity, int, list, maybe, string, substr
 import Type.IO.Encoder as Encoder exposing (Encoder(..))
 import Type.IO.Form as Form exposing (Form)
 import Type.IO.Setter as Updater exposing (Updater)
-import Type.IO.ToString as ToString exposing (ToString)
+import Type.IO.ToString exposing (ToString)
 
 
 type InputType
@@ -163,20 +162,6 @@ listConfig =
         |> updateEmpty (\x -> { x | choices = [ "Unnamed Choice" ] })
 
 
-inputTypes : List InputType
-inputTypes =
-    [ ShortAnswer shortAnswerConfig.empty
-    , LongAnswer longAnswerConfig.empty
-    , List <| ListConfig Radio []
-    , List <| ListConfig Box []
-
-    -- , DropDown []
-    -- , LinearScale Dict.empty
-    -- , Matrix Radio [] []
-    -- , Matrix Box [] []
-    ]
-
-
 toString : InputType -> String
 toString kind =
     case kind of
@@ -186,7 +171,7 @@ toString kind =
         LongAnswer _ ->
             "Long Answer"
 
-        List { singleInput, choices } ->
+        List { singleInput } ->
             case singleInput of
                 Radio ->
                     "Multiple Choice"
@@ -204,36 +189,6 @@ toString kind =
 --     "Grid of Multiple Choices"
 -- Matrix Box _ _ ->
 --     "Grid of Boxes"
-
-
-fromString : String -> Maybe InputType
-fromString name =
-    case name of
-        "Short Answer" ->
-            Just (ShortAnswer shortAnswerConfig.empty)
-
-        "Long Answer" ->
-            Just (LongAnswer longAnswerConfig.empty)
-
-        "Multiple Choice" ->
-            Just <| List <| ListConfig Radio [ "Unnamed Choice" ]
-
-        "Boxes" ->
-            Just <| List <| ListConfig Box [ "Unnamed Choice" ]
-
-        -- "DropDown Menu" ->
-        --     Just <| DropDown []
-        -- "Linear Scale" ->
-        --     Just <| LinearScale Dict.empty
-        -- "Grid of Multiple Choices" ->
-        --     Just <| Matrix Radio [] []
-        -- "Grid of Boxes" ->
-        --     Just <| Matrix Box [] []
-        _ ->
-            Nothing
-
-
-
 -- decodeInputType : Json.Decoder.Decoder InputType
 -- decodeInputType =
 
@@ -368,7 +323,7 @@ inputTypeUpdater msg val =
            _ ->
                Err Updater.InvalidValue
         -}
-        Updater.AttributeMsg name msg_ ->
+        Updater.AttributeMsg _ _ ->
             case val of
                 ShortAnswer v ->
                     Result.map ShortAnswer <| shortAnswerConfig.updater msg v

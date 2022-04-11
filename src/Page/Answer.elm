@@ -1,16 +1,15 @@
-module Page.Answer exposing (Model, RelatedData, demoContent, page, parser, relatedData, toTitle, update, view, viewQuestion)
+module Page.Answer exposing (Model, RelatedData, page, parser)
 
 --import Html.Keyed as Keyed
 
 import Dict
 import Element exposing (fill, height, padding, px, width)
-import Element.Background as Background
 import Element.Font as Font
 import Element.Keyed as Keyed
 import Html exposing (text)
 import Html.Attributes exposing (style)
 import List.Extra
-import Material.Button as Button exposing (config)
+import Material.Button as Button
 import Material.TextArea as TextArea
 import Material.TextField as TextField
 import Msg
@@ -19,7 +18,7 @@ import Session
 import Type.Database as Db
 import Type.Database.InputType exposing (InputType(..))
 import Type.Database.TypeMatching as Match
-import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Updater
 import Url.Parser as Parser exposing ((</>))
 import Url.Parser.Query as Query

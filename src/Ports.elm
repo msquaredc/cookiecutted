@@ -1,7 +1,6 @@
 port module Ports exposing (clearLocalStorage, onDbChange, onLocalStorageChange, toDb, toLocalStorage)
 
 import Json.Encode
-import Type.Database
 import Type.LocalStorage
 
 

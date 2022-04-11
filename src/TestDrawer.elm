@@ -1,7 +1,6 @@
 module TestDrawer exposing (main)
 
 import Html exposing (text)
-import Html.Attributes exposing (style)
 import Material.Drawer.Modal as ModalDrawer
     exposing
         ( content
@@ -12,12 +11,6 @@ import Material.Drawer.Modal as ModalDrawer
         , drawer
           --, drawerScrim
         )
-import Material.List
-    exposing
-        ( config
-        , list
-        )
-import Material.List.Item exposing (config, listItem)
 
 
 main : Html.Html msg

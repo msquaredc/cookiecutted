@@ -1,27 +1,10 @@
-module Type.IO.Setter exposing (Car, Error(..), Msg(..), PartialUpdater, Person, Updater, array, attribute, bool, car1, car2, carUpdater2, dict, entity, errToString, float, int, list, maybe, person_str_updater, reference, references, result, string, substruct, toString, updateWithLong)
+module Type.IO.Setter exposing (Error(..), Msg(..), PartialUpdater, Updater, array, attribute, bool, dict, entity, errToString, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
-import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
 import Result.Extra
 import Type.IO.Internal as Id exposing (Id)
-
-
-type alias Person =
-    { name : String }
-
-
-person_str_updater : (Person -> String) -> (String -> String) -> Person -> Person
-person_str_updater getter f x =
-    Person (f (getter x))
-
-
-type alias Car =
-    { brand : Maybe String
-    , model : Id Person String
-    , age : Int
-    }
 
 
 type Msg
@@ -326,24 +309,6 @@ references name getter empty def =
 substruct : String -> (car -> string) -> Updater string -> PartialUpdater car (string -> b) -> PartialUpdater car b
 substruct =
     attribute
-
-
-carUpdater2 : Updater Car
-carUpdater2 =
-    entity Car
-        |> attribute "brand" .brand (maybe "" string)
-        |> reference "model" .model string
-        |> attribute "age" .age int
-
-
-car1 : Car
-car1 =
-    Car Nothing (Id.box "mymodel") 12
-
-
-car2 : Result Error Car
-car2 =
-    carUpdater2 (AttributeMsg "brand" (MaybeUpdateMsg (Just (StringMsg "Hello")))) car1
 
 
 

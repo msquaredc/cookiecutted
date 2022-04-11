@@ -1,34 +1,17 @@
-module Page.Top exposing (Model, init, page, update, view)
+module Page.Top exposing (Model, page)
 
-import Browser
-import Browser.Events
-import Browser.Navigation
 import Dict
 import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events
-import Identicon exposing (identicon)
-import Json.Decode
 import Material.Button as Button
-import Material.Card as Card exposing (actions, block, card)
-import Material.Icon as Icon
-import Material.IconButton as IconButton
 import Material.LayoutGrid as LG exposing (cell, layoutGrid)
-import Material.List as MList
-import Material.List.Item as MLItem
-import Material.TabBar as TabBar
-import Material.Theme as Theme
-import Material.Typography as Typography
 import Msg
 import Page
 import Ports
 import Session
 import Type.Database as Db
 import Type.Database.TypeMatching as Match
-import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Updater
-import Url.Builder
-import Utils exposing (..)
 import Viewer exposing (detailsConfig)
 import Viewer.Internal as I exposing (defaultCardConfig)
 
@@ -147,10 +130,6 @@ update message (Page.Page model) =
 
 view : Page.Page Model Msg.Msg -> Viewer.Details Msg.Msg
 view (Page.Page model) =
-    let
-        db =
-            model.session.db
-    in
     { detailsConfig
         | title = toTitle
         , top = True
@@ -220,7 +199,7 @@ studyOverview user (Page.Page model) =
     db.studies
         |> Dict.toList
         |> List.map (\( x, y ) -> ( x, y.value ))
-        |> List.filter (\( x, y ) -> y.leader == user)
+        |> List.filter (\( _, y ) -> y.leader == user)
         --        |> List.map (\(x,y) -> (x, Db.study.viewer db y))
         |> List.map (\( x, y ) -> studyCard x y)
 
@@ -252,59 +231,6 @@ studyCard id study =
 --             }
 --             { label = "Coding", icon = Nothing }
 --         ]
-
-
-viewCodingCard : String -> Db.Database -> Html Msg.Msg
-viewCodingCard user db =
-    card Card.config
-        { blocks =
-            Card.primaryAction []
-                [ block <|
-                    div
-                        [ Html.Attributes.style "margin-left" "auto"
-                        , Html.Attributes.style "margin-right" "auto"
-                        , Html.Attributes.style "padding-top" "1rem"
-                        , Html.Attributes.style "width" "25%"
-                        ]
-                        [ identicon "100%" user ]
-                , block <|
-                    Html.div [ Html.Attributes.style "padding" "1rem" ]
-                        [ Html.h2
-                            [ Typography.headline6
-                            , Html.Attributes.style "margin" "0"
-                            ]
-                            [ text <| "Coding: " ++ user ]
-                        , Html.h3
-                            [ Typography.subtitle2
-                            , Theme.textSecondaryOnBackground
-                            , Html.Attributes.style "margin" "0"
-                            ]
-                            [ text "Some interesting Subtitle" ]
-                        ]
-                , block <|
-                    Html.div
-                        [ Html.Attributes.style "padding" "0 1rem 0.5rem 1rem"
-                        , Typography.body2
-                        , Theme.textSecondaryOnBackground
-                        ]
-                        [ Html.p [] [ text "Description" ] ]
-                ]
-        , actions =
-            Just <|
-                actions
-                    { buttons =
-                        [ Card.button Button.config
-                            "Visit"
-                        ]
-                    , icons =
-                        [ Card.icon IconButton.config <|
-                            IconButton.icon "favorite"
-                        ]
-                    }
-        }
-
-
-
 -- HELPERS
 
 
@@ -312,29 +238,5 @@ toTitle =
     "Home"
 
 
-highlights =
-    ul []
-        [ li [] [ text "Client-side routing that uses pushState navigation and the forward slash `/` as the path separator." ]
-        , li [] [ text "Search Engine Optimization (SEO) friendly - unique Title for each page." ]
-        , li [] [ text "Support for localStorage, with the necessary ports and JS handlers already initalized." ]
-        , li [] [ text "Support for responsive site design by listening for window size changes and always storing window size in the model." ]
-        , li [] [ text "Built with webpack." ]
-        , li [] [ text "Well-commented code!" ]
-        ]
-
-
 
 -- Custom event listener for the 'Enter' key being pressed
-
-
-onEnter : Msg.TopMsg -> Attribute Msg.TopMsg
-onEnter msg =
-    let
-        isEnter code =
-            if code == 13 then
-                Json.Decode.succeed msg
-
-            else
-                Json.Decode.fail "not ENTER"
-    in
-    Html.Events.on "keydown" (Json.Decode.andThen isEnter Html.Events.keyCode)

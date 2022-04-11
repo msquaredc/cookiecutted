@@ -1,9 +1,8 @@
-module Type.IO.Decoder exposing (Decoder, array, attribute, bool, decodeDictFromTuples, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
+module Type.IO.Decoder exposing (Decoder, array, attribute, bool, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Json.Decode exposing (Decoder, map, null, nullable, succeed)
-import Json.Decode.Extra
+import Json.Decode exposing (Decoder, succeed)
 import Json.Decode.Pipeline exposing (required)
 
 

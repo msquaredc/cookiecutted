@@ -1,4 +1,4 @@
-module Viewer.OrderAwareList exposing (OrderAware, orderAwareList, prePost)
+module Viewer.OrderAwareList exposing (OrderAware, orderAwareList)
 
 import Type.IO.Internal exposing (Id)
 

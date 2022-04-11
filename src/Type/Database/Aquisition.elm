@@ -1,9 +1,7 @@
-module Type.Database.Aquisition exposing (Aquisition, AttributeAccessor(..), add, addAttrList, addAttrSingle, aquire, end, filterBy, move, moveReferenceList, moveReferenceSingle, start, transformAccessor, updateReciever, updateReference)
+module Type.Database.Aquisition exposing (Aquisition, AttributeAccessor(..), add, aquire, end, move, moveReferenceSingle, start)
 
-import Dict exposing (Dict)
-import Type.Database as Db exposing (Database, Row, Table, Timestamp, Type(..), coding_questionary)
-import Type.Database.TypeMatching as Match
-import Type.IO.Internal as Id exposing (Id)
+import Type.Database as Db exposing (Row, Table)
+import Type.IO.Internal exposing (Id)
 
 
 type AttributeAccessor a b

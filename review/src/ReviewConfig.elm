@@ -63,6 +63,7 @@ config =
     , NoMissingDocumentation.rule
         |> Review.Rule.ignoreErrorsForDirectories [ "tests/" ]
     , NoUnused.CustomTypeConstructors.rule []
+        |> Review.Rule.ignoreErrorsForDirectories [ "src/Type/IO/" ]
     , NoUnused.CustomTypeConstructorArgs.rule
     , NoUnused.Dependencies.rule
     , NoUnused.Exports.rule

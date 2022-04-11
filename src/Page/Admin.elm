@@ -1,16 +1,14 @@
-module Page.Admin exposing (Model, SubPage, init, page, parser, update, url, view)
+module Page.Admin exposing (Model, SubPage, page, parser, url)
 
 --import Browser
 
 import Dict
 import Html exposing (a, div, h1, h3, li, p, text, ul)
 import Html.Attributes exposing (class, href)
-import Material.Button as Button exposing (config)
+import Material.Button as Button
 import Material.DataTable as DataTable
     exposing
         ( cell
-        , config
-        , dataTable
         , row
         )
 import Msg exposing (AdminMsg)
@@ -23,7 +21,7 @@ import Type.Database as Db
 import Type.Database.TypeMatching as Match
 import Type.IO exposing (form2update)
 import Type.IO.Form as Form
-import Type.IO.Internal exposing (Id, box, unbox)
+import Type.IO.Internal exposing (box)
 import Type.IO.Setter as Update
 import Type.IO.ToString as ToString
 import Url.Parser as Parser exposing ((</>), (<?>))
@@ -278,14 +276,6 @@ toTable keys kind db =
 
 edit : Db.Database -> Db.Type -> String -> List (Html.Html Msg.Msg)
 edit db kind id =
-    let
-        msg =
-            \x ->
-                Msg.Form <|
-                    Form.AttrMsg (Match.toStringPlural kind) <|
-                        Form.DictMsg (Just id) <|
-                            Form.AttrMsg "value" x
-    in
     Match.fields kind
         |> List.map
             (\x ->

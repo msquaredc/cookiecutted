@@ -1,10 +1,9 @@
-module Type.Database exposing (Answer, AnswerView, Coder, CoderView, Coding, CodingAnswer, CodingAnswerView, CodingFrame, CodingFrameView, CodingQuestion, CodingQuestionView, CodingQuestionary, CodingQuestionaryView, CodingView, Database, DatabaseView, Event, EventView, InputTypeKind(..), Place, Question, QuestionView, Questionary, QuestionaryView, Row, Study, StudyView, Table, TableView, TestSubject, TestSubjectView, Timestamp, TimestampView, Type(..), User, answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, place, question, questionary, rows, study, table, test_subject, timestamp, updateEmpty, user)
+module Type.Database exposing (Answer, AnswerView, Coder, CoderView, Coding, CodingAnswer, CodingAnswerView, CodingFrame, CodingFrameView, CodingQuestion, CodingQuestionView, CodingQuestionary, CodingQuestionaryView, CodingView, Database, DatabaseView, Event, EventView, InputTypeKind(..), Place, Question, QuestionView, Questionary, QuestionaryView, Row, Study, StudyView, Table, TableView, TestSubject, TestSubjectView, Timestamp, TimestampView, Type(..), User, answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, question, questionary, rows, study, table, test_subject, timestamp, user)
 
 import Dict exposing (Dict)
 import Tuple
 import Type.Database.InputType as IT
-import Type.IO exposing (IO, dict, string, entity, substruct, reference, attribute, bool, maybe, int, float)
-import Type.IO.Encoder exposing (Encoder(..))
+import Type.IO exposing (IO, attribute, bool, dict, entity, float, int, maybe, reference, string, substruct)
 import Type.IO.Internal as Id exposing (Id)
 
 
@@ -404,13 +403,12 @@ type alias TimestampView a =
 timestamp : IO a Database b msg -> IO (Timestamp a) Database (TimestampView b) msg
 timestamp other =
     entity Timestamp TimestampView
-    |> reference "creator" string .creator .users Dict.get .value
-    |> attribute "created" int .created
-    |> attribute "modified" int .modified
-    |> attribute "accessed" int .accessed
-    |> attribute "deleted" (maybe int) .deleted
-    |> substruct "value" other .value
-    
+        |> reference "creator" string .creator .users Dict.get .value
+        |> attribute "created" int .created
+        |> attribute "modified" int .modified
+        |> attribute "accessed" int .accessed
+        |> attribute "deleted" (maybe int) .deleted
+        |> substruct "value" other .value
 
 
 

@@ -1,25 +1,9 @@
-module Type.IO.Update exposing (Car, Msg(..), PartialUpdater, Person, Updater, array, attribute, bool, carUpdater2, dict, entity, float, int, list, maybe, person_str_updater, reference, references, result, string, substruct, updateWithLong)
+module Type.IO.Update exposing (Msg(..), PartialUpdater, Updater)
 
 import Array exposing (Array)
 import Array.Extra
 import Dict exposing (Dict)
 import List.Extra
-
-
-type alias Person =
-    { name : String }
-
-
-person_str_updater : (Person -> String) -> (String -> String) -> Person -> Person
-person_str_updater getter f x =
-    Person (f (getter x))
-
-
-type alias Car =
-    { brand : String
-    , model : String
-    , age : Int
-    }
 
 
 type Msg a
@@ -212,14 +196,6 @@ references name getter def =
 substruct : String -> (car -> string) -> Updater string a -> PartialUpdater car (string -> b) a -> PartialUpdater car b a
 substruct =
     attribute
-
-
-carUpdater2 : Updater Car a
-carUpdater2 =
-    entity Car
-        |> attribute "brand" .brand string
-        |> reference "model" .model string
-        |> attribute "age" .age int
 
 
 

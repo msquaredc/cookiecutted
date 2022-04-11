@@ -1,8 +1,7 @@
-module Page.User exposing (Model, init, page, update, view)
+module Page.User exposing (Model, page)
 
-import Browser
-import Html exposing (div,text, h1, h3, a)
-import Html.Attributes exposing (href, class)
+import Html exposing (a, div, h1, h3, text)
+import Html.Attributes exposing (class, href)
 import Msg exposing (UserMsg)
 import Page exposing (Page(..))
 import Session

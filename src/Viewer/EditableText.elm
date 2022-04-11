@@ -3,7 +3,6 @@ module Viewer.EditableText exposing (Config, text)
 import Html exposing (Attribute, Html, div)
 import Html.Events exposing (onBlur, onClick)
 import Material.TextField as TextField
-import Msg exposing (EditableTextMsg)
 
 
 type alias Config msg =

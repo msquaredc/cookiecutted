@@ -2,8 +2,8 @@ module Viewer.Desktop exposing (viewLandscape, viewPortrait)
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (style)
-import Material.Drawer.Permanent as Drawer exposing (config, drawer)
-import Material.TopAppBar as TopAppBar exposing (config, prominent)
+import Material.Drawer.Permanent as Drawer
+import Material.TopAppBar as TopAppBar exposing (prominent)
 import Viewer.Internal as I
 
 

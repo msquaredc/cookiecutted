@@ -1,4 +1,4 @@
-module Type.IO.Encoder exposing (Encoder(..), array, attribute, bool, collapseEncoder, dict, entity, float, getMaybeOut, int, list, listToSingle, maybe, reference, references, result, string, substruct)
+module Type.IO.Encoder exposing (Encoder(..), array, attribute, bool, collapseEncoder, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)

@@ -1,15 +1,13 @@
-module Page.Study exposing (Model, init, page, update, view)
+module Page.Study exposing (Model, page)
 
 --import Browser
 
-import Dict exposing (Dict)
+import Dict
 import File.Download as Download
-import Html exposing (Html, div, p, text)
+import Html exposing (Html, p, text)
 import Identicon exposing (identicon)
 import Material.Button as Button exposing (unelevated)
-import Material.Icon as Icon
-import Material.IconButton as IconButton
-import Material.LayoutGrid as LG exposing (cell, inner, layoutGrid)
+import Material.LayoutGrid exposing (cell, inner, layoutGrid)
 import Material.List as MList exposing (list)
 import Material.List.Item as MLItem exposing (graphic, listItem)
 import Material.Typography as Typography
@@ -18,9 +16,9 @@ import Page exposing (Page(..))
 import Session
 import Time exposing (Posix)
 import Type.Database as Db
-import Type.Database.Aquisition as Aq exposing (..)
+import Type.Database.Aquisition exposing (..)
 import Type.Database.TypeMatching as Match
-import Type.IO.Internal as Id exposing (Id, box, unbox)
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Updater
 import Viewer exposing (detailsConfig)
 import Viewer.EditableText as EditableText
@@ -41,14 +39,6 @@ type alias Model =
 
 
 -- INIT
-
-
-init : Id Db.Study String -> Bool -> Model
-init =
-    Model
-
-
-
 {-
    { active = False
    , activator = Msg.Study <| Msg.StudyNameEdit Msg.GetFocus
@@ -347,8 +337,8 @@ exportStudy id db =
                 |> move (Value .coding_questionary) db.coding_questions (Raw Tuple.first)
                 |> add (Value .coding_question) db.coding_answers (Value .value)
                 |> move (Value .coding_question) db.coding_answers (Raw Tuple.first)
-                |> move (Raw Tuple.first) db.coding_answers (Raw (\( x, y ) -> y.creator))
-                |> add (Raw (\( x, y ) -> y.creator)) db.users (Value (\x -> Maybe.withDefault "" x.name))
+                |> move (Raw Tuple.first) db.coding_answers (Raw (\( _, y ) -> y.creator))
+                |> add (Raw (\( _, y ) -> y.creator)) db.users (Value (\x -> Maybe.withDefault "" x.name))
                 |> end
     in
     List.map serializeStudyDatapoint datapoints
