@@ -3,7 +3,7 @@ language: elm
 sudo: required
 
 install:
-  - travis_wait npm i elm-review
+  - npm install elm-review --loglevel verbose
   - npm i create-elm-app -g
   - npm i elm-coverage -g
   #- npm i coveralls -g
