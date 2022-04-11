@@ -10,4 +10,4 @@ install:
 script: 
   - elm-app test
   - elm-coverage
-  - cat ./.coverage/lcov.info | coveralls
+  #- cat ./.coverage/lcov.info | coveralls
