@@ -2,9 +2,6 @@ language: elm
 
 sudo: required
 
-node_js:
-  - '8'
-
 install:
   - npm i create-elm-app -g
   # - npm i elm-coverage -g
