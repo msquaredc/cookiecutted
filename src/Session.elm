@@ -4,12 +4,11 @@ import Json.Decode
 import Time
 import Type.Database as Db
 import Type.Flags
-import Type.Database.TypeMatching as Match
 import Type.IO.Internal exposing (Id)
+
+
+
 --import Type.LocalStorage
-
-
-
 {-
    The session is used for any data that needs to be shared globally across all pages. All pages have the session in their model.
    You can use this to store info like credentials.
@@ -24,6 +23,7 @@ type alias Session =
         , height : Int
         }
     , user : Maybe (Id Db.User String)
+
     --    , localStorage : Maybe Type.LocalStorage.LocalStorage
     , db : Db.Database
     }
@@ -38,25 +38,16 @@ init flags =
     let
         --        localStorage =
         --            Json.Decode.decodeValue Type.LocalStorage.decode flags.localStorage
+        db : Result Json.Decode.Error Db.Database
         db =
             Json.Decode.decodeValue Db.database.decoder flags.db
 
+        posixTime : Time.Posix
         posixTime =
             Time.millisToPosix flags.timeAppStarted
-        
     in
     case db of
         Ok storage ->
-            let
-                user = Match.keys Db.UserType storage
-                       |> \x -> case List.length x of
-                                        1 -> 
-                                            List.head x
-                                        _ ->
-                                            Nothing
-                               
-                       
-            in
             Session posixTime flags.windowSize Nothing storage
 
         Err _ ->

@@ -1,4 +1,4 @@
-module Type.IO.Encoder exposing (..)
+module Type.IO.Encoder exposing (Encoder(..), array, attribute, bool, collapseEncoder, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
@@ -136,7 +136,7 @@ reference name getter def parent =
 
                         ListEncoder e ->
                             ( name
-                            , collapseEncoder (ListEncoder e) (Id.unbox(getter x))
+                            , collapseEncoder (ListEncoder e) (Id.unbox (getter x))
                             )
                  )
                     :: pe
@@ -152,15 +152,17 @@ references name getter def parent =
         ListEncoder pe ->
             ListEncoder
                 ((\x ->
-                    case def of 
+                    case def of
                         SingleEncoder e ->
                             ( name
                             , Json.Encode.list e (getter x)
                             )
+
                         ListEncoder e ->
                             ( name
-                            , Json.Encode.list (collapseEncoder (ListEncoder e)) (getter x))
+                            , Json.Encode.list (collapseEncoder (ListEncoder e)) (getter x)
                             )
+                 )
                     :: pe
                 )
 

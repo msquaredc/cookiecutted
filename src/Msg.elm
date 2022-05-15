@@ -1,36 +1,35 @@
 module Msg exposing
     ( AdminMsg(..)
     , DbMsg(..)
+    , EditableTextMsg(..)
+    , EventMsg(..)
+    , EventSubPage(..)
+    , ListMsg(..)
+    , LongMsg(..)
     , Msg(..)
     , PageOneMsg(..)
     , PageWithSubpageMsg(..)
+    , QuestionMsg(..)
+    , QuestionaryMsg(..)
+    , ShortMsg(..)
+    , StudyMsg(..)
     , TopMsg(..)
     , UserMsg(..)
     , ViewerMsg(..)
-    , StudyMsg(..)
-    , EventMsg(..)
-    , QuestionaryMsg(..)
-    , QuestionMsg(..)
-    , EditableTextMsg(..)
-    , ShortMsg(..)
-    , LongMsg(..)
-    , ListMsg(..)
-    , EventSubPage(..)
     )
 
 import Browser
+import DnDList
 import Json.Encode
-import Type.Database exposing (Type)
-import Type.IO.Form exposing (UpdateMsg(..))
-import Type.IO.Setter as Updater
-import Type.IO.Internal exposing (Id)
-import Type.Database as Db
-import Type.Database.InputType as IT
 import Material.Snackbar as Snackbar
 import Time exposing (Posix)
+import Type.Database as Db exposing (Type)
+import Type.Database.InputType as IT
+import Type.IO.Form exposing (UpdateMsg)
+import Type.IO.Internal exposing (Id)
+import Type.IO.Setter as Updater
 import Url
 import Url.Builder
-import DnDList
 
 
 type Msg
@@ -41,7 +40,7 @@ type Msg
     | Viewer ViewerMsg
     | Top TopMsg
     | User UserMsg
-    | Admin (AdminMsg)
+    | Admin AdminMsg
       -- | NewPageMsg NewPage.Msg
     | PageOne PageOneMsg
     | Study StudyMsg
@@ -61,7 +60,6 @@ type Msg
     | Tick Posix
     | SnackbarClosed Snackbar.MessageId
     | DnDEvent DnDList.Msg
-    
 
 
 type ViewerMsg
@@ -76,11 +74,12 @@ type TopMsg
     | LocalStorageInputFieldChange String
     | SetLocalStorage
     | ClearLocalStorage
-   
+
 
 type EditableTextMsg
     = GetFocus
     | LooseFocus
+
 
 type StudyMsg
     = StudyNameEdit EditableTextMsg
@@ -89,38 +88,42 @@ type StudyMsg
 
 type EventMsg
     = EventNameEdit EditableTextMsg
-    | AnswerQuestions {questionary: String, test_subject: String, event: String}
+    | AnswerQuestions { questionary : String, test_subject : String, event : String }
     | EventSwitchTo EventSubPage
+
 
 type EventSubPage
     = EventSettings
     | EventOverview
     | EventPeople
 
+
 type QuestionaryMsg
     = CurrentQuestionSelected (Maybe String)
     | QuestionNameEdit EditableTextMsg
     | ContextMenu (Maybe String)
 
-{-     | OnQuestionDrag DnDList.Msg
-    | Tock Posix -}
+
+
+{- | OnQuestionDrag DnDList.Msg
+   | Tock Posix
+-}
+
 
 type QuestionMsg
-    = SetInputType String
-    | Short ShortMsg
-    | Long LongMsg
-    | List ListMsg
+    = Short ShortMsg
 
-type ShortMsg 
-    = ShortLabel String
-    | ShortPlaceholder String
 
-type LongMsg 
+type ShortMsg
+    = ShortPlaceholder String
+
+
+type LongMsg
     = LongLabel String
 
-type ListMsg 
+
+type ListMsg
     = SingleInput IT.SingleInputType
-    
 
 
 type DbMsg
@@ -130,7 +133,10 @@ type DbMsg
     | UpdateAll (List Updater.Msg)
     | Delete Type String
     | Access Type String
-    --| SwapAttributes Type (String, String) String
+
+
+
+--| SwapAttributes Type (String, String) String
 
 
 type PageOneMsg
@@ -147,5 +153,5 @@ type UserMsg
 
 type AdminMsg
     = AdminForm UpdateMsg
-    | AdminDb (DbMsg)
+    | AdminDb DbMsg
     | ValueChanged String
