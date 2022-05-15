@@ -102,7 +102,7 @@ viewSnackbar h =
 
 
 view : Session.Session -> (a -> Msg.Msg) -> Details Msg.Msg -> Header -> Maybe Posix -> Browser.Document Msg.Msg
-view session msg details h time =
+view session _ details h time =
     { title = details.title ++ Utils.genericTitle
     , body =
         viewSnackbar h

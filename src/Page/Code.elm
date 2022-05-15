@@ -142,15 +142,14 @@ init id db =
 
         currentQuestion : Maybe CodingAnswerTemplate
         currentQuestion =
-            case currentAnswer of
-                Just ( _, cav ) ->
+            Maybe.andThen 
+                (\( _, cav ) ->
                     templates
                         |> List.filter (\{ coding_questionId } -> coding_questionId == cav.value.coding_question)
                         |> List.filter (\{ answerId } -> answerId == cav.value.answer)
-                        |> List.head
-
-                Nothing ->
-                    Nothing
+                        |> List.head)
+                currentAnswer
+                
 
         curID =
             Maybe.andThen (\x -> List.Extra.elemIndex x history) currentAnswer

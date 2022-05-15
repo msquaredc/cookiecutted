@@ -872,6 +872,7 @@ parser model session =
 --  This holds the paths for each page. Update as needed for each page you add/remove
 
 
+paths : { top : String, users : String, pageOne : String, pageWithSubpage : String, admin : String, study : String, event : String, questionary : String, question : String, coding_question : String }
 paths =
     { top = ""
     , users = "user"

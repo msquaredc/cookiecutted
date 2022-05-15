@@ -348,13 +348,21 @@ relatedData id db =
                 , created = Time.millisToPosix timestampedEvent.created
                 , creator = ( timestampedEvent.creator, Maybe.map .value <| Dict.get (unbox timestampedEvent.creator) db.users )
                 , updated = Time.millisToPosix timestampedEvent.modified
-                , questionnaries = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\_ y -> y.value) <| Dict.filter (\_ y -> y.value.study == event.study) db.questionnaries
+                , questionnaries = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\_ y -> y.value) <| Dict.filter (\x _ -> isNonEmpty (box x) db) <| Dict.filter (\_ y -> y.value.study == event.study) db.questionnaries
                 , test_subjects = List.map (Tuple.mapFirst box) <| Dict.toList <| Dict.map (\_ y -> y.value) <| Dict.filter (\_ y -> y.value.event == id) db.test_subjects
                 }
 
         Nothing ->
             Nothing
 
+isNonEmpty : Id Db.Questionary String -> Db.Database -> Bool
+isNonEmpty id db =
+    Dict.filter (\_ x -> x.value.questionary == id) db.questions
+    |> Dict.filter(\_ x -> x.value.text /= "Unnamed Question") 
+    |> Dict.map (\_ y -> y.value)
+    |> Dict.toList
+    |> List.length
+    |> \x -> x > 0
 
 viewLeader : ( String, Maybe Db.User ) -> Maybe String -> String
 viewLeader ( id, mbLeader ) cur =
