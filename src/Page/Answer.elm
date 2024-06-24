@@ -1,15 +1,15 @@
-module Page.Answer exposing (..)
+module Page.Answer exposing (Model, RelatedData, page, parser)
+
+--import Html.Keyed as Keyed
 
 import Dict
-import Element exposing (fill, height, width, px, padding )
+import Element exposing (fill, height, padding, px, width)
 import Element.Font as Font
-import Element.Background as Background
+import Element.Keyed as Keyed
 import Html exposing (text)
 import Html.Attributes exposing (style)
---import Html.Keyed as Keyed
-import Element.Keyed as Keyed
 import List.Extra
-import Material.Button as Button exposing (config)
+import Material.Button as Button
 import Material.TextArea as TextArea
 import Material.TextField as TextField
 import Msg
@@ -18,11 +18,11 @@ import Session
 import Type.Database as Db
 import Type.Database.InputType exposing (InputType(..))
 import Type.Database.TypeMatching as Match
+import Type.IO.Internal exposing (Id, box, unbox)
 import Type.IO.Setter as Updater
-import Type.IO.Internal as Id exposing (Id, box, unbox)
-import Viewer exposing (detailsConfig)
 import Url.Parser as Parser exposing ((</>))
 import Url.Parser.Query as Query
+import Viewer exposing (detailsConfig)
 
 
 type alias Model =
@@ -45,6 +45,7 @@ page session init =
             , view = view
             , toMsg = identity
             , subscriptions = Sub.none
+
             -- , header = Viewer.header
             , update = update
 
@@ -97,26 +98,35 @@ page session init =
     -}
     ( Page model, Cmd.none )
 
+
 parser : Parser.Parser ((String -> Maybe Model) -> a) a
 parser =
-    Parser.s "answer" </> (Parser.query <|
-        Query.map2 
-            (\qid tsid -> (\eid -> Maybe.map2 Model qid tsid
-                                   |> Maybe.map (\x -> x eid)))
-            (Query.string "qid")
-            (Query.string "tsid"))
-    {- let
-        page2parser : Db.Type -> Parser.Parser (SubPage -> b) b
-        page2parser subpage =
-            Parser.map (Query subpage) (Parser.s (Match.toString subpage) <?> Query.string "q")
+    Parser.s "answer"
+        </> (Parser.query <|
+                Query.map2
+                    (\qid tsid ->
+                        \eid ->
+                            Maybe.map2 Model qid tsid
+                                |> Maybe.map (\x -> x eid)
+                    )
+                    (Query.string "qid")
+                    (Query.string "tsid")
+            )
 
-        page2edit : Db.Type -> Parser.Parser (SubPage -> b) b
-        page2edit subpage =
-            Parser.map (Edit subpage) (Parser.s (Match.toString subpage) </> Parser.string)
-    in
-    Parser.oneOf
-        (Parser.map Home Parser.top :: List.map page2parser Match.types ++ List.map page2edit Match.types) -}
 
+
+{- let
+       page2parser : Db.Type -> Parser.Parser (SubPage -> b) b
+       page2parser subpage =
+           Parser.map (Query subpage) (Parser.s (Match.toString subpage) <?> Query.string "q")
+
+       page2edit : Db.Type -> Parser.Parser (SubPage -> b) b
+       page2edit subpage =
+           Parser.map (Edit subpage) (Parser.s (Match.toString subpage) </> Parser.string)
+   in
+   Parser.oneOf
+       (Parser.map Home Parser.top :: List.map page2parser Match.types ++ List.map page2edit Match.types)
+-}
 
 
 update : Msg.Msg -> Page.Page Model Msg.Msg -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
@@ -132,55 +142,57 @@ view (Page.Page model) =
 
         db =
             model.session.db
-        viewportHeight = model.session.windowSize.height
-                        
-    in  
+
+        viewportHeight =
+            model.session.windowSize.height
+    in
     { detailsConfig
         | title = toTitle model.page
         , user = model.session.user
         , body =
-            \_ -> [
-                case infos.currentQuestionId of
+            \_ ->
+                [ case infos.currentQuestionId of
                     Just qid ->
-                        case Dict.get (unbox qid) <| Dict.fromList (List.map (\(a,b) -> (unbox a, b)) infos.questions ) of
+                        case Dict.get (unbox qid) <| Dict.fromList (List.map (\( a, b ) -> ( unbox a, b )) infos.questions) of
                             Just question ->
-                                
-                                Element.layout [ height <| px <| viewportHeight - 48, padding 24] <|
-                                    Element.column [height fill, width fill]
+                                Element.layout [ height <| px <| viewportHeight - 48, padding 24 ] <|
+                                    Element.column [ height fill, width fill ]
                                         [ Element.el [ height fill, width fill ] <| viewQuestion db qid question infos.currentAnswer model.page
-                                        , Element.row [ Element.alignBottom, width fill]
-                                            [ Element.el [Element.alignLeft] <| Element.html
-                                                (case infos.previous of
-                                                    Just prev ->
-                                                        Button.raised
-                                                            (Button.config |> Button.setOnClick prev)
-                                                            "Previous"
+                                        , Element.row [ Element.alignBottom, width fill ]
+                                            [ Element.el [ Element.alignLeft ] <|
+                                                Element.html
+                                                    (case infos.previous of
+                                                        Just prev ->
+                                                            Button.raised
+                                                                (Button.config |> Button.setOnClick prev)
+                                                                "Previous"
 
-                                                    Nothing ->
-                                                        text ""
-                                                )
+                                                        Nothing ->
+                                                            text ""
+                                                    )
                                             , Element.el [ Element.centerX, width fill ] (Element.text "")
-                                            , Element.el [ Element.alignRight] <| Element.html
-                                                (case infos.next of
-                                                    Just next ->
-                                                        Button.raised
-                                                            (Button.config |> Button.setOnClick next)
-                                                            "Next"
+                                            , Element.el [ Element.alignRight ] <|
+                                                Element.html
+                                                    (case infos.next of
+                                                        Just next ->
+                                                            Button.raised
+                                                                (Button.config |> Button.setOnClick next)
+                                                                "Next"
 
-                                                    Nothing ->
-                                                        text ""
-                                                )
+                                                        Nothing ->
+                                                            text ""
+                                                    )
                                             ]
                                         ]
 
                             Nothing ->
-                                 text "Question not found" 
+                                text "Question not found"
 
                     Nothing ->
                         Html.div demoContent
                             [ text "Nothing to do!"
                             ]
-            ]
+                ]
     }
 
 
@@ -248,41 +260,59 @@ viewQuestion db qid question mbAnswer model =
                                 ]
                             )
     in
-    Keyed.column [width fill, height fill] [
-        ( "title", Element.el [ width fill, height fill] <| Element.el [Element.centerX, Element.centerY {-Background.color (Element.rgb 0.8 0.8 0.8)-},padding 32] <| Element.paragraph [Font.size 32] [Element.text question.text] )
-            ,("edit", Keyed.row [width fill, height fill] [
-            ("padleft", Element.el [width fill] <| Element.none)
-            , (unbox qid, Element.el [ width fill, height fill] <| Element.el [Element.centerY, width fill] <| (case mbit of
-                    Nothing ->
-                        Element.html <| text "Undefined input type" 
-                    Just (ShortAnswer s) ->
-                        Element.html <| TextField.filled
-                                (TextField.config
-                                    |> TextField.setLabel s.label
-                                    |> TextField.setValue mbvalue
-                                    |> TextField.setPlaceholder s.placeholder
-                                    |> TextField.setOnInput tonInput
-                                 --|> TextField.setMaxLength s.maxLength
-                                 --|> TextField.setMinLength s.minLength
-                                )
-                          
-                        
+    Keyed.column [ width fill, height fill ]
+        [ ( "title"
+          , Element.el [ width fill, height fill ] <|
+                Element.el
+                    [ Element.centerX
+                    , Element.centerY
 
-                    Just (LongAnswer l) ->
-                        Element.html <| TextArea.filled
-                                (TextArea.config
-                                    |> TextArea.setLabel l.label
-                                    |> TextArea.setValue mbvalue
-                                    |> TextArea.setOnInput tonInput
-                                    |> TextArea.setRows l.rows
-                                    |> TextArea.setCols l.cols
-                                )
-                         
+                    {- Background.color (Element.rgb 0.8 0.8 0.8) -}
+                    , padding 32
+                    ]
+                <|
+                    Element.paragraph [ Font.size 32 ] [ Element.text question.text ]
+          )
+        , ( "edit"
+          , Keyed.row [ width fill, height fill ]
+                [ ( "padleft", Element.el [ width fill ] <| Element.none )
+                , ( unbox qid
+                  , Element.el [ width fill, height fill ] <|
+                        Element.el [ Element.centerY, width fill ] <|
+                            case mbit of
+                                Nothing ->
+                                    Element.html <| text "Undefined input type"
 
-                    Just (List _) ->
-                        Element.text "List Answer" 
-               ))
-            , ("padright", Element.el [width fill] <| Element.none)])]
+                                Just (ShortAnswer s) ->
+                                    Element.html <|
+                                        TextField.filled
+                                            (TextField.config
+                                                |> TextField.setLabel s.label
+                                                |> TextField.setValue mbvalue
+                                                |> TextField.setPlaceholder s.placeholder
+                                                |> TextField.setOnInput tonInput
+                                             --|> TextField.setMaxLength s.maxLength
+                                             --|> TextField.setMinLength s.minLength
+                                            )
+
+                                Just (LongAnswer l) ->
+                                    Element.html <|
+                                        TextArea.filled
+                                            (TextArea.config
+                                                |> TextArea.setLabel l.label
+                                                |> TextArea.setValue mbvalue
+                                                |> TextArea.setOnInput tonInput
+                                                |> TextArea.setRows l.rows
+                                                |> TextArea.setCols l.cols
+                                            )
+
+                                Just (List _) ->
+                                    Element.text "List Answer"
+                  )
+                , ( "padright", Element.el [ width fill ] <| Element.none )
+                ]
+          )
+        ]
 
 
 type alias RelatedData =
@@ -318,7 +348,7 @@ relatedData db model =
                 |> List.map (List.sortBy (\( _, val ) -> val.created))
                 |> List.filterMap List.Extra.last
                 |> List.sortBy (\( _, val ) -> val.accessed)
-                |> List.map (\(a, b) -> (box a, b))
+                |> List.map (\( a, b ) -> ( box a, b ))
 
         qids_present =
             List.map (\( _, val ) -> val.value.question) answers
@@ -342,7 +372,6 @@ relatedData db model =
 
         currentAnswer =
             answerFromId currentQuestion
-            
 
         curID : Maybe Int
         curID =
@@ -361,7 +390,7 @@ relatedData db model =
         prevAnswer =
             answerFromId prevID
 
-        getMsg : Maybe (Id Db.Question String) -> Maybe (Id Db.Answer String, Db.Answer) -> Maybe (Msg.Msg)
+        getMsg : Maybe (Id Db.Question String) -> Maybe ( Id Db.Answer String, Db.Answer ) -> Maybe Msg.Msg
         getMsg id answer =
             case answer of
                 Just ( aid, _ ) ->

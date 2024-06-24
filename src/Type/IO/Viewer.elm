@@ -1,4 +1,4 @@
-module Type.IO.Viewer exposing (..)
+module Type.IO.Viewer exposing (Basic, Viewer, array, attribute, bool, dict, entity, float, int, list, maybe, reference, references, result, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
@@ -59,7 +59,7 @@ dict keys values db full =
                     ( Just k1, Just v1 ) ->
                         Just ( k1, v1 )
 
-                    ( _, _ ) ->
+                    _ ->
                         Nothing
             )
         |> Maybe.Extra.combine
@@ -110,7 +110,7 @@ reference keygetter dictgetter foreigngetter post parent db full =
                         f argument
                             |> Just
 
-                    ( _, _ ) ->
+                    _ ->
                         Nothing
            )
 
@@ -142,5 +142,5 @@ substruct getter struct old =
             ( Just f, Just v ) ->
                 Just (f v)
 
-            ( _, _ ) ->
+            _ ->
                 Nothing

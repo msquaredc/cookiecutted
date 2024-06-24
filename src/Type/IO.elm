@@ -1,4 +1,4 @@
-module Type.IO exposing (..)
+module Type.IO exposing (DatatypeIO, IO, PartialIO, Reference(..), array, attribute, bool, dict, encode, entity, float, form2update, int, list, maybe, reference, string, substruct)
 
 import Array exposing (Array)
 import Dict exposing (Dict)
@@ -8,9 +8,9 @@ import Json.Encode
 import Type.IO.Decoder as Decoder exposing (Decoder)
 import Type.IO.Encoder as Encoder exposing (Encoder)
 import Type.IO.Form as Form exposing (Form)
-import Type.IO.ToString as ToString exposing (ToString)
-import Type.IO.Setter as Update exposing (PartialUpdater)
 import Type.IO.Internal as Id exposing (Id)
+import Type.IO.Setter as Update exposing (PartialUpdater)
+import Type.IO.ToString as ToString exposing (ToString)
 import Type.IO.Viewer as Viewer exposing (Viewer)
 
 
@@ -26,6 +26,7 @@ type alias PartialIO delta full db view msg =
     , form : Form full msg
     , updater : PartialUpdater full delta
     }
+
 
 type alias IO kind db view msg =
     PartialIO kind kind db view msg
@@ -186,7 +187,7 @@ array old =
 entity : b -> c -> PartialIO b a db c msg
 entity new view =
     { decoder = Decoder.entity new
-    , strDecoder = \a -> Decoder.entity new
+    , strDecoder = \_ -> Decoder.entity new
     , toString = ToString.entity new
     , encoder = Encoder.entity
     , fuzzer = Fuzz.constant new
@@ -220,12 +221,12 @@ reference :
     -> (db -> f) -- lookup
     -> (comparable -> f -> Maybe d) -- MaybeGetter
     -> (d -> a)
-    -> PartialIO ((Id g comparable) -> b) c db (a -> e) msg -- Old Entity
+    -> PartialIO (Id g comparable -> b) c db (a -> e) msg -- Old Entity
     -> PartialIO b c db e msg
 reference name def getter lookup foreigngetter post parent =
     { decoder = Decoder.reference name (Json.Decode.map Id.box def.decoder) parent.decoder
     , strDecoder = \a -> Decoder.reference name (Json.Decode.map Id.box (def.strDecoder a)) (parent.strDecoder a)
-    , encoder = Encoder.reference name getter def.encoder parent.encoder 
+    , encoder = Encoder.reference name getter def.encoder parent.encoder
     , toString = ToString.reference name getter def.toString parent.toString
     , fuzzer = Fuzz.andMap (Fuzz.map Id.box def.fuzzer) parent.fuzzer
     , viewer = Viewer.reference getter lookup foreigngetter post parent.viewer
@@ -250,7 +251,7 @@ references name def getter lookup foreigngetter post parent =
     , strDecoder = \a -> Decoder.references name (def.strDecoder a) (parent.strDecoder a)
     , encoder = Encoder.references name getter def.encoder parent.encoder
     , toString = ToString.references name getter def.toString parent.toString
-    , fuzzer = Fuzz.andMap (Fuzz.list def.fuzzer) parent.fuzzer 
+    , fuzzer = Fuzz.andMap (Fuzz.list def.fuzzer) parent.fuzzer
     , viewer = Viewer.references getter lookup foreigngetter post parent.viewer
     , empty = parent.empty (list def).empty
     , fields = parent.fields ++ [ name ]
@@ -280,69 +281,72 @@ reference_fuzzer =
         |> Fuzz.map (\x -> Reference x)
 
 
-map_decoder_maybe : (Decoder (delta -> target) -> Decoder target) -> Decoder (Maybe delta -> target) -> Decoder target
-map_decoder_maybe olddecoder newhandle =
-    Json.Decode.map map_maybe_func newhandle
-        |> olddecoder
-
-
-map_maybe_func : (Maybe delta -> target) -> delta -> target
-map_maybe_func func val =
-    func (Just val)
-
-form2update : Form.UpdateMsg -> Maybe (Update.Msg)
+form2update : Form.UpdateMsg -> Maybe Update.Msg
 form2update fmsg =
     case fmsg of
         Form.IntMsg Nothing ->
             Nothing
+
         Form.IntMsg (Just val) ->
             Just (Update.IntMsg val)
+
         Form.StringMsg Nothing ->
             Nothing
+
         Form.StringMsg (Just val) ->
             Just (Update.StringMsg val)
+
         Form.FloatMsg Nothing ->
             Nothing
+
         Form.FloatMsg (Just val) ->
             Just (Update.FloatMsg val)
+
         Form.BoolMsg _ ->
             Just (Update.BoolUpdateMsg not)
+
         Form.ListMsg index msg ->
             case form2update msg of
                 Just msg_ ->
                     Just (Update.ListUpdateMsg index msg_)
+
                 Nothing ->
                     Nothing
+
         Form.ArrayMsg index msg ->
             case form2update msg of
                 Just msg_ ->
                     Just (Update.ArrayUpdateIndexMsg index msg_)
+
                 Nothing ->
                     Nothing
+
         Form.MaybeMsg msg ->
             Just (Update.MaybeUpdateMsg (form2update msg))
+
         Form.DictMsg key msg ->
-            case (form2update msg, key) of
-                (Just msg_, Just key_) ->
+            case ( form2update msg, key ) of
+                ( Just msg_, Just key_ ) ->
                     Just (Update.DictKeyMsg key_ msg_)
-                (_, _) ->
+
+                _ ->
                     Nothing
+
         Form.ResultMsg state msg ->
-            case (state, form2update msg) of
-                (Form.ErrForm , Just val) ->
+            case ( state, form2update msg ) of
+                ( Form.ErrForm, Just val ) ->
                     Just (Update.ResultErrMsg val)
-                (Form.OkForm, Just val) ->
+
+                ( Form.OkForm, Just val ) ->
                     Just (Update.ResultOkMsg val)
-                _ -> 
+
+                _ ->
                     Nothing
+
         Form.AttrMsg name msg ->
             case form2update msg of
                 Just val ->
                     Just (Update.AttributeMsg name val)
+
                 Nothing ->
                     Nothing
-                    
-            
-        
-
-                    

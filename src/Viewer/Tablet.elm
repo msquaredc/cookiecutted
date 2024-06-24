@@ -1,87 +1,97 @@
-module Viewer.Tablet exposing (..)
+module Viewer.Tablet exposing (viewLandscape, viewPortrait)
 
-import Html exposing (Html,text,div)
+import Html exposing (Html, div, text)
 import Html.Attributes exposing (style)
-import Viewer.Internal as I
-import Material.TopAppBar as TopAppBar
 import Material.Drawer.Dismissible as DDrawer
 import Material.Drawer.Modal as MDrawer
+import Material.TopAppBar as TopAppBar
+import Viewer.Internal as I
 
+{-| Display the interface in landscape mode.
+-}
 viewLandscape : I.ViewerConfig msg -> List (Html msg)
 viewLandscape config =
-    [
-        I.viewTopAppBar
-            {topAppBar = TopAppBar.regular 
+    [ I.viewTopAppBar
+        { topAppBar =
+            TopAppBar.regular
                 (TopAppBar.config
                     |> TopAppBar.setDense True
-                    |> TopAppBar.setFixed True)
-            , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
-            , title = Maybe.withDefault "Landscape Tablet" config.title
-            , search = Nothing
-            , user = config.user
-            , actions = config.actions
-            },
-        div [TopAppBar.denseFixedAdjust][
-            I.viewDrawer
-            {drawer = DDrawer.drawer 
-                        (DDrawer.config 
-                            |> DDrawer.setOpen config.drawerOpen
-                            |> DDrawer.setOnClose config.closeDrawer
-                            |> DDrawer.setAttributes [ style "z-index" "1" ])
+                    |> TopAppBar.setFixed True
+                )
+        , navButton = Just { icon = config.navButtonIcon, message = config.navButtonCallback }
+        , title = Maybe.withDefault "Landscape Tablet" config.title
+        , search = Nothing
+        , user = config.user
+        , actions = config.actions
+        }
+    , div [ TopAppBar.denseFixedAdjust ]
+        [ I.viewDrawer
+            { drawer =
+                DDrawer.drawer
+                    (DDrawer.config
+                        |> DDrawer.setOpen config.drawerOpen
+                        |> DDrawer.setOnClose config.closeDrawer
+                        |> DDrawer.setAttributes [ style "z-index" "1" ]
+                    )
             , drawerTitle = text config.drawerTitle
             , drawerSubtitle = config.drawerSubtitle
             , content = config.drawerContent
             }
-            , DDrawer.content [] [
-                config.body
+        , DDrawer.content []
+            [ config.body
             ]
-    ]
+        ]
     ]
 
+{-| Display the interface in portrait mode.
+-}
 viewPortrait : I.ViewerConfig msg -> List (Html msg)
 viewPortrait config =
-
-        -- [ topAppBar topAppBarConfig
-        --     [ TopAppBar.row []
-        --         [ TopAppBar.section [ TopAppBar.alignStart ]
-        --             [ Html.span [ TopAppBar.title ]
-        --                 [ text "Title" ]
-        --             ]
-        --         ]
-        --     ]
-        --     , Drawer.modalDrawer
-        --     { modalDrawerConfig
-        --         | open = True
-        --         , onClose = config.closeDrawer
-        --         , additionalAttributes = []
-        --     }
-        --     [ Drawer.drawerContent [TopAppBar.fixedAdjust] [] ]
-        -- , drawerScrim [] []
-        -- , Html.div [Drawer.appContent] [ config.body ]
-        -- ]
-    [
-    I.viewDrawer
-        {drawer = MDrawer.drawer (MDrawer.config
-                                    |> MDrawer.setOpen config.drawerOpen
-                                    |> MDrawer.setOnClose config.closeDrawer) 
+    -- [ topAppBar topAppBarConfig
+    --     [ TopAppBar.row []
+    --         [ TopAppBar.section [ TopAppBar.alignStart ]
+    --             [ Html.span [ TopAppBar.title ]
+    --                 [ text "Title" ]
+    --             ]
+    --         ]
+    --     ]
+    --     , Drawer.modalDrawer
+    --     { modalDrawerConfig
+    --         | open = True
+    --         , onClose = config.closeDrawer
+    --         , additionalAttributes = []
+    --     }
+    --     [ Drawer.drawerContent [TopAppBar.fixedAdjust] [] ]
+    -- , drawerScrim [] []
+    -- , Html.div [Drawer.appContent] [ config.body ]
+    -- ]
+    [ I.viewDrawer
+        { drawer =
+            MDrawer.drawer
+                (MDrawer.config
+                    |> MDrawer.setOpen config.drawerOpen
+                    |> MDrawer.setOnClose config.closeDrawer
+                )
         , drawerTitle = text config.drawerTitle
         , drawerSubtitle = config.drawerSubtitle
         , content = config.drawerContent
-        } 
+        }
     , MDrawer.scrim [] []
-    , Html.div [] [ --MDrawer.content
-        I.viewTopAppBar
-            {topAppBar = 
-                TopAppBar.regular 
-                (TopAppBar.config
-                    |> TopAppBar.setDense True
-                    |> TopAppBar.setFixed True)
-            , navButton = Just {icon = config.navButtonIcon, message = config.navButtonCallback}
+    , Html.div []
+        [ --MDrawer.content
+          I.viewTopAppBar
+            { topAppBar =
+                TopAppBar.regular
+                    (TopAppBar.config
+                        |> TopAppBar.setDense True
+                        |> TopAppBar.setFixed True
+                    )
+            , navButton = Just { icon = config.navButtonIcon, message = config.navButtonCallback }
             , title = Maybe.withDefault "Portrait Tablet" config.title
             , search = Nothing
             , user = config.user
             , actions = config.actions
             }
         ]
-    , div [TopAppBar.fixedAdjust] [config.body]
+    , div [ TopAppBar.fixedAdjust ] [ config.body ]
     ]
