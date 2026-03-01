@@ -1,33 +1,8 @@
-module Type.Entity exposing (..)
+module Type.Entity exposing (Entity(..), RecordBuilder, RecordEncoder)
 
 import Dict exposing (Dict)
-import Html exposing (Html)
-import Json.Decode exposing (Decoder, nullable, succeed)
-import Json.Decode.Pipeline
-import Json.Encode exposing (null)
-import Json.Encode.Extra
-import Msg exposing (Msg)
-
-
-type alias View flag mediator target =
-    { translate : flag -> mediator -> target
-    , entity : Entity target
-    }
-
-
-type alias IO delta target =
-    { decoder : String -> (Decoder (delta -> target) -> Decoder target)
-    , toString : delta -> String
-    , encoder : Encoder delta
-    }
-
-
-int_io : IO Int a
-int_io =
-    { decoder = \x -> Json.Decode.Pipeline.required x Json.Decode.int
-    , toString = String.fromInt
-    , encoder = Json.Encode.int
-    }
+import Json.Decode exposing (Decoder)
+import Json.Encode
 
 
 
@@ -35,15 +10,9 @@ int_io =
 -- int_view =
 --     {
 --         entity= Type {
-
 --         },
 --         translate = {}
 --     }
-
-
-
-type alias Encoder a =
-    a -> Json.Encode.Value
 
 
 type alias RecordEncoder a =
@@ -52,7 +21,6 @@ type alias RecordEncoder a =
 
 type Entity flag
     = Record (RecordBuilder flag flag)
-    | Type (TypeBuilder flag flag)
 
 
 type alias RecordBuilder decoded built =
@@ -64,85 +32,12 @@ type alias RecordBuilder decoded built =
     }
 
 
-type alias TypeBuilder a b =
-    { name : String
-    , decoder : Decoder b
-    , encoder : Encoder a
-    , toString : a -> String
-    }
-
-
-type alias Parser a =
-    a -> String
-
-
 
 -- maybe : Parser a -> Parser (Maybe a)
 -- maybe parse target =
 --     Maybe.map parse target
 --     |> Maybe.withDefault ""
 -- connect : String -> Entity a b mediator -> Entity c d mediator ->
-
-
-maybe : Entity flag -> Entity (Maybe flag)
-maybe p =
-    case p of
-        Type b ->
-            Type
-                { name = "maybe " ++ b.name
-                , decoder = nullable b.decoder
-                , encoder = Json.Encode.Extra.maybe b.encoder
-                , toString =
-                    \x ->
-                        case x of
-                            Just v ->
-                                b.toString v
-
-                            Nothing ->
-                                ""
-                }
-
-        Record e ->
-            Record
-                { name = "maybe " ++ e.name
-                , decoder = nullable e.decoder
-                , encoder =
-                    [ \entity ->
-                        ( e.name
-                        , case entity of
-                            Just v ->
-                                Json.Encode.object (List.map (\x -> x v) e.encoder)
-
-                            Nothing ->
-                                null
-                        )
-                    ]
-                , attributes = e.attributes
-                , toString = Dict.map (\k v a -> Maybe.map v a |> Maybe.withDefault "") e.toString
-                }
-
-
-int : Entity Int
-int =
-    Type
-        { name = "int"
-        , decoder = Json.Decode.int
-        , encoder = Json.Encode.int
-        , toString = String.fromInt
-        }
-
-
-string : Entity String
-string =
-    Type
-        { name = "string"
-        , decoder = Json.Decode.string
-        , encoder = Json.Encode.string
-        , toString = \x -> x
-        }
-
-
-
 -- attribute :
 --     String
 --     -> (built -> newtype)
@@ -231,62 +126,7 @@ string =
 --         encoder = old.encoder,
 --         model = \built mediator -> Maybe.map2 (\argument oldf -> oldf argument) (mgetter (rgetter built) mediator) (old.model built mediator)
 --     }
-
-
-new : a -> RecordBuilder a b
-new entity =
-    { name = ""
-    , decoder = succeed entity
-    , encoder = []
-    , attributes = []
-    , toString = Dict.empty
-    }
-
-
-finish : RecordBuilder a a -> Entity a
-finish e =
-    Record e
-
-
-encode : RecordBuilder a b -> b -> Json.Encode.Value
-encode entity instance =
-    Json.Encode.object
-        (List.map (\x -> x instance) entity.encoder)
-
-
-
 -- HELPER
-
-
-match_encoder : (a -> b) -> String -> (b -> Json.Encode.Value) -> List (a -> ( String, Json.Encode.Value )) -> List (a -> ( String, Json.Encode.Value ))
-match_encoder getter name encoder old =
-    (\x -> ( name, encoder (getter x) )) :: old
-
-
-adapt_encoder : RecordEncoder a -> Encoder a
-adapt_encoder r =
-    \encodable -> Json.Encode.object (List.map (\y -> y encodable) r)
-
-
-adapt_toString : Dict String (a -> String) -> Dict String (b -> String) -> Dict String (b -> String)
-adapt_toString oldToString newToString =
-    newToString
-
-
-match_model : (flag -> mediator -> Maybe a) -> (flag -> mediator -> Maybe (a -> model)) -> (flag -> mediator -> Maybe model)
-match_model getter old_model =
-    \flag mediator ->
-        let
-            value =
-                getter flag mediator
-
-            func =
-                old_model flag mediator
-        in
-        Maybe.map2 (\x y -> x y) func value
-
-
-
 -- type alias Encoder a =
 --     a -> Json.Encode.Value
 -- type alias Entity a b =

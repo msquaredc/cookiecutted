@@ -1,11 +1,10 @@
-module Type.Database exposing (..)
+module Type.Database exposing (Answer, AnswerView, Coder, CoderView, Coding, CodingAnswer, CodingAnswerView, CodingFrame, CodingFrameView, CodingQuestion, CodingQuestionView, CodingQuestionary, CodingQuestionaryView, CodingView, Database, DatabaseView, Event, EventView, InputTypeKind(..), Place, Question, QuestionView, Questionary, QuestionaryView, Row, Study, StudyView, Table, TableView, TestSubject, TestSubjectView, Timestamp, TimestampView, Type(..), User, answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, question, questionary, rows, study, table, test_subject, timestamp, user)
 
-import Dict exposing (..)
-import Type.Database.InputType as IT
-import Type.IO exposing (..)
-import Type.IO.Encoder exposing (Encoder(..))
-import Type.IO.Internal as Id exposing (Id)
+import Dict exposing (Dict)
 import Tuple
+import Type.Database.InputType as IT
+import Type.IO exposing (IO, attribute, bool, dict, entity, float, int, maybe, reference, string, substruct)
+import Type.IO.Internal as Id exposing (Id)
 
 
 
@@ -16,8 +15,10 @@ import Tuple
 type alias Table a =
     Dict String (Timestamp a)
 
-type alias Row a = 
-    (Id a String, Timestamp a)
+
+type alias Row a =
+    ( Id a String, Timestamp a )
+
 
 type alias TableView a =
     Dict String (TimestampView a)
@@ -124,7 +125,7 @@ type alias CoderView =
 coder : IO Coder Database CoderView msg
 coder =
     entity Coder CoderView
-    |> reference "user" string .user .users Dict.get .value
+        |> reference "user" string .user .users Dict.get .value
 
 
 type alias Coding =
@@ -145,6 +146,7 @@ coding =
 
 type alias CodingAnswer =
     { coding_question : Id CodingQuestion String
+
     --, coding_frame : String
     , answer : Id Answer String
     , value : String
@@ -153,6 +155,7 @@ type alias CodingAnswer =
 
 type alias CodingAnswerView =
     { coding_question : CodingQuestion
+
     --, coding_frame : CodingFrame
     , answer : Answer
     , value : String
@@ -346,6 +349,7 @@ type alias TestSubject =
     , infos : Dict String String
     }
 
+
 type alias TestSubjectView =
     { id : String
     , event : Event
@@ -398,17 +402,13 @@ type alias TimestampView a =
 
 timestamp : IO a Database b msg -> IO (Timestamp a) Database (TimestampView b) msg
 timestamp other =
-    let
-        t =
-            entity Timestamp TimestampView
-                |> reference "creator" string .creator .users Dict.get .value
-                |> attribute "created" int .created
-                |> attribute "modified" int .modified
-                |> attribute "accessed" int .accessed
-                |> attribute "deleted" (maybe int) .deleted
-                |> substruct "value" other .value
-    in
-    t
+    entity Timestamp TimestampView
+        |> reference "creator" string .creator .users Dict.get .value
+        |> attribute "created" int .created
+        |> attribute "modified" int .modified
+        |> attribute "accessed" int .accessed
+        |> attribute "deleted" (maybe int) .deleted
+        |> substruct "value" other .value
 
 
 
@@ -442,8 +442,9 @@ type Type
     | TestSubjectType
     | InputTypeType InputTypeKind
 
-type InputTypeKind = 
-    ShortKind
+
+type InputTypeKind
+    = ShortKind
     | LongKind
     | ListKind
 
@@ -452,7 +453,8 @@ updateEmpty : (a -> a) -> IO a b c msg -> IO a b c msg
 updateEmpty f prev =
     { prev | empty = f prev.empty }
 
+
 rows : Table a -> List (Row a)
-rows old = 
+rows old =
     Dict.toList old
-    |> List.map (Tuple.mapFirst Id.box)
+        |> List.map (Tuple.mapFirst Id.box)

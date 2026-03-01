@@ -1,4 +1,4 @@
-module Page.CodingQuestion exposing (..)
+module Page.CodingQuestion exposing (Model, RelatedData, page)
 
 import Dict
 import Html exposing (Html, p, text)
@@ -7,12 +7,7 @@ import Material.LayoutGrid exposing (cell, inner, layoutGrid)
 import Material.Radio as Radio
 import Material.Slider as Slider
 import Material.TextField as TextField
-import Material.Switch as Switch
-import Material.Typography as Typography exposing (typography)
-import Material.List as List
-import Material.List.Item as ListItem exposing (ListItem)
-import Material.Button as Button
-import Maybe.Extra
+import Material.Typography as Typography
 import Msg
 import Page exposing (Page(..))
 import Session
@@ -20,13 +15,13 @@ import Time exposing (Posix)
 import Type.Database as Db
 import Type.Database.InputType as IT
 import Type.Database.TypeMatching as Match
+import Type.IO.Internal exposing (Id, unbox)
 import Type.IO.Setter as Updater
-import Type.IO.Internal as Id exposing (Id, box, unbox)
 import Viewer exposing (detailsConfig)
 
 
 type alias Model =
-    { id : (Id Db.Question String)
+    { id : Id Db.Question String
     , question : Maybe (Db.Timestamp Db.CodingQuestion)
     , short : Maybe (Id IT.InputType String)
     , long : Maybe (Id IT.InputType String)
@@ -45,10 +40,7 @@ init db id =
                 Nothing
                 Nothing
                 Nothing
-                
-        
-        
-       
+
         q =
             Dict.get (unbox id) db.coding_questions
                 |> Maybe.map .value
@@ -84,6 +76,7 @@ page session id =
             , view = view
             , toMsg = identity
             , subscriptions = Sub.none
+
             -- , header = Viewer.header
             , update = update
 
@@ -95,47 +88,6 @@ page session id =
 
 update : Msg.Msg -> Page.Page Model Msg.Msg -> ( Page.Page Model Msg.Msg, Cmd Msg.Msg )
 update message (Page model) =
-    let
-        oldmodel =
-            model.page
-
-        updatePage x =
-            Page { model | page = x }
-
-        setInputTypeDb it =
-            let
-                oldsession =
-                    model.session
-
-                newdb n =
-                    { oldsession | db = n }
-
-                olddb =
-                    oldsession.db
-
-                newq n =
-                    newdb { olddb | questions = n }
-            in
-            newq <|
-                Dict.update
-                    (unbox oldmodel.id)
-                    (Maybe.map
-                        (\i ->
-                            let
-                                oldvalue =
-                                    i.value
-
-                                newvalue n =
-                                    { i | value = n }
-
-                                newquestion =
-                                    { oldvalue | input_type = it }
-                            in
-                            newvalue newquestion
-                        )
-                    )
-                    model.session.db.questions
-    in
     case message of
         Msg.Question _ ->
             ( Page model, Cmd.none )
@@ -204,8 +156,6 @@ view (Page.Page model) =
 
         mbInfos =
             relatedData model.page.id db
-
-        
     in
     { detailsConfig
         | title = toTitle model.page
@@ -245,7 +195,7 @@ view (Page.Page model) =
                                         )
                                     ]
                                         ++ viewInputTypeSelection model.page infos.input_type
-                                , cell [] <| viewSettings model.session.db model.page.id model.page infos.input_type 
+                                , cell [] <| viewSettings model.session.db model.page.id model.page infos.input_type
                                 ]
                             ]
 
@@ -279,13 +229,6 @@ relatedData id db =
         Just timestampedQuestion ->
             let
                 --coding_questions : List (Id Db.CodingQuestionary String, Db.CodingQuestionary)
-                coding_questions =
-                    {- List.sortBy (\( _, y ) -> y.index) <| -}
-                    Dict.toList db.coding_questionnaries
-                    |> List.filter (\( _, y ) -> y.value.question == id)
-                    |> List.map (\( x, y ) -> ( box x, y.value ))
-                            
-
                 question =
                     timestampedQuestion.value
             in
@@ -514,26 +457,8 @@ viewInputTypeSelection model ( id, _ ) =
         ]
 
 
-
 viewSettings : Db.Database -> Id Db.Question String -> Model -> ( Id IT.InputType String, Maybe IT.InputType ) -> List (Html Msg.Msg)
 viewSettings db id model ( itid, mbit ) =
-    let
-        umessage attribute setter value =
-            Msg.CRUD <|
-                Msg.Update <|
-                    Updater.AttributeMsg "questions" <|
-                        Updater.DictKeyMsg (unbox id) <|
-                            Updater.AttributeMsg "value" <|
-                                Updater.AttributeMsg "input_type" <|
-                                    Updater.AttributeMsg attribute <|
-                                        setter value
-
-        moreInfo : String
-        moreInfo =
-            Maybe.map (IT.input_type.toString "*") mbit
-                |> Maybe.andThen Result.toMaybe
-                |> Maybe.withDefault ""
-    in
     if model.short == Just itid then
         case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.short of
             Just (IT.ShortAnswer short) ->
@@ -586,10 +511,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt short.minLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat short.minLength) of
-                                    Just length -> Slider.setValue length x
-                                    Nothing -> x)
+                            |> (\x ->
+                                    case Maybe.map toFloat short.minLength of
+                                        Just length ->
+                                            Slider.setValue length x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -607,10 +536,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt short.maxLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat short.maxLength) of
-                                    Just length -> Slider.setValue length x
-                                    Nothing -> x)
+                            |> (\x ->
+                                    case Maybe.map toFloat short.maxLength of
+                                        Just length ->
+                                            Slider.setValue length x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMin (Maybe.map toFloat short.minLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -629,9 +562,8 @@ viewSettings db id model ( itid, mbit ) =
             _ ->
                 [ text "No Config found" ]
 
-    else
-        if model.long == Just itid then
-            case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.long of
+    else if model.long == Just itid then
+        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.long of
             Just (IT.LongAnswer long) ->
                 [ TextField.filled
                     (TextField.config
@@ -682,11 +614,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Min Length: " ++ (Maybe.withDefault "0" <| Maybe.map String.fromInt long.minLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat long.minLength) of
-                                    Just length -> Slider.setValue length x
-                                    Nothing -> x)
-                            
+                            |> (\x ->
+                                    case Maybe.map toFloat long.minLength of
+                                        Just length ->
+                                            Slider.setValue length x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMax (Maybe.map toFloat short.maxLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -704,10 +639,14 @@ viewSettings db id model ( itid, mbit ) =
                     [ text <| "Max Length: " ++ (Maybe.withDefault "100" <| Maybe.map String.fromInt long.maxLength)
                     , Slider.slider
                         (Slider.config
-                            |> (\x -> 
-                                case (Maybe.map toFloat long.maxLength) of
-                                    Just length -> Slider.setValue length x
-                                    Nothing -> x)
+                            |> (\x ->
+                                    case Maybe.map toFloat long.maxLength of
+                                        Just length ->
+                                            Slider.setValue length x
+
+                                        Nothing ->
+                                            x
+                               )
                             --                        |> Slider.setMin (Maybe.map toFloat short.minLength)
                             |> Slider.setOnInput
                                 (\x ->
@@ -725,24 +664,25 @@ viewSettings db id model ( itid, mbit ) =
 
             _ ->
                 [ text "No Config found" ]
-        else
-            if model.list == Just itid then
-                case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.list of
-                    Just (IT.List list) ->
-                        [ text "Boxes or Radio?"
-                        , FormField.formField
-                            (FormField.config
-                            |> FormField.setLabel (Just "Radio Button")
-                            )
-                            [ Radio.radio Radio.config ]
-                        , FormField.formField
-                            (FormField.config
-                            |> FormField.setLabel (Just "Checkbox")
-                            )
-                            [ Radio.radio Radio.config ]
-                        ]
 
-                    _ ->
-                        [ text "No Config found"]
-            else
-                [text "You have not selected an Input type yet." ]
+    else if model.list == Just itid then
+        case Maybe.map .value <| Maybe.andThen (\x -> Dict.get (unbox x) db.input_types) model.list of
+            Just (IT.List _) ->
+                [ text "Boxes or Radio?"
+                , FormField.formField
+                    (FormField.config
+                        |> FormField.setLabel (Just "Radio Button")
+                    )
+                    [ Radio.radio Radio.config ]
+                , FormField.formField
+                    (FormField.config
+                        |> FormField.setLabel (Just "Checkbox")
+                    )
+                    [ Radio.radio Radio.config ]
+                ]
+
+            _ ->
+                [ text "No Config found" ]
+
+    else
+        [ text "You have not selected an Input type yet." ]

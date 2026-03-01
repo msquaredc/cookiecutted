@@ -1,4 +1,4 @@
-module Main exposing (Model, init, main, subscriptions, update, view)
+module Main exposing (Model, Page, main)
 
 -- import Page.NewPage as NewPage
 --import Html exposing (..)
@@ -9,42 +9,39 @@ import Browser
 import Browser.Events
 import Browser.Navigation
 import Json.Decode
+import Material.Snackbar as Snackbar
 import Msg
 import Page
 import Page.Admin as Admin
+import Page.Answer as Answer
+import Page.Code as Code
+import Page.CodingQuestion as CodingQuestion
 import Page.Event as Event
 import Page.PageOne as PageOne
 import Page.PageWithSubpage as PageWithSubpage
-import Page.Questionary as Questionary
 import Page.Question as Question
+import Page.Questionary as Questionary
 import Page.Study as Study
 import Page.Top as Top
 import Page.User as User
-import Page.CodingQuestion as CodingQuestion
-import Page.Answer as Answer
-import Page.Code as Code
 import Ports
-import Random exposing (generate)
+import Random
 import Random.Char exposing (latin)
 import Random.String exposing (string)
 import Session
 import Task exposing (perform)
-import Time exposing (now, Posix)
-import Material.Snackbar as Snackbar
+import Time exposing (Posix, now)
 import Type.Database as Db exposing (database)
 import Type.Database.TypeMatching as Match
 import Type.Flags
 import Type.IO exposing (form2update)
+import Type.IO.Internal exposing (box)
 import Type.IO.Setter as Updater
-import Type.IO.Internal exposing (Id, box, unbox)
 import Url
 import Url.Builder
-import Url.Parser as Parser exposing ((</>),(<?>))
-import Url.Parser.Query as Query
+import Url.Parser as Parser exposing ((</>))
 import Viewer
-import Url.Parser exposing (query)
 
- 
 
 
 -- TYPES
@@ -93,12 +90,11 @@ init flags url key =
         localStorage =
             Json.Decode.decodeValue Db.database.decoder flags.localStorage
 
-        db =
-            Json.Decode.decodeValue Db.database.decoder flags.db
-
         ( model, cmds ) =
             routeUrl (urlAdaptHash url) <| Model key (NotFound <| Session.init flags) Viewer.header Nothing
-        newCmds = Cmd.batch [cmds, perform Msg.Tick now]
+
+        newCmds =
+            Cmd.batch [ cmds, perform Msg.Tick now ]
     in
     --  On loading the application, we read form local storage. If the object is incorrectly formatted, clear localStorage
     case localStorage of
@@ -107,7 +103,9 @@ init flags url key =
 
         Err _ ->
             let
-                newmodel = {-reportError "Could not load localstorage!"-} model
+                newmodel =
+                    {- reportError "Could not load localstorage!" -}
+                    model
             in
             -- If localstorage decoder failed, clear localstorage
             ( newmodel, Cmd.batch [ newCmds, Ports.clearLocalStorage () ] )
@@ -122,9 +120,6 @@ defaultUpdate message ( model, effect ) =
     let
         session =
             extractSession model
-
-        db =
-            session.db
     in
     (\( x, y ) -> ( x, Cmd.batch [ effect, y ] )) <|
         case message of
@@ -198,6 +193,10 @@ defaultUpdate message ( model, effect ) =
                 updateSession model { session | db = new_db }
 
             Msg.CRUD msg ->
+                let
+                    db =
+                        session.db
+                in
                 case msg of
                     Msg.Create kind id callbacks ->
                         let
@@ -214,7 +213,7 @@ defaultUpdate message ( model, effect ) =
                                 case kind of
                                     Db.UserType ->
                                         updateDbSession model { session | user = Just (box id) } newDb
-                                        |> chainableUpdate (Msg.SetUser (box id))
+                                            |> chainableUpdate (Msg.SetUser (box id))
 
                                     Db.QuestionaryType ->
                                         updateDbSession model session newDb
@@ -243,9 +242,10 @@ defaultUpdate message ( model, effect ) =
                         case Db.database.updater msg_ db of
                             Err e ->
                                 let
-                                    newmodel = reportError (Updater.errToString e) model
+                                    newmodel =
+                                        reportError (Updater.errToString e) model
                                 in
-                                    ( newmodel, Cmd.none )
+                                ( newmodel, Cmd.none )
 
                             Ok newDb ->
                                 case msg_ of
@@ -279,41 +279,46 @@ defaultUpdate message ( model, effect ) =
 
                                     _ ->
                                         updateDbSession model session newDb
-                    
-                    Msg.Access kind id ->
-                        ( model, Cmd.batch [ Cmd.map (Msg.CRUD << Msg.Update) <|
-                                        perform
-                                            (\z ->
-                                                Updater.AttributeMsg (Match.toStringPlural kind) <|
-                                                    Updater.DictKeyMsg id <|
-                                                        Updater.AttributeMsg "accessed" <|
-                                                            Updater.IntMsg (Time.posixToMillis z)
-                                            )
-                                            now
-                                            ])
 
+                    Msg.Access kind id ->
+                        ( model
+                        , Cmd.batch
+                            [ Cmd.map (Msg.CRUD << Msg.Update) <|
+                                perform
+                                    (\z ->
+                                        Updater.AttributeMsg (Match.toStringPlural kind) <|
+                                            Updater.DictKeyMsg id <|
+                                                Updater.AttributeMsg "accessed" <|
+                                                    Updater.IntMsg (Time.posixToMillis z)
+                                    )
+                                    now
+                            ]
+                        )
 
                     Msg.UpdateAll updates ->
                         case List.foldl (Result.andThen << Db.database.updater) (Ok db) updates of
                             Err e ->
                                 let
-                                    newmodel = reportError (Updater.errToString e) model
+                                    newmodel =
+                                        reportError (Updater.errToString e) model
                                 in
-                                    ( newmodel, Cmd.none )
+                                ( newmodel, Cmd.none )
+
                             Ok newDb ->
                                 updateDbSession model session newDb
 
                     Msg.Delete kind id ->
                         let
-                            newDb = Match.delete (box id) kind db
+                            newDb =
+                                Match.delete (box id) kind db
                         in
-                            updateDbSession model session newDb
-                    -- Msg.SwapAttributes kind (first, second) attribute ->
-                    --     let
-                    --         fvalue = db
-                    --     in
-                       
-                    --     (model, Cmd.none)
+                        updateDbSession model session newDb
+
+            -- Msg.SwapAttributes kind (first, second) attribute ->
+            --     let
+            --         fvalue = db
+            --     in
+            --     (model, Cmd.none)
             Msg.Form msg ->
                 case form2update msg of
                     Just dbmsg ->
@@ -324,52 +329,53 @@ defaultUpdate message ( model, effect ) =
 
             Msg.Follow kind id ->
                 ( model, Browser.Navigation.pushUrl model.key <| "#" ++ Url.Builder.absolute [ Match.toString kind, id ] [] )
-            
-            Msg.FollowSubpage kind id subpages qparam -> 
-                ( model, Browser.Navigation.pushUrl model.key <| "#" ++ Url.Builder.absolute ([ Match.toString kind, id] ++ subpages)  qparam )
+
+            Msg.FollowSubpage kind id subpages qparam ->
+                ( model, Browser.Navigation.pushUrl model.key <| "#" ++ Url.Builder.absolute ([ Match.toString kind, id ] ++ subpages) qparam )
 
             Msg.SetUser id ->
-                    let
-                        newSession =
-                            { session | user = Just id }
-                    in
-                        updateSession model newSession
-                        |> (\(x, y) -> (x, Cmd.batch [y 
-                                                     , 
-                                                            perform
-                                                                (\z ->
-                                                                    Match.setField 
-                                                                        { kind = Db.UserType
-                                                                        , attribute = "last_login"
-                                                                        , setter = Updater.IntMsg << Time.posixToMillis
-                                                                        , value = z
-                                                                        , id = id
-                                                                        }
-                                                                )
-                                                                now]))
-            
+                let
+                    newSession =
+                        { session | user = Just id }
+                in
+                updateSession model newSession
+                    |> (\( x, y ) ->
+                            ( x
+                            , Cmd.batch
+                                [ y
+                                , perform
+                                    (\z ->
+                                        Match.setField
+                                            { kind = Db.UserType
+                                            , attribute = "last_login"
+                                            , setter = Updater.IntMsg << Time.posixToMillis
+                                            , value = z
+                                            , id = id
+                                            }
+                                    )
+                                    now
+                                ]
+                            )
+                       )
+
             Msg.Back ->
-                (model, Browser.Navigation.back model.key 1)
+                ( model, Browser.Navigation.back model.key 1 )
 
             Msg.Tick time ->
-                ({model | time = Just time}, Cmd.none)
-            
+                ( { model | time = Just time }, Cmd.none )
+
             Msg.SnackbarClosed messageId ->
                 let
-                    oldheader = model.header
-                    newheader = {oldheader | queue = Snackbar.close messageId oldheader.queue}
+                    oldheader =
+                        model.header
+
+                    newheader =
+                        { oldheader | queue = Snackbar.close messageId oldheader.queue }
                 in
-                
-                ({model | header = newheader}, Cmd.none)
-            
+                ( { model | header = newheader }, Cmd.none )
 
             _ ->
                 ( model, Cmd.none )
-
-
-updateAll : List Msg.Msg -> Model -> ( Model, Cmd Msg.Msg )
-updateAll messages model =
-    chainedUpdateAll messages ( model, Cmd.none )
 
 
 chainedUpdateAll : List Msg.Msg -> ( Model, Cmd Msg.Msg ) -> ( Model, Cmd Msg.Msg )
@@ -442,12 +448,13 @@ update message model =
                 ( newmodel, effect ) =
                     --Admin.update message
                     mapPageMsg model Admin (Page.update message m)
-
-                session =
-                    extractSession newmodel
             in
             case message of
                 Msg.Admin (Msg.AdminDb _) ->
+                    let
+                        session =
+                            extractSession newmodel
+                    in
                     updateSession newmodel (extractSession newmodel)
                         |> (\( x, y ) -> ( x, Cmd.batch [ y, Ports.toDb (Type.IO.encode database.encoder session.db) ] ))
 
@@ -462,26 +469,29 @@ update message model =
                     defaultUpdate message ( newmodel, effect )
 
         Study m ->
-            
             mapPageMsg model Study (Page.update message m)
                 |> defaultUpdate message
 
         Event m ->
-            case message of 
-                    Msg.Event (Msg.AnswerQuestions newmodel) ->
-                        let
-                            session = extractSession model
-                            (newpage, effect) = Answer.page session newmodel
-                        in
-                            ({model| page = Answer <| newpage}, effect)
-                    _ ->
-                        mapPageMsg model Event (Page.update message m)
-                            |> defaultUpdate message
+            case message of
+                Msg.Event (Msg.AnswerQuestions newmodel) ->
+                    let
+                        session =
+                            extractSession model
+
+                        ( newpage, effect ) =
+                            Answer.page session newmodel
+                    in
+                    ( { model | page = Answer <| newpage }, effect )
+
+                _ ->
+                    mapPageMsg model Event (Page.update message m)
+                        |> defaultUpdate message
 
         Questionary m ->
             mapPageMsg model Questionary (Page.update message m)
-            |> defaultUpdate message
-        
+                |> defaultUpdate message
+
         Question m ->
             mapPageMsg model Question (Page.update message m)
                 |> defaultUpdate message
@@ -493,7 +503,7 @@ update message model =
         Answer m ->
             mapPageMsg model Answer (Page.update message m)
                 |> defaultUpdate message
-        
+
         Code m ->
             mapPageMsg model Code (Page.update message m)
                 |> defaultUpdate message
@@ -509,12 +519,12 @@ update message model =
 
 view : Model -> Browser.Document Msg.Msg
 view model =
-    let
-        session =
-            extractSession model
-    in
     case model.page of
         NotFound _ ->
+            let
+                session =
+                    extractSession model
+            in
             Viewer.view session never Viewer.notFound Viewer.header model.time
 
         User m ->
@@ -542,16 +552,16 @@ view model =
 
         Questionary m ->
             Page.view m model.header model.time
-        
+
         Question m ->
             Page.view m model.header model.time
-        
+
         CodingQuestion m ->
             Page.view m model.header model.time
-        
+
         Answer m ->
             Page.view m model.header model.time
-        
+
         Code m ->
             Page.view m model.header model.time
 
@@ -562,18 +572,19 @@ view model =
 
 
 subscriptions : Model -> Sub Msg.Msg
-subscriptions {page} =
+subscriptions { page } =
     Sub.batch <|
-        [case page of
+        [ case page of
             Questionary (Page.Page m) ->
                 Sub.map m.toMsg m.subscriptions
+
             _ ->
                 Sub.none
         , Browser.Events.onResize Msg.OnWindowResize
         , Ports.onLocalStorageChange Msg.OnLocalStorageChange
         , Ports.onDbChange Msg.OnDbChange
         , Time.every 1000 Msg.Tick
-        ] 
+        ]
 
 
 
@@ -653,10 +664,10 @@ extractSession model =
 
         Questionary m ->
             getSession m
-        
+
         Question m ->
             getSession m
-        
+
         CodingQuestion m ->
             getSession m
 
@@ -665,6 +676,7 @@ extractSession model =
 
         Code m ->
             getSession m
+
 
 
 -- Update the session of the active page (This could be changed to send a OnSessionChange Msg rather than using init)
@@ -708,19 +720,19 @@ updateSession model session =
         Questionary (Page.Page m) ->
             Questionary.page session m.page.id m.page.focus (Just m.page.questions) m.page.dnd
                 |> (\( x, y ) -> ( { model | page = Questionary x }, y ))
-        
+
         Question (Page.Page m) ->
             Question.page session m.page.id
                 |> (\( x, y ) -> ( { model | page = Question x }, y ))
-        
+
         CodingQuestion (Page.Page m) ->
             CodingQuestion.page session m.page.id
                 |> (\( x, y ) -> ( { model | page = CodingQuestion x }, y ))
-        
+
         Answer (Page.Page m) ->
             Answer.page session m.page
                 |> (\( x, y ) -> ( { model | page = Answer x }, y ))
-        
+
         Code (Page.Page m) ->
             Code.page session m.page.id
                 |> (\( x, y ) -> ( { model | page = Code x }, y ))
@@ -740,17 +752,8 @@ updateDbSession model session db =
 
 -- ROUTING
 -- The following functions create the client-side router. Update "parser" and "paths" for each page you add/remove
-testMethod =
-    case Url.fromString "http://localhost:3000/event/oLFlGAGBkkaZDCTsnmOA/answer?tsid=a" of 
-        Nothing ->
-            Nothing
-        Just oldUrl ->
-            let
-                hashUrl = { oldUrl | path = Maybe.withDefault "" oldUrl.fragment, fragment = Nothing }
-                func x y = "yes"
-            in
-                Parser.parse (Parser.map func (Parser.s paths.event </> Parser.string </> Parser.s "answer" <?> Query.custom "tsid" identity)) oldUrl
-    --Parser.parse (Parser.s paths.event </> Parser.string </> Answer.parser )
+--Parser.parse (Parser.s paths.event </> Parser.string </> Answer.parser )
+
 
 routeUrl : Url.Url -> Model -> ( Model, Cmd Msg.Msg )
 routeUrl url model =
@@ -763,9 +766,8 @@ routeUrl url model =
             { url | path = Maybe.withDefault "" url.fragment, fragment = Nothing }
     in
     -- If you'd like to use hash-based routing:
-    
     --case Parser.parse (parser model session) hashUrl of
-     case Parser.parse (parser model session) url of
+    case Parser.parse (parser model session) url of
         Just success ->
             success
 
@@ -793,47 +795,63 @@ parser model session =
         , route (Parser.s paths.study </> Parser.string)
             (\id -> mapPageMsg model Study (Study.page session (box id) False))
         , route (Parser.s paths.study </> Parser.string </> Parser.s "code")
-            (\id -> mapPageMsg model Code (Code.page session (box id))) 
+            (\id -> mapPageMsg model Code (Code.page session (box id)))
+
         --
-        , route (Parser.s paths.event </> Parser.string </> Answer.parser )
-            (\eid answer_result -> 
+        , route (Parser.s paths.event </> Parser.string </> Answer.parser)
+            (\eid answer_result ->
                 case answer_result eid of
                     Just amodel ->
-                        mapPageMsg model Answer (Answer.page
-                            session 
-                            amodel)
-                    Nothing ->
-                        mapPageMsg model Event (
-                        Event.page
-                            session 
-                            Msg.EventSettings
-                            (box eid)
-                            False)
+                        mapPageMsg model
+                            Answer
+                            (Answer.page
+                                session
+                                amodel
+                            )
 
+                    Nothing ->
+                        mapPageMsg model
+                            Event
+                            (Event.page
+                                session
+                                Msg.EventSettings
+                                (box eid)
+                                False
+                            )
             )
-                  
         , route (Parser.s paths.event </> Parser.string </> Parser.s "people")
-            (\id -> mapPageMsg model Event (
-                Event.page
-                    session 
-                    Msg.EventPeople
-                    (box id)
-                    False))
+            (\id ->
+                mapPageMsg model
+                    Event
+                    (Event.page
+                        session
+                        Msg.EventPeople
+                        (box id)
+                        False
+                    )
+            )
         , route (Parser.s paths.event </> Parser.string </> Parser.s "settings")
-            (\id -> mapPageMsg model Event (
-                Event.page
-                    session 
-                    Msg.EventSettings
-                    (box id)
-                    False))
-            
+            (\id ->
+                mapPageMsg model
+                    Event
+                    (Event.page
+                        session
+                        Msg.EventSettings
+                        (box id)
+                        False
+                    )
+            )
         , route (Parser.s paths.event </> Parser.string)
-            (\id -> mapPageMsg model Event (
-                Event.page
-                    session 
-                    Msg.EventOverview
-                    (box id)
-                    False))
+            (\id ->
+                mapPageMsg model
+                    Event
+                    (Event.page
+                        session
+                        Msg.EventOverview
+                        (box id)
+                        False
+                    )
+            )
         , route (Parser.s paths.questionary </> Parser.string)
             (\id -> mapPageMsg model Questionary (Questionary.page session (box id) Questionary.defaultFokus Nothing Viewer.system.model))
         , route (Parser.s paths.question </> Parser.string)
@@ -854,6 +872,7 @@ parser model session =
 --  This holds the paths for each page. Update as needed for each page you add/remove
 
 
+paths : { top : String, users : String, pageOne : String, pageWithSubpage : String, admin : String, study : String, event : String, questionary : String, question : String, coding_question : String }
 paths =
     { top = ""
     , users = "user"
@@ -879,23 +898,32 @@ toHashUrl url =
     { url | fragment = Just url.path, path = "" }
 
 
-reportError : String -> Model -> Model 
+reportError : String -> Model -> Model
 reportError msg model =
     let
-        oldheader = model.header
-        message = Snackbar.message msg
-                    |> Snackbar.setStacked True
-        newQueue = Snackbar.addMessage message oldheader.queue
-        newheader = {oldheader | queue = newQueue}
+        oldheader =
+            model.header
+
+        message =
+            Snackbar.message msg
+                |> Snackbar.setStacked True
+
+        newQueue =
+            Snackbar.addMessage message oldheader.queue
+
+        newheader =
+            { oldheader | queue = newQueue }
     in
-        {model|header = newheader}
+    { model | header = newheader }
+
 
 urlAdaptHash : Url.Url -> Url.Url
 urlAdaptHash url =
     let
-        mbnewUrl = url
-                |> Url.toString 
+        mbnewUrl =
+            url
+                |> Url.toString
                 |> String.replace "/#/" "/"
                 |> Url.fromString
     in
-        Maybe.withDefault url mbnewUrl
+    Maybe.withDefault url mbnewUrl

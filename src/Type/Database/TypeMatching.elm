@@ -1,16 +1,15 @@
-module Type.Database.TypeMatching exposing (..)
+module Type.Database.TypeMatching exposing (DispatchType(..), FieldConfig, delete, fields, forms, getField, keys, new, setField, setTimestamp, toString, toStringPlural, types)
 
-import Dict exposing (..)
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Msg
 import Task exposing (perform)
 import Time exposing (Posix, now, posixToMillis)
-import Type.Database as Db exposing (..)
-import Type.IO.Form as Form exposing (UpdateMsg(..))
-import Type.IO.Setter as Updater
-import Type.IO.Internal as Id exposing (Id, unbox)
-import Type.Database.InputType exposing (InputType)
+import Type.Database as Db exposing (Database, InputTypeKind(..), Type(..), answer, coder, coding, coding_answer, coding_frame, coding_question, coding_questionary, database, event, question, questionary, study, test_subject, timestamp, user)
 import Type.Database.InputType as IT exposing (input_type)
+import Type.IO.Form as Form exposing (UpdateMsg)
+import Type.IO.Internal exposing (Id, unbox)
+import Type.IO.Setter as Updater
 
 
 types : List Type
@@ -31,55 +30,6 @@ types =
     , InputTypeType ListKind
     , InputTypeType LongKind
     ]
-
-
-fromString : String -> Maybe Type
-fromString name =
-    case name of
-        "answer" ->
-            Just AnswerType
-
-        "coder" ->
-            Just CoderType
-
-        "coding" ->
-            Just CodingType
-
-        "coding_answer" ->
-            Just CodingAnswerType
-
-        "coding_frame" ->
-            Just CodingFrameType
-
-        "coding_question" ->
-            Just CodingQuestionType
-
-        "coding_questionary" ->
-            Just CodingQuestionaryType
-
-        "event" ->
-            Just EventType
-
-        "question" ->
-            Just QuestionType
-
-        "questionary" ->
-            Just QuestionaryType
-
-        "study" ->
-            Just StudyType
-
-        "user" ->
-            Just UserType
-        
-        "input_type" ->
-            Just (InputTypeType ShortKind)
-        
-        "test_subject" ->
-            Just TestSubjectType
-
-        _ ->
-            Nothing
 
 
 toString : Type -> String
@@ -120,10 +70,10 @@ toString kind =
 
         UserType ->
             "user"
-        
+
         TestSubjectType ->
             "test_subject"
-        
+
         InputTypeType _ ->
             "input_type"
 
@@ -166,10 +116,10 @@ toStringPlural kind =
 
         UserType ->
             "users"
-        
+
         TestSubjectType ->
             "test_subjects"
-        
+
         InputTypeType _ ->
             "input_types"
 
@@ -212,10 +162,10 @@ fields kind =
 
         UserType ->
             user.fields
-        
+
         TestSubjectType ->
             test_subject.fields
-        
+
         InputTypeType _ ->
             input_type.fields
 
@@ -223,6 +173,7 @@ fields kind =
 keys : Type -> Database -> List String
 keys kind db =
     let
+        g : Dict comparable b -> List comparable
         g =
             Dict.keys
     in
@@ -262,7 +213,7 @@ keys kind db =
 
         UserType ->
             g db.users
-        
+
         TestSubjectType ->
             g db.test_subjects
 
@@ -281,6 +232,7 @@ forms id kind acc db f =
                         Form.DictMsg (Just id) <|
                             Form.AttrMsg "value" x
 
+        --g : IO a Database c Msg.Msg -> Table a -> Result Form.Error (Html.Html Msg.Msg)
         g def table =
             Dict.get id table
                 |> Maybe.map (\x -> def.form id m x.value acc f)
@@ -325,34 +277,41 @@ forms id kind acc db f =
 
         TestSubjectType ->
             g test_subject db.test_subjects
-        
+
         InputTypeType _ ->
             g input_type db.input_types
 
-type DispatchType = 
-    New (Id Db.User String)
+
+type DispatchType
+    = New (Id Db.User String)
     | Delete
 
+
 new : Id a String -> Type -> Id Db.User String -> Database -> Database
-new id kind u db=
+new id kind u db =
     dispatchDb (New u) id kind db
+
 
 delete : Id a String -> Type -> Database -> Database
 delete =
     dispatchDb Delete
 
+
 dispatchDb : DispatchType -> Id a String -> Type -> Database -> Database
 dispatchDb dt id kind db =
     let
+        --g : Table a -> IO a Database c msg -> (Database -> Table a -> Database) -> Database
         g table def update =
-            let
-                config =
-                    (timestamp def).empty
-            in
-                update db <|
+            update db <|
                 case dt of
                     New u ->
+                        let
+                            --config : Timestamp a
+                            config =
+                                (timestamp def).empty
+                        in
                         Dict.insert (unbox id) { config | creator = u } table
+
                     Delete ->
                         Dict.remove (unbox id) table
     in
@@ -394,22 +353,28 @@ dispatchDb dt id kind db =
             g db.users user (\t x -> { t | users = x })
 
         TestSubjectType ->
-            g db.test_subjects test_subject (\t x -> {t | test_subjects = x})
+            g db.test_subjects test_subject (\t x -> { t | test_subjects = x })
 
         InputTypeType it ->
             case it of
                 ShortKind ->
-                    g db.input_types input_type (\t x -> {t | input_types = x})
+                    g db.input_types input_type (\t x -> { t | input_types = x })
+
                 LongKind ->
-                    g db.input_types {input_type|empty = IT.LongAnswer IT.longAnswerConfig.empty} (\t x -> {t | input_types = x})
+                    g db.input_types { input_type | empty = IT.LongAnswer IT.longAnswerConfig.empty } (\t x -> { t | input_types = x })
+
                 ListKind ->
-                    g db.input_types {input_type|empty = IT.List IT.listConfig.empty} (\t x -> {t | input_types = x})
+                    g db.input_types { input_type | empty = IT.List IT.listConfig.empty } (\t x -> { t | input_types = x })
+
+
 
 {- getReferenceHolder : (Type, String) -> Database -> List (Type, String)
-getReferenceHolder (kind,id) db =
-    case kind of
-        AnswerType ->
-            CodingAnswer -}
+   getReferenceHolder (kind,id) db =
+       case kind of
+           AnswerType ->
+               CodingAnswer
+-}
+
 
 getField : String -> String -> Type -> Database -> Maybe String
 getField id fname kind db =
@@ -428,62 +393,23 @@ getTimestampUpdaterMsg kind id attribute time =
                             posixToMillis time
 
 
-
 setTimestamp : Type -> String -> String -> Cmd Msg.Msg
 setTimestamp kind id attribute =
     getTimestampUpdaterMsg kind id attribute
         |> (\x -> perform x now)
 
-filterBy : (Row b -> Id a c) -> (Database -> Table b) -> Database -> Id a c -> List (Row b)
-filterBy attr dbgetter db old =
-    dbgetter db
-    |> Db.rows
-    |> List.filter (\x -> attr x == old)
-
-
-resolveAttributes : (a -> Id b String) -> (Database -> Table b) -> Database -> Row a -> List (Row a, Row b)
-resolveAttributes attr dbgetter db (oldid,fullold) = 
-    let
-        f id = dbgetter db
-               |> Db.rows
-               |> List.filter (\(cid, _) -> cid == id)
-    in
-    (oldid,fullold)
-    |> (\(id, value) -> ((id, value),(f (attr value.value))))
-    |> (\(oldval, list) -> List.map (\newval -> (oldval,newval)) list)
-
-    
-
-
-join : (Row b -> Id a String) -> (Database -> Table b) -> Database -> List (Row a ) -> List ((Row a),(Row b))
-join attr dbgetter db old =
-    let
-        k = List.map (\(id, value) -> id) old
-    in
-    old
-    |> List.map (\(id, value) -> ((id, value),(filterBy attr dbgetter db id)))
-    |> List.map (\(oldval, list) -> List.map (\newval -> (oldval,newval)) list)
-    |> List.concat
-    
-concatTupleFirst : (List a, b) -> List (a, b)
-concatTupleFirst (l,elem) =
-    List.map (\x -> (x, elem)) l
-
-concatTupleLast : (a, List b) -> List (a, b)
-concatTupleLast (elem, l) = 
-    List.map (\x -> (elem, x)) l
 
 type alias FieldConfig a b =
-    {
-        kind : Type,
-        attribute : String,
-        setter : (a -> Updater.Msg),
-        id : Id b String,
-        value : a
+    { kind : Type
+    , attribute : String
+    , setter : a -> Updater.Msg
+    , id : Id b String
+    , value : a
     }
 
+
 setField : FieldConfig a b -> Msg.Msg
-setField {kind, attribute, setter, id, value} =
+setField { kind, attribute, setter, id, value } =
     Msg.CRUD <|
         Msg.Update <|
             Updater.AttributeMsg (toStringPlural kind) <|
@@ -492,52 +418,11 @@ setField {kind, attribute, setter, id, value} =
                         Updater.AttributeMsg attribute <|
                             setter value
 
-setManyFields : List (FieldConfig a b) -> Msg.Msg
-setManyFields f =
-    List.map setFieldRaw f
-    |> Msg.UpdateAll
-    |> Msg.CRUD
 
-setFieldRaw : FieldConfig a b -> Updater.Msg
-setFieldRaw {kind, attribute, setter, id, value} =
-
-            Updater.AttributeMsg (toStringPlural kind) <|
-                Updater.DictKeyMsg (unbox id) <|
-                    Updater.AttributeMsg "value" <|
-                        Updater.AttributeMsg attribute <|
-                            setter value
-
-type alias FieldUpdateConfig a =
-    {
-        kind : Type,
-        attribute : String,
-        setter : ((a -> a) -> Updater.Msg),
-        id : String
-    }
-
-updateField : FieldUpdateConfig a -> (a -> a)-> Updater.Msg
-updateField config updater =
-    Updater.AttributeMsg (toStringPlural config.kind) <|
-        Updater.DictKeyMsg config.id <|
-            Updater.AttributeMsg "value" <|
-                Updater.AttributeMsg config.attribute <|
-                    config.setter updater
 
 -- go down and get value via update
-
-swapFields : Type -> String -> (a -> Updater.Msg) -> (Id b String, Id b String) -> (a, a) -> Msg.Msg
-swapFields kind attribute setter (f_id,s_id) (f_val, s_val) =
-    Msg.CRUD <|
-        Msg.UpdateAll
-            [
-                setFieldRaw
-                    {kind = kind, attribute = attribute, setter = setter, id = f_id, value = s_val}
-                , setFieldRaw
-                    {kind = kind, attribute = attribute, setter = setter, id = s_id, value = f_val}
-            ]
-
 -- swapFields : FieldUpdateConfig a -> FieldUpdateConfig a -> Database -> Database
--- swapFields first second db = 
+-- swapFields first second db =
 --     let
 --         firstMsg x = database.updater (updateField first x) db
 --         secondMsg y = database.updater (updateField second y) db

@@ -1,4 +1,4 @@
-module Viewer.OrderAwareList exposing (..)
+module Viewer.OrderAwareList exposing (OrderAware, orderAwareList)
 
 import Type.IO.Internal exposing (Id)
 
@@ -35,6 +35,7 @@ prePost prev xs =
 orderAwareList : List ( Id a String, a ) -> List (OrderAware a)
 orderAwareList old =
     let
+        mapToValue : Maybe ( Id a String, a ) -> Maybe { id : Id a String, value : a }
         mapToValue a =
             case a of
                 Just ( id, val ) ->
